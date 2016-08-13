@@ -1,11 +1,11 @@
 #pragma once
 
-#include <string>
-#include <functional>
-#include <stack>
-#include <unordered_map>
-#include <memory>
 #include <yajl/yajl_parse.h>
+#include <functional>
+#include <memory>
+#include <stack>
+#include <string>
+#include <unordered_map>
 
 namespace SJParser {
 
@@ -35,7 +35,7 @@ class TokenParser {
   virtual bool on(const MapEndT) { return false; }
   virtual bool on(const ArrayStartT) { return false; }
   virtual bool on(const ArrayEndT) { return false; }
-  
+
   virtual bool finish() { return true; }
 
   virtual ~TokenParser() = default;
@@ -54,20 +54,20 @@ class Dispatcher {
   template <typename T> bool on(const T &value);
 
  protected:
-  std::stack<TokenParser *>_parsers;
+  std::stack<TokenParser *> _parsers;
   std::function<void()> _on_completion;
 };
 
 template <typename T> class ValueParser : public TokenParser {
  public:
-  void setOnFinish(std::function<bool (const T&)> on_finish);
+  void setOnFinish(std::function<bool(const T &)> on_finish);
   virtual bool on(const T &value) override;
   virtual bool finish() override;
-  const T& get();
+  const T &get();
 
  private:
   T _value;
-  std::function<bool (const T&)> _on_finish = nullptr;
+  std::function<bool(const T &)> _on_finish = nullptr;
 };
 
 class ObjectParser : public TokenParser {
@@ -85,15 +85,14 @@ class ObjectParser : public TokenParser {
   void addField(const std::string &name, TokenParser *parser);
 
  private:
-  std::unordered_map<std::string, TokenParser*> _fields;
+  std::unordered_map<std::string, TokenParser *> _fields;
 };
-
 
 class ArrayParser : public TokenParser {
  public:
   virtual bool start() { return true; }
-  
-  //template <typename T> bool on(const T &value) override;
+
+  // template <typename T> bool on(const T &value) override;
 
   virtual bool on(const bool &value) override;
   virtual bool on(const int64_t &value) override;
@@ -128,8 +127,8 @@ class Parser {
   Dispatcher _dispatcher;
 };
 
-template <typename T> void ValueParser<T>::setOnFinish(
-    std::function<bool (const T&)> on_finish) {
+template <typename T>
+void ValueParser<T>::setOnFinish(std::function<bool(const T &)> on_finish) {
   _on_finish = on_finish;
 }
 
@@ -147,9 +146,8 @@ template <typename T> bool ValueParser<T>::finish() {
   return _on_finish(_value);
 }
 
-template <typename T> const T& ValueParser<T>::get() {
-  //TODO: exception
-  return _value; 
+template <typename T> const T &ValueParser<T>::get() {
+  // TODO: exception
+  return _value;
 }
-
 }

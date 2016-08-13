@@ -9,7 +9,7 @@ void TokenParser::setDispatcher(Dispatcher *dispatcher) {
 bool TokenParser::isSet() {
   return _set;
 }
-  
+
 void TokenParser::reset() {
   _set = false;
 }
@@ -126,67 +126,59 @@ template <typename T> bool Dispatcher::on(const T &value) {
   return _parsers.top()->on(value);
 }
 
-static int yajl_boolean (void *ctx, int value) {
-  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+static int yajl_boolean(void *ctx, int value) {
+  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
   return dispatcher->on(static_cast<bool>(value));
 }
 
 static int yajl_integer(void *ctx, long long value) {
-  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
   return dispatcher->on(static_cast<int64_t>(value));
 }
 
 static int yajl_double(void *ctx, double value) {
-  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
   return dispatcher->on(value);
 }
 
 static int yajl_string(void *ctx, const unsigned char *value, size_t len) {
-  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
-  return dispatcher->on(std::string(reinterpret_cast<const char*>(value), len));
+  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
+  return dispatcher->on(
+      std::string(reinterpret_cast<const char *>(value), len));
 }
 
 static int yajl_start_map(void *ctx) {
-  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
   return dispatcher->on(MapStartT{});
 }
 
 static int yajl_map_key(void *ctx, const unsigned char *value, size_t len) {
-  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
-  return dispatcher->on(MapKeyT{std::string(
-        reinterpret_cast<const char*>(value),
-        len)});
+  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
+  return dispatcher->on(
+      MapKeyT{std::string(reinterpret_cast<const char *>(value), len)});
 }
 
 static int yajl_end_map(void *ctx) {
-  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
   return dispatcher->on(MapEndT{});
 }
 
 static int yajl_start_array(void *ctx) {
-  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
   return dispatcher->on(ArrayStartT{});
 }
 
 static int yajl_end_array(void *ctx) {
-  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
   return dispatcher->on(ArrayEndT{});
 }
 
-Parser::Parser(std::shared_ptr<TokenParser> parser) :  
-  _callbacks {
-    nullptr,
-    yajl_boolean ,
-    yajl_integer,
-    yajl_double,
-    nullptr,
-    yajl_string,
-    yajl_start_map,
-    yajl_map_key,
-    yajl_end_map,
-    yajl_start_array,
-    yajl_end_array
-  }, _parser(std::move(parser)), _dispatcher(_parser.get()) {
+Parser::Parser(std::shared_ptr<TokenParser> parser)
+    : _callbacks{nullptr,      yajl_boolean,     yajl_integer,   yajl_double,
+                 nullptr,      yajl_string,      yajl_start_map, yajl_map_key,
+                 yajl_end_map, yajl_start_array, yajl_end_array},
+      _parser(std::move(parser)),
+      _dispatcher(_parser.get()) {
   _handle = yajl_alloc(&_callbacks, nullptr, &_dispatcher);
 }
 
@@ -196,8 +188,9 @@ Parser::~Parser() {
 
 #include <stdio.h>
 bool Parser::parse(const std::string &data) {
-  if (yajl_parse(_handle, reinterpret_cast<const unsigned char*>(data.data()),
-        data.size()) != yajl_status_ok) {
+  if (yajl_parse(_handle, reinterpret_cast<const unsigned char *>(data.data()),
+                 data.size())
+      != yajl_status_ok) {
     return false;
   }
   return true;
@@ -207,12 +200,12 @@ bool Parser::finish() {
   if (yajl_complete_parse(_handle) != yajl_status_ok) {
     return false;
   }
-    return true;
+  return true;
 }
 
 std::string Parser::getError() {
   auto err = yajl_get_error(_handle, 0, nullptr, 0);
-  std::string error_str = reinterpret_cast<char*>(err);
+  std::string error_str = reinterpret_cast<char *>(err);
 
   yajl_free_error(_handle, err);
   return error_str;
