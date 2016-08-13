@@ -1,0 +1,219 @@
+#include "sjparser.h"
+
+using namespace SJParser;
+
+void TokenParser::setDispatcher(Dispatcher *dispatcher) {
+  _dispatcher = dispatcher;
+}
+
+bool TokenParser::isSet() {
+  return _set;
+}
+  
+void TokenParser::reset() {
+  _set = false;
+}
+
+bool TokenParser::endParsing() {
+  if (_dispatcher) {
+    _dispatcher->popParser();
+  }
+  return finish();
+}
+
+void ObjectParser::addField(const std::string &name, TokenParser *parser) {
+  _fields[name] = parser;
+}
+
+void ObjectParser::setDispatcher(Dispatcher *dispatcher) {
+  TokenParser::setDispatcher(dispatcher);
+  for (auto &field : _fields) {
+    field.second->setDispatcher(dispatcher);
+  }
+}
+
+bool ObjectParser::on(const MapStartT) {
+  return start();
+}
+
+bool ObjectParser::on(const MapKeyT &key) {
+  try {
+    auto &parser = _fields.at(key.key);
+    _dispatcher->pushParser(parser);
+  } catch (...) {
+    return false;
+  }
+  return true;
+}
+
+bool ObjectParser::on(const MapEndT) {
+  return endParsing();
+}
+
+void ArrayParser::setElementsParser(TokenParser *parser) {
+  _parser = parser;
+}
+
+/*
+template <typename T> bool ArrayParser::on(const T &value) {
+  return _parser->on(value);
+}
+
+template <typename T> bool ArrayParser::on(const ArrayStartT) {
+  if (!_started) {
+    _started = true;
+    return start();
+  }
+  return _parser->on(ArrayStartT{});
+}
+
+template <typename T> bool ArrayParser::on(const ArrayEndT) {
+  _started = false;
+  return endParsing();
+}
+*/
+
+bool ArrayParser::on(const bool &value) {
+  return _parser->on(value);
+}
+
+bool ArrayParser::on(const int64_t &value) {
+  return _parser->on(value);
+}
+
+bool ArrayParser::on(const double &value) {
+  return _parser->on(value);
+}
+
+bool ArrayParser::on(const std::string &value) {
+  return _parser->on(value);
+}
+
+bool ArrayParser::on(const MapStartT) {
+  return _parser->on(MapStartT{});
+}
+
+bool ArrayParser::on(const ArrayStartT) {
+  if (!_started) {
+    _started = true;
+    return start();
+  }
+  return _parser->on(ArrayStartT{});
+}
+
+bool ArrayParser::on(const ArrayEndT) {
+  _started = false;
+  return endParsing();
+}
+
+Dispatcher::Dispatcher(TokenParser *parser) {
+  _parsers.push(parser);
+  parser->setDispatcher(this);
+}
+
+void Dispatcher::pushParser(TokenParser *parser) {
+  _parsers.push(parser);
+}
+
+void Dispatcher::popParser() {
+  _parsers.pop();
+}
+
+template <typename T> bool Dispatcher::on(const T &value) {
+  if (_parsers.empty()) {
+    return false;
+  }
+  return _parsers.top()->on(value);
+}
+
+static int yajl_boolean (void *ctx, int value) {
+  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  return dispatcher->on(static_cast<bool>(value));
+}
+
+static int yajl_integer(void *ctx, long long value) {
+  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  return dispatcher->on(static_cast<int64_t>(value));
+}
+
+static int yajl_double(void *ctx, double value) {
+  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  return dispatcher->on(value);
+}
+
+static int yajl_string(void *ctx, const unsigned char *value, size_t len) {
+  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  return dispatcher->on(std::string(reinterpret_cast<const char*>(value), len));
+}
+
+static int yajl_start_map(void *ctx) {
+  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  return dispatcher->on(MapStartT{});
+}
+
+static int yajl_map_key(void *ctx, const unsigned char *value, size_t len) {
+  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  return dispatcher->on(MapKeyT{std::string(
+        reinterpret_cast<const char*>(value),
+        len)});
+}
+
+static int yajl_end_map(void *ctx) {
+  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  return dispatcher->on(MapEndT{});
+}
+
+static int yajl_start_array(void *ctx) {
+  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  return dispatcher->on(ArrayStartT{});
+}
+
+static int yajl_end_array(void *ctx) {
+  auto dispatcher = reinterpret_cast<Dispatcher*>(ctx);
+  return dispatcher->on(ArrayEndT{});
+}
+
+Parser::Parser(std::shared_ptr<TokenParser> parser) :  
+  _callbacks {
+    nullptr,
+    yajl_boolean ,
+    yajl_integer,
+    yajl_double,
+    nullptr,
+    yajl_string,
+    yajl_start_map,
+    yajl_map_key,
+    yajl_end_map,
+    yajl_start_array,
+    yajl_end_array
+  }, _parser(std::move(parser)), _dispatcher(_parser.get()) {
+  _handle = yajl_alloc(&_callbacks, nullptr, &_dispatcher);
+}
+
+Parser::~Parser() {
+  yajl_free(_handle);
+}
+
+#include <stdio.h>
+bool Parser::parse(const std::string &data) {
+  if (yajl_parse(_handle, reinterpret_cast<const unsigned char*>(data.data()),
+        data.size()) != yajl_status_ok) {
+    return false;
+  }
+  return true;
+}
+
+bool Parser::finish() {
+  if (yajl_complete_parse(_handle) != yajl_status_ok) {
+    return false;
+  }
+    return true;
+}
+
+std::string Parser::getError() {
+  auto err = yajl_get_error(_handle, 0, nullptr, 0);
+  std::string error_str = reinterpret_cast<char*>(err);
+
+  yajl_free_error(_handle, err);
+  return error_str;
+}
