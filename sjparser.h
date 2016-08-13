@@ -92,8 +92,6 @@ class ArrayParser : public TokenParser {
  public:
   virtual bool start() { return true; }
 
-  // template <typename T> bool on(const T &value) override;
-
   virtual bool on(const bool &value) override;
   virtual bool on(const int64_t &value) override;
   virtual bool on(const double &value) override;

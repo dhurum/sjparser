@@ -54,25 +54,6 @@ void ArrayParser::setElementsParser(TokenParser *parser) {
   _parser = parser;
 }
 
-/*
-template <typename T> bool ArrayParser::on(const T &value) {
-  return _parser->on(value);
-}
-
-template <typename T> bool ArrayParser::on(const ArrayStartT) {
-  if (!_started) {
-    _started = true;
-    return start();
-  }
-  return _parser->on(ArrayStartT{});
-}
-
-template <typename T> bool ArrayParser::on(const ArrayEndT) {
-  _started = false;
-  return endParsing();
-}
-*/
-
 bool ArrayParser::on(const bool &value) {
   return _parser->on(value);
 }

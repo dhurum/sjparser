@@ -6,7 +6,7 @@ TEST(Parser, boolean) {
   auto value_parser = std::make_shared<SJParser::ValueParser<bool>>();
 
   SJParser::Parser parser(value_parser);
-  
+
   ASSERT_FALSE(value_parser->isSet());
 
   ASSERT_TRUE(parser.parse(buf));
@@ -21,7 +21,7 @@ TEST(Parser, integer) {
   auto value_parser = std::make_shared<SJParser::ValueParser<int64_t>>();
 
   SJParser::Parser parser(value_parser);
-  
+
   ASSERT_FALSE(value_parser->isSet());
 
   ASSERT_TRUE(parser.parse(buf));
@@ -36,7 +36,7 @@ TEST(Parser, double) {
   auto value_parser = std::make_shared<SJParser::ValueParser<double>>();
 
   SJParser::Parser parser(value_parser);
-  
+
   ASSERT_FALSE(value_parser->isSet());
 
   ASSERT_TRUE(parser.parse(buf));
@@ -51,7 +51,7 @@ TEST(Parser, string) {
   auto value_parser = std::make_shared<SJParser::ValueParser<std::string>>();
 
   SJParser::Parser parser(value_parser);
-  
+
   ASSERT_FALSE(value_parser->isSet());
 
   ASSERT_TRUE(parser.parse(buf));
@@ -98,11 +98,11 @@ TEST(Parser, emptyObject) {
 
 class TestArray : public SJParser::ArrayParser {
  public:
-  TestArray() { 
-     _elements_parser.setOnFinish(
-         [this](const std::string &value) { 
-           this->values.push_back(value); return true;
-         } );
+  TestArray() {
+    _elements_parser.setOnFinish([this](const std::string &value) {
+      this->values.push_back(value);
+      return true;
+    });
     setElementsParser(&_elements_parser);
   }
 
