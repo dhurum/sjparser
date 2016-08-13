@@ -71,6 +71,8 @@ bool ArrayParser::on(const std::string &value) {
 }
 
 bool ArrayParser::on(const MapStartT) {
+  _parser->setDispatcher(_dispatcher);
+  _dispatcher->pushParser(_parser);
   return _parser->on(MapStartT{});
 }
 
@@ -79,6 +81,9 @@ bool ArrayParser::on(const ArrayStartT) {
     _started = true;
     return start();
   }
+
+  _parser->setDispatcher(_dispatcher);
+  _dispatcher->pushParser(_parser);
   return _parser->on(ArrayStartT{});
 }
 

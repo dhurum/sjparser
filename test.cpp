@@ -100,13 +100,13 @@ class TestArray : public SJParser::ArrayParser {
  public:
   TestArray() {
     _elements_parser.setOnFinish([this](const std::string &value) {
-      this->values.push_back(value);
+      this->_values.push_back(value);
       return true;
     });
     setElementsParser(&_elements_parser);
   }
 
-  std::vector<std::string> values;
+  std::vector<std::string> _values;
   SJParser::ValueParser<std::string> _elements_parser;
 };
 
@@ -119,9 +119,9 @@ TEST(Parser, array) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(2, value_parser->values.size());
-  ASSERT_EQ("value", value_parser->values[0]);
-  ASSERT_EQ("value2", value_parser->values[1]);
+  ASSERT_EQ(2, value_parser->_values.size());
+  ASSERT_EQ("value", value_parser->_values[0]);
+  ASSERT_EQ("value2", value_parser->_values[1]);
 }
 
 TEST(Parser, emptyArray) {
@@ -133,5 +133,57 @@ TEST(Parser, emptyArray) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(0, value_parser->values.size());
+  ASSERT_EQ(0, value_parser->_values.size());
+}
+
+class TestInnerArray : public SJParser::ArrayParser {
+ public:
+  TestInnerArray(std::vector<std::vector<std::string>> &result)
+      : _result(result) {
+    _elements_parser.setOnFinish([this](const std::string &value) {
+      this->_values.push_back(value);
+      return true;
+    });
+    setElementsParser(&_elements_parser);
+  }
+
+  virtual bool finish() override {
+    _result.push_back(_values);
+    _values.clear();
+    return true;
+  }
+
+  std::vector<std::string> _values;
+  SJParser::ValueParser<std::string> _elements_parser;
+  std::vector<std::vector<std::string>> &_result;
+};
+
+class TestOuterArray : public SJParser::ArrayParser {
+ public:
+  TestOuterArray() : _elements_parser(_values) {
+    setElementsParser(&_elements_parser);
+  }
+
+  virtual bool finish() override { return true; }
+
+  std::vector<std::vector<std::string>> _values;
+  TestInnerArray _elements_parser;
+};
+
+TEST(Parser, insetArray) {
+  std::string buf(R"([["value", "value2"], ["value3", "value4"]])");
+  auto value_parser = std::make_shared<TestOuterArray>();
+
+  SJParser::Parser parser(value_parser);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(2, value_parser->_values.size());
+  ASSERT_EQ(2, value_parser->_values[0].size());
+  ASSERT_EQ(2, value_parser->_values[1].size());
+  ASSERT_EQ("value", value_parser->_values[0][0]);
+  ASSERT_EQ("value2", value_parser->_values[0][1]);
+  ASSERT_EQ("value3", value_parser->_values[1][0]);
+  ASSERT_EQ("value4", value_parser->_values[1][1]);
 }
