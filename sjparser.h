@@ -60,20 +60,20 @@ class Dispatcher {
 
 template <typename T> class ValueParser : public TokenParser {
  public:
-  void setOnFinish(std::function<bool(const T &)> on_finish);
+  ValueParser(std::function<bool(const T &)> on_finish = nullptr)
+      : _on_finish(on_finish) {}
   virtual bool on(const T &value) override;
   virtual bool finish() override;
   const T &get();
 
  private:
   T _value;
-  std::function<bool(const T &)> _on_finish = nullptr;
+  std::function<bool(const T &)> _on_finish;
 };
 
 class ObjectParser : public TokenParser {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher) override;
-  virtual bool start() { return true; }
 
   virtual bool on(const MapStartT) override;
   virtual bool on(const MapKeyT &key) override;
@@ -90,8 +90,6 @@ class ObjectParser : public TokenParser {
 
 class ArrayParser : public TokenParser {
  public:
-  virtual bool start() { return true; }
-
   virtual bool on(const bool &value) override;
   virtual bool on(const int64_t &value) override;
   virtual bool on(const double &value) override;
@@ -124,11 +122,6 @@ class Parser {
   std::shared_ptr<TokenParser> _parser;
   Dispatcher _dispatcher;
 };
-
-template <typename T>
-void ValueParser<T>::setOnFinish(std::function<bool(const T &)> on_finish) {
-  _on_finish = on_finish;
-}
 
 template <typename T> bool ValueParser<T>::on(const T &value) {
   _value = value;

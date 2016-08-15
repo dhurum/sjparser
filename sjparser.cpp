@@ -33,7 +33,10 @@ void ObjectParser::setDispatcher(Dispatcher *dispatcher) {
 }
 
 bool ObjectParser::on(const MapStartT) {
-  return start();
+  for (auto &field_info : _fields) {
+    field_info.second->reset();
+  }
+  return true;
 }
 
 bool ObjectParser::on(const MapKeyT &key) {
@@ -79,7 +82,7 @@ bool ArrayParser::on(const MapStartT) {
 bool ArrayParser::on(const ArrayStartT) {
   if (!_started) {
     _started = true;
-    return start();
+    return true;
   }
 
   _parser->setDispatcher(_dispatcher);
