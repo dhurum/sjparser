@@ -21,27 +21,23 @@ bool TokenParser::endParsing() {
   return finish();
 }
 
-void ObjectParser::addField(const std::string &name, TokenParser *parser) {
-  _fields[name] = parser;
-}
-
-void ObjectParser::setDispatcher(Dispatcher *dispatcher) {
+void ObjectParserBase::setDispatcher(Dispatcher *dispatcher) {
   TokenParser::setDispatcher(dispatcher);
-  for (auto &field : _fields) {
+  for (auto &field : _fields_map) {
     field.second->setDispatcher(dispatcher);
   }
 }
 
-bool ObjectParser::on(const MapStartT) {
-  for (auto &field_info : _fields) {
-    field_info.second->reset();
+bool ObjectParserBase::on(const MapStartT) {
+  for (auto &field : _fields_map) {
+    field.second->reset();
   }
   return true;
 }
 
-bool ObjectParser::on(const MapKeyT &key) {
+bool ObjectParserBase::on(const MapKeyT &key) {
   try {
-    auto &parser = _fields.at(key.key);
+    auto &parser = _fields_map.at(key.key);
     _dispatcher->pushParser(parser);
   } catch (...) {
     return false;
@@ -49,37 +45,33 @@ bool ObjectParser::on(const MapKeyT &key) {
   return true;
 }
 
-bool ObjectParser::on(const MapEndT) {
+bool ObjectParserBase::on(const MapEndT) {
   return endParsing();
 }
 
-void ArrayParser::setElementsParser(TokenParser *parser) {
-  _parser = parser;
-}
-
-bool ArrayParser::on(const bool &value) {
+bool ArrayParserBase::on(const bool &value) {
   return _parser->on(value);
 }
 
-bool ArrayParser::on(const int64_t &value) {
+bool ArrayParserBase::on(const int64_t &value) {
   return _parser->on(value);
 }
 
-bool ArrayParser::on(const double &value) {
+bool ArrayParserBase::on(const double &value) {
   return _parser->on(value);
 }
 
-bool ArrayParser::on(const std::string &value) {
+bool ArrayParserBase::on(const std::string &value) {
   return _parser->on(value);
 }
 
-bool ArrayParser::on(const MapStartT) {
+bool ArrayParserBase::on(const MapStartT) {
   _parser->setDispatcher(_dispatcher);
   _dispatcher->pushParser(_parser);
   return _parser->on(MapStartT{});
 }
 
-bool ArrayParser::on(const ArrayStartT) {
+bool ArrayParserBase::on(const ArrayStartT) {
   if (!_started) {
     _started = true;
     return true;
@@ -90,7 +82,7 @@ bool ArrayParser::on(const ArrayStartT) {
   return _parser->on(ArrayStartT{});
 }
 
-bool ArrayParser::on(const ArrayEndT) {
+bool ArrayParserBase::on(const ArrayEndT) {
   _started = false;
   return endParsing();
 }
@@ -108,7 +100,8 @@ void Dispatcher::popParser() {
   _parsers.pop();
 }
 
-template <typename T> bool Dispatcher::on(const T &value) {
+template <typename T>
+bool Dispatcher::on(const T &value) {
   if (_parsers.empty()) {
     return false;
   }
@@ -178,8 +171,7 @@ Parser::~Parser() {
 #include <stdio.h>
 bool Parser::parse(const std::string &data) {
   if (yajl_parse(_handle, reinterpret_cast<const unsigned char *>(data.data()),
-                 data.size())
-      != yajl_status_ok) {
+                 data.size()) != yajl_status_ok) {
     return false;
   }
   return true;
