@@ -103,12 +103,14 @@ TEST(Parser, objectWithObject) {
   "key4": true
 })");
 
-  auto value_parser = SJParser::makeObjectParser<
-      SJParser::ValueParser<std::string>, SJParser::ValueParser<int64_t>,
-      SJParser::ObjectParser<SJParser::ValueParser<int64_t>,
-                             SJParser::ValueParser<std::string>>,
-      SJParser::ValueParser<bool>>(
-      {{{"key"}, {"key2"}, {"key3", {{{"key"}, {"key2"}}}}, {"key4"}}});
+  auto value_parser = SJParser::
+      makeObjectParser<SJParser::ValueParser<std::string>,
+                       SJParser::ValueParser<int64_t>,
+                       SJParser::
+                           ObjectParser<SJParser::ValueParser<int64_t>,
+                                        SJParser::ValueParser<std::string>>,
+                       SJParser::ValueParser<bool>>(
+          {{{"key"}, {"key2"}, {"key3", {{{"key"}, {"key2"}}}}, {"key4"}}});
 
   SJParser::Parser parser(value_parser);
 
@@ -139,13 +141,17 @@ TEST(Parser, objectOfObjects) {
   }
 })");
 
-  auto value_parser = SJParser::makeObjectParser<
-      SJParser::ObjectParser<SJParser::ValueParser<std::string>,
-                             SJParser::ValueParser<int64_t>>,
-      SJParser::ObjectParser<SJParser::ValueParser<int64_t>,
-                             SJParser::ValueParser<std::string>>,
-      SJParser::ObjectParser<SJParser::ValueParser<bool>>>(
-      {{{"key", {{{"key"}, {"key2"}}}}, {"key2", {{{"key"}, {"key2"}}}}, {"key3", {{{"key"}}}}}});
+  auto value_parser = SJParser::
+      makeObjectParser<SJParser::
+                           ObjectParser<SJParser::ValueParser<std::string>,
+                                        SJParser::ValueParser<int64_t>>,
+                       SJParser::
+                           ObjectParser<SJParser::ValueParser<int64_t>,
+                                        SJParser::ValueParser<std::string>>,
+                       SJParser::ObjectParser<SJParser::ValueParser<bool>>>(
+          {{{"key", {{{"key"}, {"key2"}}}},
+            {"key2", {{{"key"}, {"key2"}}}},
+            {"key3", {{{"key"}}}}}});
 
   SJParser::Parser parser(value_parser);
 
@@ -159,41 +165,16 @@ TEST(Parser, objectOfObjects) {
   ASSERT_EQ(true, value_parser->get<2>().get<0>().get());
 }
 
-#if 0
 TEST(Parser, array) {
-  std::string buf(R"(["value", "value2"])");
-
-  auto value_parser = std::make_shared<SJParser::ArrayParser<SJParser::ValueParser<std::string>>>();
-
-  SJParser::Parser parser(value_parser);
-
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
-
-  ASSERT_EQ(2, value_parser->get().size());
-  ASSERT_EQ("value", value_parser->get()[0]);
-  ASSERT_EQ("value2", value_parser->get()[1]);
-}
-
-TEST(Parser, emptyArray) {
-  std::string buf(R"([])");
-
-  auto value_parser = std::make_shared<SJParser::ArrayParser<SJParser::ValueParser<std::string>>>();
-
-  SJParser::Parser parser(value_parser);
-
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
-
-  ASSERT_EQ(0, value_parser->get().size());
-}
-
-TEST(Parser, arrayWithCallback) {
   std::string buf(R"(["value", "value2"])");
   std::vector<std::string> values;
 
-  auto value_parser = std::make_shared<SJParser::ArrayParser<SJParser::ValueParser<std::string>>>(
-      [&](const std::string &value) { values.push_back(value); return true; });
+  auto value_parser =
+      SJParser::makeArrayParser<SJParser::ValueParser<std::string>>(
+          {[&](const std::string &value) {
+            values.push_back(value);
+            return true;
+          }});
 
   SJParser::Parser parser(value_parser);
 
@@ -205,57 +186,60 @@ TEST(Parser, arrayWithCallback) {
   ASSERT_EQ("value2", values[1]);
 }
 
-/*
-class TestInnerArray : public SJParser::ArrayParser {
- public:
-  TestInnerArray(std::vector<std::vector<std::string>> &result)
-      : _elements_parser([this](const std::string &value) {
-          this->_values.push_back(value);
-          return true;
-        }),
-        _result(result) {
-    setElementsParser(&_elements_parser);
-  }
+TEST(Parser, emptyArray) {
+  std::string buf(R"([])");
+  std::vector<std::string> values;
 
-  virtual bool finish() override {
-    _result.push_back(_values);
-    _values.clear();
+  auto elementCb = [&](const std::string &value) {
+    values.push_back(value);
     return true;
-  }
+  };
 
-  std::vector<std::string> _values;
-  SJParser::ValueParser<std::string> _elements_parser;
-  std::vector<std::vector<std::string>> &_result;
-};
-
-class TestOuterArray : public SJParser::ArrayParser {
- public:
-  TestOuterArray() : _elements_parser(_values) {
-    setElementsParser(&_elements_parser);
-  }
-
-  std::vector<std::vector<std::string>> _values;
-  TestInnerArray _elements_parser;
-};
-
-TEST(Parser, insetArray) {
-  std::string buf(R"([["value", "value2"], ["value3", "value4"]])");
-  auto value_parser = std::make_shared<TestOuterArray>();
+  auto value_parser =
+      SJParser::makeArrayParser<SJParser::ValueParser<std::string>>(
+          {elementCb});
 
   SJParser::Parser parser(value_parser);
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(2, value_parser->_values.size());
-  ASSERT_EQ(2, value_parser->_values[0].size());
-  ASSERT_EQ(2, value_parser->_values[1].size());
-  ASSERT_EQ("value", value_parser->_values[0][0]);
-  ASSERT_EQ("value2", value_parser->_values[0][1]);
-  ASSERT_EQ("value3", value_parser->_values[1][0]);
-  ASSERT_EQ("value4", value_parser->_values[1][1]);
+  ASSERT_EQ(0, values.size());
 }
-*/
+
+TEST(Parser, arrayOfArrays) {
+  std::string buf(R"([["value", "value2"], ["value3", "value4"]])");
+  std::vector<std::vector<std::string>> values;
+  std::vector<std::string> tmp;
+
+  auto elementCb = [&](const std::string &value) {
+    tmp.push_back(value);
+    return true;
+  };
+
+  auto innerArrayCb = [&]() {
+    values.push_back(tmp);
+    tmp.clear();
+    return true;
+  };
+
+  auto value_parser =
+      SJParser::makeArrayParser<SJParser::ArrayParser<SJParser::ValueParser<std::string>>>(
+          {{elementCb, innerArrayCb}});
+
+  SJParser::Parser parser(value_parser);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(2, values.size());
+  ASSERT_EQ(2, values[0].size());
+  ASSERT_EQ(2, values[1].size());
+  ASSERT_EQ("value", values[0][0]);
+  ASSERT_EQ("value2", values[0][1]);
+  ASSERT_EQ("value3", values[1][0]);
+  ASSERT_EQ("value4", values[1][1]);
+}
 
 struct TestStruct {
   std::string field1;
@@ -270,11 +254,13 @@ TEST(Parser, arrayOfObjects) {
   using ParserType = SJParser::ObjectParser<SJParser::ValueParser<std::string>,
                                             SJParser::ValueParser<int64_t>>;
 
-  auto value_parser = std::make_shared<SJParser::ArrayParser<ParserType>>(
-      [&](ParserType &parser) {
-        values.push_back({parser.get<0>().get(), parser.get<1>().get()});
-        return true;
-      }, std::initializer_list<SJParser::Param>{"key", "key2"});
+  auto objectCb = [&](ParserType &parser) {
+    values.push_back({parser.get<0>().get(), parser.get<1>().get()});
+    return true;
+  };
+
+  auto value_parser =
+      SJParser::makeArrayParser<ParserType>({{{{"key"}, {"key2"}}, objectCb}});
 
   SJParser::Parser parser(value_parser);
 
@@ -288,5 +274,4 @@ TEST(Parser, arrayOfObjects) {
   ASSERT_EQ(20, values[1].field2);
 }
 
-#endif
-//TODO: object with array and object with array of objects
+// TODO: object with array and object with array of objects

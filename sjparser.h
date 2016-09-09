@@ -231,44 +231,43 @@ class ArrayParserBase : public TokenParser {
   bool _started = false;
 };
 
-/*
-template <typename T>
-class ArrayParser : public ArrayParserBase {};
+template <typename T> struct ArrayArg {
+  using Args = typename T::Args;
 
-template <typename T>
-class ArrayParser<ValueParser<T>> : public ArrayParserBase {
- public:
-  ArrayParser(std::function<bool(const T &)> on_element = nullptr,
-              std::function<bool()> on_finish = nullptr)
-      : ArrayParserBase(on_finish),
-        _parser(on_element ? on_element : [&](const T &value) {
-          _values.push_back(value);
-          return true;
-        }) {
-    ArrayParserBase::_parser = &_parser;
-  }
+  ArrayArg(const Args &value) : value(value) {}
+  ArrayArg() {}
 
-  const std::vector<T> &get() { return _values; }
-
- private:
-  std::vector<T> _values;
-  ValueParser<T> _parser;
+  Args value = nullptr;
 };
 
-template <typename... Ts>
-class ArrayParser<ObjectParser<Ts...>> : public ArrayParserBase {
+//TODO: maybe add some template parameter for internal vector
+template <typename T>
+class ArrayParser : public ArrayParserBase {
  public:
-  ArrayParser(std::function<bool(ObjectParser<Ts...> &)> on_element,
-              std::initializer_list<Param> params,
-              std::function<bool()> on_finish = nullptr)
-      : ArrayParserBase(on_finish), _parser(params, on_element) {
+  struct Args {
+    using EltArgs = typename T::Args;
+    Args(const EltArgs &args,
+         const std::function<bool()> &on_finish)
+        : args(args), on_finish(on_finish) {}
+    Args(const EltArgs &args) : args(args) {}
+
+    EltArgs args;
+    std::function<bool()> on_finish;
+  };
+
+  ArrayParser(const Args &args) : ArrayParserBase(args.on_finish), _parser(args.args) {
     ArrayParserBase::_parser = &_parser;
   }
 
  private:
-  ObjectParser<Ts...> _parser;
+  T _parser;
 };
-*/
+
+template <typename T>
+std::shared_ptr<ArrayParser<T>> makeArrayParser(
+    const typename ArrayParser<T>::Args &args) {
+  return std::make_shared<ArrayParser<T>>(args);
+}
 
 class Dispatcher {
  public:
