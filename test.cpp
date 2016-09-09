@@ -66,7 +66,7 @@ TEST(Parser, object) {
   auto value_parser =
       SJParser::makeObjectParser<SJParser::ValueParser<std::string>,
                                  SJParser::ValueParser<int64_t>>(
-          {"key", "key2"});
+          {{{"key"}, {"key2"}}});
 
   SJParser::Parser parser(value_parser);
 
@@ -82,7 +82,7 @@ TEST(Parser, emptyObject) {
   auto value_parser =
       SJParser::makeObjectParser<SJParser::ValueParser<std::string>,
                                  SJParser::ValueParser<int64_t>>(
-          {"key", "key2"});
+          {{{"key"}, {"key2"}}});
 
   SJParser::Parser parser(value_parser);
 
@@ -90,6 +90,76 @@ TEST(Parser, emptyObject) {
   ASSERT_TRUE(parser.finish());
 }
 
+TEST(Parser, objectWithObject) {
+  std::string buf(
+      R"(
+{
+  "key": "value",
+  "key2": 10,
+  "key3": {
+    "key": 1,
+    "key2": "in_value"
+  },
+  "key4": true
+})");
+
+  auto value_parser = SJParser::makeObjectParser<
+      SJParser::ValueParser<std::string>, SJParser::ValueParser<int64_t>,
+      SJParser::ObjectParser<SJParser::ValueParser<int64_t>,
+                             SJParser::ValueParser<std::string>>,
+      SJParser::ValueParser<bool>>(
+      {{{"key"}, {"key2"}, {"key3", {{{"key"}, {"key2"}}}}, {"key4"}}});
+
+  SJParser::Parser parser(value_parser);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", value_parser->get<0>().get());
+  ASSERT_EQ(10, value_parser->get<1>().get());
+  ASSERT_EQ(1, value_parser->get<2>().get<0>().get());
+  ASSERT_EQ("in_value", value_parser->get<2>().get<1>().get());
+  ASSERT_EQ(true, value_parser->get<3>().get());
+}
+
+TEST(Parser, objectOfObjects) {
+  std::string buf(
+      R"(
+{
+  "key": {
+    "key": "value",
+    "key2": 10
+  },
+  "key2": {
+    "key": 1,
+    "key2": "value2"
+  },
+  "key3": {
+    "key": true
+  }
+})");
+
+  auto value_parser = SJParser::makeObjectParser<
+      SJParser::ObjectParser<SJParser::ValueParser<std::string>,
+                             SJParser::ValueParser<int64_t>>,
+      SJParser::ObjectParser<SJParser::ValueParser<int64_t>,
+                             SJParser::ValueParser<std::string>>,
+      SJParser::ObjectParser<SJParser::ValueParser<bool>>>(
+      {{{"key", {{{"key"}, {"key2"}}}}, {"key2", {{{"key"}, {"key2"}}}}, {"key3", {{{"key"}}}}}});
+
+  SJParser::Parser parser(value_parser);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", value_parser->get<0>().get<0>().get());
+  ASSERT_EQ(10, value_parser->get<0>().get<1>().get());
+  ASSERT_EQ(1, value_parser->get<1>().get<0>().get());
+  ASSERT_EQ("value2", value_parser->get<1>().get<1>().get());
+  ASSERT_EQ(true, value_parser->get<2>().get<0>().get());
+}
+
+#if 0
 TEST(Parser, array) {
   std::string buf(R"(["value", "value2"])");
 
@@ -218,73 +288,5 @@ TEST(Parser, arrayOfObjects) {
   ASSERT_EQ(20, values[1].field2);
 }
 
-TEST(Parser, objectWithObject) {
-  std::string buf(
-      R"(
-{
-  "key": "value",
-  "key2": 10,
-  "key3": {
-    "key": 1,
-    "key2": "in_value"
-  },
-  "key4": true
-})");
-
-  auto value_parser = SJParser::makeObjectParser<
-      SJParser::ValueParser<std::string>, SJParser::ValueParser<int64_t>,
-      SJParser::ObjectParser<SJParser::ValueParser<int64_t>,
-                             SJParser::ValueParser<std::string>>,
-      SJParser::ValueParser<bool>>(
-      {"key", "key2", "key3", {"key", "key2"}, "key4"});
-
-  SJParser::Parser parser(value_parser);
-
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
-
-  ASSERT_EQ("value", value_parser->get<0>().get());
-  ASSERT_EQ(10, value_parser->get<1>().get());
-  ASSERT_EQ(1, value_parser->get<2>().get<0>().get());
-  ASSERT_EQ("in_value", value_parser->get<2>().get<1>().get());
-  ASSERT_EQ(true, value_parser->get<3>().get());
-}
-
-TEST(Parser, objectOfObjects) {
-  std::string buf(
-      R"(
-{
-  "key": {
-    "key": "value",
-    "key2": 10
-  },
-  "key2": {
-    "key": 1,
-    "key2": "value2"
-  },
-  "key3": {
-    "key": true
-  }
-})");
-
-  auto value_parser = SJParser::makeObjectParser<
-      SJParser::ObjectParser<SJParser::ValueParser<std::string>,
-                             SJParser::ValueParser<int64_t>>,
-      SJParser::ObjectParser<SJParser::ValueParser<int64_t>,
-                             SJParser::ValueParser<std::string>>,
-      SJParser::ObjectParser<SJParser::ValueParser<bool>>>(
-      {"key", {"key", "key2"}, "key2", {"key", "key2"}, "key3", {"key"}});
-
-  SJParser::Parser parser(value_parser);
-
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
-
-  ASSERT_EQ("value", value_parser->get<0>().get<0>().get());
-  ASSERT_EQ(10, value_parser->get<0>().get<1>().get());
-  ASSERT_EQ(1, value_parser->get<1>().get<0>().get());
-  ASSERT_EQ("value2", value_parser->get<1>().get<1>().get());
-  ASSERT_EQ(true, value_parser->get<2>().get<0>().get());
-}
-
+#endif
 //TODO: object with array and object with array of objects
