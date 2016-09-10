@@ -51,17 +51,16 @@ class TokenParser {
 
 template <typename T> class ValueParser : public TokenParser {
  public:
-  ValueParser(std::function<bool(const T &)> on_finish = nullptr)
-      : _on_finish(on_finish) {}
+  using Args = std::function<bool(const T &)>;
+
+  ValueParser(const Args &on_finish = nullptr) : _on_finish(on_finish) {}
   virtual bool on(const T &value) override;
   virtual bool finish() override;
   const T &get();
 
-  using Args = std::function<bool(const T &)>;
-
  private:
   T _value;
-  std::function<bool(const T &)> _on_finish;
+  Args _on_finish;
 };
 
 class ObjectParserBase : public TokenParser {
@@ -83,7 +82,7 @@ template <typename T> struct ObjectArg {
   ObjectArg(const std::string &name, const Args &value)
       : name(name), value(value) {}
   ObjectArg(const std::string &name) : name(name) {}
-  ObjectArg(const char* name) : name(name) {}
+  ObjectArg(const char *name) : name(name) {}
 
   std::string name;
   Args value = nullptr;
@@ -232,14 +231,12 @@ class ArrayParserBase : public TokenParser {
   bool _started = false;
 };
 
-//TODO: maybe add some template parameter for internal vector
-template <typename T>
-class ArrayParser : public ArrayParserBase {
+// TODO: maybe add some template parameter for internal vector
+template <typename T> class ArrayParser : public ArrayParserBase {
  public:
   struct Args {
     using EltArgs = typename T::Args;
-    Args(const EltArgs &args,
-         const std::function<bool()> &on_finish)
+    Args(const EltArgs &args, const std::function<bool()> &on_finish)
         : args(args), on_finish(on_finish) {}
     Args(const EltArgs &args) : args(args) {}
 
@@ -247,7 +244,8 @@ class ArrayParser : public ArrayParserBase {
     std::function<bool()> on_finish = nullptr;
   };
 
-  ArrayParser(const Args &args) : ArrayParserBase(args.on_finish), _parser(args.args) {
+  ArrayParser(const Args &args)
+      : ArrayParserBase(args.on_finish), _parser(args.args) {
     ArrayParserBase::_parser = &_parser;
   }
 
