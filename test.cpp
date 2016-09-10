@@ -223,8 +223,9 @@ TEST(Parser, arrayOfArrays) {
     return true;
   };
 
-  auto value_parser =
-      SJParser::makeArrayParser<SJParser::ArrayParser<SJParser::ValueParser<std::string>>>(
+  auto value_parser = SJParser::
+      makeArrayParser<SJParser::
+                          ArrayParser<SJParser::ValueParser<std::string>>>(
           {{elementCb, innerArrayCb}});
 
   SJParser::Parser parser(value_parser);
@@ -241,7 +242,7 @@ TEST(Parser, arrayOfArrays) {
   ASSERT_EQ("value4", values[1][1]);
 }
 
-struct TestStruct {
+struct ObjectStruct {
   std::string field1;
   int64_t field2;
 };
@@ -249,7 +250,7 @@ struct TestStruct {
 TEST(Parser, arrayOfObjects) {
   std::string buf(
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
-  std::vector<TestStruct> values;
+  std::vector<ObjectStruct> values;
 
   using ParserType = SJParser::ObjectParser<SJParser::ValueParser<std::string>,
                                             SJParser::ValueParser<int64_t>>;
@@ -274,4 +275,60 @@ TEST(Parser, arrayOfObjects) {
   ASSERT_EQ(20, values[1].field2);
 }
 
-// TODO: object with array and object with array of objects
+struct ObjectWArrayStruct {
+  std::string field1;
+  int64_t field2;
+  std::vector<std::string> array;
+};
+
+TEST(Parser, objectWithArray) {
+  std::string buf(
+      R"(
+{
+  "key": "value",
+  "key2": 10,
+  "key3": [
+    "elt1",
+    "elt2",
+    "elt3"
+  ]
+})");
+
+  using ParserType = SJParser::
+      ObjectParser<SJParser::ValueParser<std::string>,
+                   SJParser::ValueParser<int64_t>,
+                   SJParser::ArrayParser<SJParser::ValueParser<std::string>>>;
+
+  ObjectWArrayStruct object;
+
+  auto arrayEltCb = [&](const std::string &value) {
+    object.array.push_back(value);
+
+    return true;
+  };
+
+  auto objectCb = [&](ParserType &parser) {
+    object.field1 = parser.get<0>().get();
+    object.field2 = parser.get<1>().get();
+
+    return true;
+  };
+
+  auto value_parser = SJParser::
+      makeObjectParser<SJParser::ValueParser<std::string>,
+                       SJParser::ValueParser<int64_t>,
+                       SJParser::
+                           ArrayParser<SJParser::ValueParser<std::string>>>(
+          {{{"key"}, {"key2"}, {"key3", {{arrayEltCb}}}}, objectCb});
+  SJParser::Parser parser(value_parser);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", object.field1);
+  ASSERT_EQ(10, object.field2);
+  ASSERT_EQ(3, object.array.size());
+  ASSERT_EQ("elt1", object.array[0]);
+  ASSERT_EQ("elt2", object.array[1]);
+  ASSERT_EQ("elt3", object.array[2]);
+}
