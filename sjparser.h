@@ -83,6 +83,7 @@ template <typename T> struct ObjectArg {
   ObjectArg(const std::string &name, const Args &value)
       : name(name), value(value) {}
   ObjectArg(const std::string &name) : name(name) {}
+  ObjectArg(const char* name) : name(name) {}
 
   std::string name;
   Args value = nullptr;
@@ -231,15 +232,6 @@ class ArrayParserBase : public TokenParser {
   bool _started = false;
 };
 
-template <typename T> struct ArrayArg {
-  using Args = typename T::Args;
-
-  ArrayArg(const Args &value) : value(value) {}
-  ArrayArg() {}
-
-  Args value = nullptr;
-};
-
 //TODO: maybe add some template parameter for internal vector
 template <typename T>
 class ArrayParser : public ArrayParserBase {
@@ -252,7 +244,7 @@ class ArrayParser : public ArrayParserBase {
     Args(const EltArgs &args) : args(args) {}
 
     EltArgs args;
-    std::function<bool()> on_finish;
+    std::function<bool()> on_finish = nullptr;
   };
 
   ArrayParser(const Args &args) : ArrayParserBase(args.on_finish), _parser(args.args) {

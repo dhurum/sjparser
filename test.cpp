@@ -66,7 +66,7 @@ TEST(Parser, object) {
   auto value_parser =
       SJParser::makeObjectParser<SJParser::ValueParser<std::string>,
                                  SJParser::ValueParser<int64_t>>(
-          {{{"key"}, {"key2"}}});
+          {{"key", "key2"}});
 
   SJParser::Parser parser(value_parser);
 
@@ -82,7 +82,7 @@ TEST(Parser, emptyObject) {
   auto value_parser =
       SJParser::makeObjectParser<SJParser::ValueParser<std::string>,
                                  SJParser::ValueParser<int64_t>>(
-          {{{"key"}, {"key2"}}});
+          {{"key", "key2"}});
 
   SJParser::Parser parser(value_parser);
 
@@ -110,7 +110,7 @@ TEST(Parser, objectWithObject) {
                            ObjectParser<SJParser::ValueParser<int64_t>,
                                         SJParser::ValueParser<std::string>>,
                        SJParser::ValueParser<bool>>(
-          {{{"key"}, {"key2"}, {"key3", {{{"key"}, {"key2"}}}}, {"key4"}}});
+          {{"key", "key2", {"key3", {{"key", "key2"}}}, "key4"}});
 
   SJParser::Parser parser(value_parser);
 
@@ -149,9 +149,9 @@ TEST(Parser, objectOfObjects) {
                            ObjectParser<SJParser::ValueParser<int64_t>,
                                         SJParser::ValueParser<std::string>>,
                        SJParser::ObjectParser<SJParser::ValueParser<bool>>>(
-          {{{"key", {{{"key"}, {"key2"}}}},
-            {"key2", {{{"key"}, {"key2"}}}},
-            {"key3", {{{"key"}}}}}});
+          {{{"key", {{"key", "key2"}}},
+            {"key2", {{"key", "key2"}}},
+            {"key3", {{"key"}}}}});
 
   SJParser::Parser parser(value_parser);
 
@@ -261,7 +261,7 @@ TEST(Parser, arrayOfObjects) {
   };
 
   auto value_parser =
-      SJParser::makeArrayParser<ParserType>({{{{"key"}, {"key2"}}, objectCb}});
+      SJParser::makeArrayParser<ParserType>({{{"key", "key2"}, objectCb}});
 
   SJParser::Parser parser(value_parser);
 
@@ -319,7 +319,7 @@ TEST(Parser, objectWithArray) {
                        SJParser::ValueParser<int64_t>,
                        SJParser::
                            ArrayParser<SJParser::ValueParser<std::string>>>(
-          {{{"key"}, {"key2"}, {"key3", {{arrayEltCb}}}}, objectCb});
+          {{"key", "key2", {"key3", {{arrayEltCb}}}}, objectCb});
   SJParser::Parser parser(value_parser);
 
   ASSERT_TRUE(parser.parse(buf));
