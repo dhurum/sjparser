@@ -26,8 +26,7 @@ class TokenParser {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher);
   bool isSet();
-  // TODO: virtual reset
-  void reset();
+  virtual void reset();
   bool endParsing();
 
   virtual bool on(const bool & /*value*/) { return false; }
@@ -53,10 +52,11 @@ template <typename T> class ValueParser : public TokenParser {
  public:
   using Args = std::function<bool(const T &)>;
 
-  ValueParser(const Args &on_finish = nullptr) : _on_finish(on_finish) {}
+  ValueParser(const Args &on_finish) : _on_finish(on_finish) {}
   virtual bool on(const T &value) override;
   virtual bool finish() override;
   const T &get();
+  const T &pop();
 
  private:
   T _value;
@@ -66,6 +66,7 @@ template <typename T> class ValueParser : public TokenParser {
 class ObjectParserBase : public TokenParser {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher) override;
+  virtual void reset() override;
 
   virtual bool on(const MapStartT) override;
   virtual bool on(const MapKeyT &key) override;
@@ -75,7 +76,6 @@ class ObjectParserBase : public TokenParser {
   std::unordered_map<std::string, TokenParser *> _fields_map;
 };
 
-// TODO: specialization for ObjectArgs with value, default - without
 template <typename T> struct ObjectArg {
   using Args = typename T::Args;
 
@@ -198,15 +198,10 @@ template <typename... Ts> class ObjectParser : public ObjectParserBase {
   std::function<bool(ObjectParser<Ts...> &)> _on_finish;
 };
 
-template <typename... Ts>
-std::shared_ptr<ObjectParser<Ts...>> makeObjectParser(
-    const typename ObjectParser<Ts...>::Args &args) {
-  return std::make_shared<ObjectParser<Ts...>>(args);
-}
-
 class ArrayParserBase : public TokenParser {
  public:
   ArrayParserBase(std::function<bool()> on_finish) : _on_finish(on_finish) {}
+  virtual void reset() override;
 
   virtual bool on(const bool &value) override;
   virtual bool on(const int64_t &value) override;
@@ -253,12 +248,6 @@ template <typename T> class ArrayParser : public ArrayParserBase {
   T _parser;
 };
 
-template <typename T>
-std::shared_ptr<ArrayParser<T>> makeArrayParser(
-    const typename ArrayParser<T>::Args &args) {
-  return std::make_shared<ArrayParser<T>>(args);
-}
-
 class Dispatcher {
  public:
   Dispatcher(TokenParser *parser);
@@ -272,19 +261,32 @@ class Dispatcher {
   std::function<void()> _on_completion;
 };
 
-class Parser {
+class ParserImpl {
  public:
-  Parser(std::shared_ptr<TokenParser> parser);
-  ~Parser();
+  ParserImpl(TokenParser *parser);
+  ~ParserImpl();
   bool parse(const std::string &data);
   bool finish();
   std::string getError();
 
- protected:
+ private:
   const yajl_callbacks _callbacks;
   yajl_handle _handle;
-  std::shared_ptr<TokenParser> _parser;
   Dispatcher _dispatcher;
+};
+
+template <typename T> class Parser {
+ public:
+  Parser(const typename T::Args &args = nullptr)
+      : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+  bool parse(const std::string &data) { return _impl->parse(data); }
+  bool finish() { return _impl->finish(); }
+  std::string getError() { return _impl->getError(); }
+  T &parser() { return _parser; }
+
+ private:
+  T _parser;
+  std::unique_ptr<ParserImpl> _impl;
 };
 
 template <typename T> bool ValueParser<T>::on(const T &value) {
@@ -302,7 +304,15 @@ template <typename T> bool ValueParser<T>::finish() {
 }
 
 template <typename T> const T &ValueParser<T>::get() {
-  // TODO: exception
+  if (!isSet()) {
+    throw std::runtime_error("Can't get value, parser is unset");
+  }
   return _value;
+}
+
+template <typename T> const T &ValueParser<T>::pop() {
+  auto &ret = get();
+  reset();
+  return ret;
 }
 }

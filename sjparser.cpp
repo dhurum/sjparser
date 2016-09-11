@@ -28,10 +28,14 @@ void ObjectParserBase::setDispatcher(Dispatcher *dispatcher) {
   }
 }
 
-bool ObjectParserBase::on(const MapStartT) {
+void ObjectParserBase::reset() {
   for (auto &field : _fields_map) {
     field.second->reset();
   }
+}
+
+bool ObjectParserBase::on(const MapStartT) {
+  reset();
   return true;
 }
 
@@ -47,6 +51,10 @@ bool ObjectParserBase::on(const MapKeyT &key) {
 
 bool ObjectParserBase::on(const MapEndT) {
   return endParsing();
+}
+
+void ArrayParserBase::reset() {
+  _parser->reset();
 }
 
 bool ArrayParserBase::on(const bool &value) {
@@ -155,21 +163,19 @@ static int yajl_end_array(void *ctx) {
   return dispatcher->on(ArrayEndT{});
 }
 
-Parser::Parser(std::shared_ptr<TokenParser> parser)
+ParserImpl::ParserImpl(TokenParser *parser)
     : _callbacks{nullptr,      yajl_boolean,     yajl_integer,   yajl_double,
                  nullptr,      yajl_string,      yajl_start_map, yajl_map_key,
                  yajl_end_map, yajl_start_array, yajl_end_array},
-      _parser(std::move(parser)),
-      _dispatcher(_parser.get()) {
+      _dispatcher(parser) {
   _handle = yajl_alloc(&_callbacks, nullptr, &_dispatcher);
 }
 
-Parser::~Parser() {
+ParserImpl::~ParserImpl() {
   yajl_free(_handle);
 }
 
-#include <stdio.h>
-bool Parser::parse(const std::string &data) {
+bool ParserImpl::parse(const std::string &data) {
   if (yajl_parse(_handle, reinterpret_cast<const unsigned char *>(data.data()),
                  data.size()) != yajl_status_ok) {
     return false;
@@ -177,14 +183,14 @@ bool Parser::parse(const std::string &data) {
   return true;
 }
 
-bool Parser::finish() {
+bool ParserImpl::finish() {
   if (yajl_complete_parse(_handle) != yajl_status_ok) {
     return false;
   }
   return true;
 }
 
-std::string Parser::getError() {
+std::string ParserImpl::getError() {
   auto err = yajl_get_error(_handle, 0, nullptr, 0);
   std::string error_str = reinterpret_cast<char *>(err);
 
