@@ -2,44 +2,44 @@
 
 using namespace SJParser;
 
-void TokenParser::setDispatcher(Dispatcher *dispatcher) {
+void Token::setDispatcher(Dispatcher *dispatcher) {
   _dispatcher = dispatcher;
 }
 
-bool TokenParser::isSet() {
+bool Token::isSet() {
   return _set;
 }
 
-void TokenParser::reset() {
+void Token::reset() {
   _set = false;
 }
 
-bool TokenParser::endParsing() {
+bool Token::endParsing() {
   if (_dispatcher) {
     _dispatcher->popParser();
   }
   return finish();
 }
 
-void ObjectParserBase::setDispatcher(Dispatcher *dispatcher) {
-  TokenParser::setDispatcher(dispatcher);
+void ObjectBase::setDispatcher(Dispatcher *dispatcher) {
+  Token::setDispatcher(dispatcher);
   for (auto &field : _fields_map) {
     field.second->setDispatcher(dispatcher);
   }
 }
 
-void ObjectParserBase::reset() {
+void ObjectBase::reset() {
   for (auto &field : _fields_map) {
     field.second->reset();
   }
 }
 
-bool ObjectParserBase::on(const MapStartT) {
+bool ObjectBase::on(const MapStartT) {
   reset();
   return true;
 }
 
-bool ObjectParserBase::on(const MapKeyT &key) {
+bool ObjectBase::on(const MapKeyT &key) {
   try {
     auto &parser = _fields_map.at(key.key);
     _dispatcher->pushParser(parser);
@@ -49,37 +49,37 @@ bool ObjectParserBase::on(const MapKeyT &key) {
   return true;
 }
 
-bool ObjectParserBase::on(const MapEndT) {
+bool ObjectBase::on(const MapEndT) {
   return endParsing();
 }
 
-void ArrayParserBase::reset() {
+void ArrayBase::reset() {
   _parser->reset();
 }
 
-bool ArrayParserBase::on(const bool &value) {
+bool ArrayBase::on(const bool &value) {
   return _parser->on(value);
 }
 
-bool ArrayParserBase::on(const int64_t &value) {
+bool ArrayBase::on(const int64_t &value) {
   return _parser->on(value);
 }
 
-bool ArrayParserBase::on(const double &value) {
+bool ArrayBase::on(const double &value) {
   return _parser->on(value);
 }
 
-bool ArrayParserBase::on(const std::string &value) {
+bool ArrayBase::on(const std::string &value) {
   return _parser->on(value);
 }
 
-bool ArrayParserBase::on(const MapStartT) {
+bool ArrayBase::on(const MapStartT) {
   _parser->setDispatcher(_dispatcher);
   _dispatcher->pushParser(_parser);
   return _parser->on(MapStartT{});
 }
 
-bool ArrayParserBase::on(const ArrayStartT) {
+bool ArrayBase::on(const ArrayStartT) {
   if (!_started) {
     _started = true;
     return true;
@@ -90,17 +90,17 @@ bool ArrayParserBase::on(const ArrayStartT) {
   return _parser->on(ArrayStartT{});
 }
 
-bool ArrayParserBase::on(const ArrayEndT) {
+bool ArrayBase::on(const ArrayEndT) {
   _started = false;
   return endParsing();
 }
 
-Dispatcher::Dispatcher(TokenParser *parser) {
+Dispatcher::Dispatcher(Token *parser) {
   _parsers.push(parser);
   parser->setDispatcher(this);
 }
 
-void Dispatcher::pushParser(TokenParser *parser) {
+void Dispatcher::pushParser(Token *parser) {
   _parsers.push(parser);
 }
 
@@ -163,7 +163,7 @@ static int yajl_end_array(void *ctx) {
   return dispatcher->on(ArrayEndT{});
 }
 
-ParserImpl::ParserImpl(TokenParser *parser)
+ParserImpl::ParserImpl(Token *parser)
     : _callbacks{nullptr,      yajl_boolean,     yajl_integer,   yajl_double,
                  nullptr,      yajl_string,      yajl_start_map, yajl_map_key,
                  yajl_end_map, yajl_start_array, yajl_end_array},

@@ -22,12 +22,13 @@ struct ArrayEndT {};
 
 class Dispatcher;
 
-class TokenParser {
+class Token {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher);
   bool isSet();
   virtual void reset();
   bool endParsing();
+  virtual bool finish() = 0;
 
   virtual bool on(const bool & /*value*/) { return false; }
   virtual bool on(const int64_t & /*value*/) { return false; }
@@ -39,20 +40,18 @@ class TokenParser {
   virtual bool on(const ArrayStartT) { return false; }
   virtual bool on(const ArrayEndT) { return false; }
 
-  virtual bool finish() { return true; }
-
-  virtual ~TokenParser() = default;
+  virtual ~Token() = default;
 
  protected:
   Dispatcher *_dispatcher = nullptr;
   bool _set = false;
 };
 
-template <typename T> class ValueParser : public TokenParser {
+template <typename T> class Value : public Token {
  public:
   using Args = std::function<bool(const T &)>;
 
-  ValueParser(const Args &on_finish) : _on_finish(on_finish) {}
+  Value(const Args &on_finish) : _on_finish(on_finish) {}
   virtual bool on(const T &value) override;
   virtual bool finish() override;
   const T &get();
@@ -63,7 +62,7 @@ template <typename T> class ValueParser : public TokenParser {
   Args _on_finish;
 };
 
-class ObjectParserBase : public TokenParser {
+class ObjectBase : public Token {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher) override;
   virtual void reset() override;
@@ -73,7 +72,7 @@ class ObjectParserBase : public TokenParser {
   virtual bool on(const MapEndT) override;
 
  protected:
-  std::unordered_map<std::string, TokenParser *> _fields_map;
+  std::unordered_map<std::string, Token *> _fields_map;
 };
 
 template <typename T> struct ObjectArg {
@@ -133,24 +132,24 @@ struct ObjectArgs<T, Ts...> : private ObjectArgs<Ts...> {
   typename T::Args _value;
 };
 
-template <typename... Ts> class ObjectParser : public ObjectParserBase {
+template <typename... Ts> class Object : public ObjectBase {
  public:
   using FieldArgs = ObjectArgs<Ts...>;
   struct Args {
     Args(const FieldArgs &args,
-         const std::function<bool(ObjectParser<Ts...> &)> &on_finish)
+         const std::function<bool(Object<Ts...> &)> &on_finish)
         : args(args), on_finish(on_finish) {}
     Args(const FieldArgs &args) : args(args) {}
 
     FieldArgs args;
-    std::function<bool(ObjectParser<Ts...> &)> on_finish = nullptr;
+    std::function<bool(Object<Ts...> &)> on_finish = nullptr;
   };
 
-  ObjectParser(const Args &args)
+  Object(const Args &args)
       : _fields(_fields_array, _fields_map, args.args),
         _on_finish(args.on_finish) {}
 
-  ObjectParser(const ObjectParser &) = delete;
+  Object(const Object &) = delete;
 
   virtual bool finish() override {
     if (!_on_finish) {
@@ -174,15 +173,15 @@ template <typename... Ts> class ObjectParser : public ObjectParserBase {
 
  private:
   template <size_t, typename...> struct Field {
-    Field(std::array<TokenParser *, sizeof...(Ts)> & /*fields_array*/,
-          std::unordered_map<std::string, TokenParser *> & /*fields_map*/,
+    Field(std::array<Token *, sizeof...(Ts)> & /*fields_array*/,
+          std::unordered_map<std::string, Token *> & /*fields_map*/,
           const FieldArgs & /*args*/) {}
   };
 
   template <size_t n, typename T, typename... TDs>
   struct Field<n, T, TDs...> : private Field<n + 1, TDs...> {
-    Field(std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-          std::unordered_map<std::string, TokenParser *> &fields_map,
+    Field(std::array<Token *, sizeof...(Ts)> &fields_array,
+          std::unordered_map<std::string, Token *> &fields_map,
           const FieldArgs &args)
         : Field<n + 1, TDs...>(fields_array, fields_map, args),
           _field(args.template getValue<n>()) {
@@ -193,14 +192,14 @@ template <typename... Ts> class ObjectParser : public ObjectParserBase {
     T _field;
   };
 
-  std::array<TokenParser *, sizeof...(Ts)> _fields_array;
+  std::array<Token *, sizeof...(Ts)> _fields_array;
   Field<0, Ts...> _fields;
-  std::function<bool(ObjectParser<Ts...> &)> _on_finish;
+  std::function<bool(Object<Ts...> &)> _on_finish;
 };
 
-class ArrayParserBase : public TokenParser {
+class ArrayBase : public Token {
  public:
-  ArrayParserBase(std::function<bool()> on_finish) : _on_finish(on_finish) {}
+  ArrayBase(std::function<bool()> on_finish) : _on_finish(on_finish) {}
   virtual void reset() override;
 
   virtual bool on(const bool &value) override;
@@ -219,7 +218,7 @@ class ArrayParserBase : public TokenParser {
   }
 
  protected:
-  TokenParser *_parser;
+  Token *_parser;
   std::function<bool()> _on_finish;
 
  private:
@@ -227,7 +226,7 @@ class ArrayParserBase : public TokenParser {
 };
 
 // TODO: maybe add some template parameter for internal vector
-template <typename T> class ArrayParser : public ArrayParserBase {
+template <typename T> class Array : public ArrayBase {
  public:
   struct Args {
     using EltArgs = typename T::Args;
@@ -239,9 +238,9 @@ template <typename T> class ArrayParser : public ArrayParserBase {
     std::function<bool()> on_finish = nullptr;
   };
 
-  ArrayParser(const Args &args)
-      : ArrayParserBase(args.on_finish), _parser(args.args) {
-    ArrayParserBase::_parser = &_parser;
+  Array(const Args &args)
+      : ArrayBase(args.on_finish), _parser(args.args) {
+    ArrayBase::_parser = &_parser;
   }
 
  private:
@@ -250,20 +249,20 @@ template <typename T> class ArrayParser : public ArrayParserBase {
 
 class Dispatcher {
  public:
-  Dispatcher(TokenParser *parser);
-  void pushParser(TokenParser *parser);
+  Dispatcher(Token *parser);
+  void pushParser(Token *parser);
   void popParser();
 
   template <typename T> bool on(const T &value);
 
  protected:
-  std::stack<TokenParser *> _parsers;
+  std::stack<Token *> _parsers;
   std::function<void()> _on_completion;
 };
 
 class ParserImpl {
  public:
-  ParserImpl(TokenParser *parser);
+  ParserImpl(Token *parser);
   ~ParserImpl();
   bool parse(const std::string &data);
   bool finish();
@@ -289,28 +288,28 @@ template <typename T> class Parser {
   std::unique_ptr<ParserImpl> _impl;
 };
 
-template <typename T> bool ValueParser<T>::on(const T &value) {
+template <typename T> bool Value<T>::on(const T &value) {
   _value = value;
   _set = true;
 
   return endParsing();
 }
 
-template <typename T> bool ValueParser<T>::finish() {
+template <typename T> bool Value<T>::finish() {
   if (!_on_finish) {
     return true;
   }
   return _on_finish(_value);
 }
 
-template <typename T> const T &ValueParser<T>::get() {
+template <typename T> const T &Value<T>::get() {
   if (!isSet()) {
     throw std::runtime_error("Can't get value, parser is unset");
   }
   return _value;
 }
 
-template <typename T> const T &ValueParser<T>::pop() {
+template <typename T> const T &Value<T>::pop() {
   auto &ret = get();
   reset();
   return ret;

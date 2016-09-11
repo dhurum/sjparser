@@ -6,7 +6,7 @@ using namespace SJParser;
 TEST(Parser, boolean) {
   std::string buf(R"(true)");
 
-  Parser<ValueParser<bool>> parser;
+  Parser<Value<bool>> parser;
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -20,7 +20,7 @@ TEST(Parser, boolean) {
 TEST(Parser, integer) {
   std::string buf(R"(10)");
 
-  Parser<ValueParser<int64_t>> parser;
+  Parser<Value<int64_t>> parser;
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -34,7 +34,7 @@ TEST(Parser, integer) {
 TEST(Parser, double) {
   std::string buf(R"(1.3)");
 
-  Parser<ValueParser<double>> parser;
+  Parser<Value<double>> parser;
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -48,7 +48,7 @@ TEST(Parser, double) {
 TEST(Parser, string) {
   std::string buf(R"("value")");
 
-  Parser<ValueParser<std::string>> parser;
+  Parser<Value<std::string>> parser;
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -62,8 +62,7 @@ TEST(Parser, string) {
 TEST(Parser, object) {
   std::string buf(R"({"key": "value", "key2": 10})");
 
-  Parser<ObjectParser<ValueParser<std::string>, ValueParser<int64_t>>> parser(
-      {{"key", "key2"}});
+  Parser<Object<Value<std::string>, Value<int64_t>>> parser({{"key", "key2"}});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -75,8 +74,7 @@ TEST(Parser, object) {
 TEST(Parser, emptyObject) {
   std::string buf(R"({})");
 
-  Parser<ObjectParser<ValueParser<std::string>, ValueParser<int64_t>>> parser(
-      {{"key", "key2"}});
+  Parser<Object<Value<std::string>, Value<int64_t>>> parser({{"key", "key2"}});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -97,10 +95,8 @@ TEST(Parser, objectWithObject) {
   "key4": true
 })");
 
-  Parser<ObjectParser<ValueParser<std::string>, ValueParser<int64_t>,
-                      ObjectParser<ValueParser<int64_t>,
-                                   ValueParser<std::string>>,
-                      ValueParser<bool>>>
+  Parser<Object<Value<std::string>, Value<int64_t>,
+                Object<Value<int64_t>, Value<std::string>>, Value<bool>>>
       parser({{"key", "key2", {"key3", {{"key", "key2"}}}, "key4"}});
 
   ASSERT_TRUE(parser.parse(buf));
@@ -130,11 +126,9 @@ TEST(Parser, objectOfObjects) {
   }
 })");
 
-  Parser<ObjectParser<ObjectParser<ValueParser<std::string>,
-                                   ValueParser<int64_t>>,
-                      ObjectParser<ValueParser<int64_t>,
-                                   ValueParser<std::string>>,
-                      ObjectParser<ValueParser<bool>>>>
+  Parser<Object<Object<Value<std::string>, Value<int64_t>>,
+                Object<Value<int64_t>, Value<std::string>>,
+                Object<Value<bool>>>>
       parser({{{"key", {{"key", "key2"}}},
                {"key2", {{"key", "key2"}}},
                {"key3", {{"key"}}}}});
@@ -158,7 +152,7 @@ TEST(Parser, array) {
     return true;
   };
 
-  Parser<ArrayParser<ValueParser<std::string>>> parser({elementCb});
+  Parser<Array<Value<std::string>>> parser({elementCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -177,7 +171,7 @@ TEST(Parser, emptyArray) {
     return true;
   };
 
-  Parser<ArrayParser<ValueParser<std::string>>> parser({elementCb});
+  Parser<Array<Value<std::string>>> parser({elementCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -201,8 +195,7 @@ TEST(Parser, arrayOfArrays) {
     return true;
   };
 
-  Parser<ArrayParser<ArrayParser<ValueParser<std::string>>>> parser(
-      {{elementCb, innerArrayCb}});
+  Parser<Array<Array<Value<std::string>>>> parser({{elementCb, innerArrayCb}});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -226,15 +219,14 @@ TEST(Parser, arrayOfObjects) {
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
   std::vector<ObjectStruct> values;
 
-  using ParserType =
-      ObjectParser<ValueParser<std::string>, ValueParser<int64_t>>;
+  using ParserType = Object<Value<std::string>, Value<int64_t>>;
 
   auto objectCb = [&](ParserType &parser) {
     values.push_back({parser.get<0>().get(), parser.get<1>().get()});
     return true;
   };
 
-  Parser<ArrayParser<ParserType>> parser({{{"key", "key2"}, objectCb}});
+  Parser<Array<ParserType>> parser({{{"key", "key2"}, objectCb}});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -266,8 +258,7 @@ TEST(Parser, objectWithArray) {
 })");
 
   using ParserType =
-      ObjectParser<ValueParser<std::string>, ValueParser<int64_t>,
-                   ArrayParser<ValueParser<std::string>>>;
+      Object<Value<std::string>, Value<int64_t>, Array<Value<std::string>>>;
 
   ObjectWArrayStruct object;
 
