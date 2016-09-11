@@ -145,6 +145,19 @@ TEST(Parser, objectOfObjects) {
 
 TEST(Parser, array) {
   std::string buf(R"(["value", "value2"])");
+
+  Parser<Array<Value<std::string>, true>> parser;
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ("value", parser.parser().get()[0]);
+  ASSERT_EQ("value2", parser.parser().get()[1]);
+}
+
+TEST(Parser, arrayWithEltCallback) {
+  std::string buf(R"(["value", "value2"])");
   std::vector<std::string> values;
 
   auto elementCb = [&](const std::string &value) {
@@ -164,38 +177,26 @@ TEST(Parser, array) {
 
 TEST(Parser, emptyArray) {
   std::string buf(R"([])");
-  std::vector<std::string> values;
 
-  auto elementCb = [&](const std::string &value) {
-    values.push_back(value);
-    return true;
-  };
-
-  Parser<Array<Value<std::string>>> parser({elementCb});
+  Parser<Array<Value<std::string>, true>> parser;
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(0, values.size());
+  ASSERT_EQ(0, parser.parser().get().size());
 }
 
 TEST(Parser, arrayOfArrays) {
   std::string buf(R"([["value", "value2"], ["value3", "value4"]])");
   std::vector<std::vector<std::string>> values;
-  std::vector<std::string> tmp;
 
-  auto elementCb = [&](const std::string &value) {
-    tmp.push_back(value);
+  auto innerArrayCb = [&](Array<Value<std::string>, true> &parser) {
+    values.push_back(parser.get());
+    parser.reset();
     return true;
   };
 
-  auto innerArrayCb = [&]() {
-    values.push_back(tmp);
-    tmp.clear();
-    return true;
-  };
-
-  Parser<Array<Array<Value<std::string>>>> parser({{elementCb, innerArrayCb}});
+  Parser<Array<Array<Value<std::string>, true>>> parser({innerArrayCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());

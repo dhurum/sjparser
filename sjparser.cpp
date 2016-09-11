@@ -95,6 +95,13 @@ bool ArrayBase::on(const ArrayEndT) {
   return endParsing();
 }
 
+bool ArrayBase::finish() {
+  if (!_on_finish) {
+    return true;
+  }
+  return _on_finish();
+}
+
 Dispatcher::Dispatcher(Token *parser) {
   _parsers.push(parser);
   parser->setDispatcher(this);

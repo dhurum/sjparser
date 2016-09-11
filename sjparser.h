@@ -50,6 +50,7 @@ class Token {
 template <typename T> class Value : public Token {
  public:
   using Args = std::function<bool(const T &)>;
+  using Type = T;
 
   Value(const Args &on_finish) : _on_finish(on_finish) {}
   virtual bool on(const T &value) override;
@@ -210,12 +211,7 @@ class ArrayBase : public Token {
   virtual bool on(const ArrayStartT) override;
   virtual bool on(const ArrayEndT) override;
 
-  virtual bool finish() override {
-    if (!_on_finish) {
-      return true;
-    }
-    return _on_finish();
-  }
+  virtual bool finish() override;
 
  protected:
   Token *_parser;
@@ -225,8 +221,8 @@ class ArrayBase : public Token {
   bool _started = false;
 };
 
-// TODO: maybe add some template parameter for internal vector
-template <typename T> class Array : public ArrayBase {
+template <typename T, bool InternalVector = false>
+class Array : public ArrayBase {
  public:
   struct Args {
     using EltArgs = typename T::Args;
@@ -238,13 +234,41 @@ template <typename T> class Array : public ArrayBase {
     std::function<bool()> on_finish = nullptr;
   };
 
-  Array(const Args &args)
-      : ArrayBase(args.on_finish), _parser(args.args) {
+  Array(const Args &args) : ArrayBase(args.on_finish), _parser(args.args) {
     ArrayBase::_parser = &_parser;
   }
 
  private:
   T _parser;
+};
+
+template <typename T> class Array<T, true> : public Array<T, false> {
+ public:
+  using Args = std::function<bool(Array<T, true> &)>;
+  using EltType = typename T::Type;
+
+  Array(const Args &args = nullptr)
+      : Array<T, false>({[this](const EltType &value) {
+                           this->_values.push_back(value);
+                           return true;
+                         },
+                         nullptr}), _on_finish(args) {}
+  std::vector<EltType> &get() { return _values; }
+
+  virtual bool finish() override {
+    if (!_on_finish) {
+      return true;
+    }
+    return _on_finish(*this);
+  }
+
+  virtual void reset() override {
+    _values.clear();
+  }
+
+ private:
+  std::vector<EltType> _values;
+  std::function<bool(Array<T, true> &)> _on_finish;
 };
 
 class Dispatcher {
