@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <tuple>
 
 namespace SJParser {
 
@@ -77,66 +78,21 @@ class ObjectBase : public Token {
   std::unordered_map<std::string, Token *> _fields_map;
 };
 
-template <typename T> struct ObjectArg {
+template <typename T> struct FieldArg {
   using Args = typename T::Args;
 
-  ObjectArg(const std::string &name, const Args &value)
+  FieldArg(const std::string &name, const Args &value)
       : name(name), value(value) {}
-  ObjectArg(const std::string &name) : name(name) {}
-  ObjectArg(const char *name) : name(name) {}
+  FieldArg(const std::string &name) : name(name) {}
+  FieldArg(const char *name) : name(name) {}
 
   std::string name;
   Args value;
 };
 
-template <typename...> struct ObjectArgs {};
-
-template <typename T, typename... Ts>
-struct ObjectArgs<T, Ts...> : private ObjectArgs<Ts...> {
-  ObjectArgs(ObjectArg<T> arg, ObjectArg<Ts>... ts)
-      : ObjectArgs<Ts...>(ts...), _name(arg.name), _value(arg.value) {}
-
-  template <size_t n, typename TD, typename... TDs> struct NthType {
-    using type = typename NthType<n - 1, TDs...>::type;
-  };
-
-  template <typename TD, typename... TDs> struct NthType<0, TD, TDs...> {
-    using type = typename TD::Args;
-  };
-
-  template <size_t n>
-  typename std::enable_if<n == 0,
-                          const typename NthType<n, T, Ts...>::type &>::type
-  getValue() const {
-    return _value;
-  }
-
-  template <size_t n>
-  typename std::enable_if<n != 0,
-                          const typename NthType<n, T, Ts...>::type &>::type
-  getValue() const {
-    const ObjectArgs<Ts...> &base = *this;
-    return base.template getValue<n - 1>();
-  }
-
-  template <size_t n>
-  typename std::enable_if<n == 0, const std::string &>::type getName() const {
-    return _name;
-  }
-
-  template <size_t n>
-  typename std::enable_if<n != 0, const std::string &>::type getName() const {
-    const ObjectArgs<Ts...> &base = *this;
-    return base.template getName<n - 1>();
-  }
-
-  std::string _name;
-  typename T::Args _value;
-};
-
 template <typename... Ts> class Object : public ObjectBase {
  public:
-  using FieldArgs = ObjectArgs<Ts...>;
+  using FieldArgs = std::tuple<FieldArg<Ts>...>;
   struct Args {
     Args(const FieldArgs &args,
          const std::function<bool(Object<Ts...> &)> &on_finish)
@@ -186,9 +142,9 @@ template <typename... Ts> class Object : public ObjectBase {
           std::unordered_map<std::string, Token *> &fields_map,
           const FieldArgs &args)
         : Field<n + 1, TDs...>(fields_array, fields_map, args),
-          _field(args.template getValue<n>()) {
+          _field(std::get<n>(args).value) {
       fields_array[n] = &_field;
-      fields_map[args.template getName<n>()] = &_field;
+      fields_map[std::get<n>(args).name] = &_field;
     }
 
     T _field;
@@ -201,7 +157,7 @@ template <typename... Ts> class Object : public ObjectBase {
 
 template <typename T, typename... Ts> class SObject : public Object<Ts...> {
  public:
-  using FieldArgs = ObjectArgs<Ts...>;
+  using FieldArgs = typename Object<Ts...>::FieldArgs;
   using Type = T;
 
   struct Args {
