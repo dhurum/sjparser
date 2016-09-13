@@ -39,6 +39,8 @@ class Token {
   virtual bool on(const MapEndT) { return false; }
   virtual bool on(const ArrayStartT) { return false; }
   virtual bool on(const ArrayEndT) { return false; }
+  
+  virtual void childParsed() {}
 
   virtual ~Token() = default;
 
@@ -56,7 +58,6 @@ template <typename T> class Value : public Token {
   virtual bool on(const T &value) override;
   virtual bool finish() override;
   const T &get();
-  const T &pop();
 
  private:
   T _value;
@@ -85,7 +86,7 @@ template <typename T> struct ObjectArg {
   ObjectArg(const char *name) : name(name) {}
 
   std::string name;
-  Args value = nullptr;
+  Args value;
 };
 
 template <typename...> struct ObjectArgs {};
@@ -143,7 +144,7 @@ template <typename... Ts> class Object : public ObjectBase {
     Args(const FieldArgs &args) : args(args) {}
 
     FieldArgs args;
-    std::function<bool(Object<Ts...> &)> on_finish = nullptr;
+    std::function<bool(Object<Ts...> &)> on_finish;
   };
 
   Object(const Args &args)
@@ -198,6 +199,58 @@ template <typename... Ts> class Object : public ObjectBase {
   std::function<bool(Object<Ts...> &)> _on_finish;
 };
 
+template <typename T, typename... Ts> class SObject : public Object<Ts...> {
+ public:
+  using FieldArgs = ObjectArgs<Ts...>;
+  using Type = T;
+
+  struct Args {
+    Args(const FieldArgs &args,
+         const std::function<bool (SObject<T, Ts...> &, T&)> &make_value,
+         const std::function<bool(const T&)> &on_finish)
+        : args(args), make_value(make_value), on_finish(on_finish) {}
+    Args(const FieldArgs &args,
+         const std::function<bool (SObject<T, Ts...> &, T&)> &make_value)
+        : args(args), make_value(make_value) {}
+
+    FieldArgs args;
+    std::function<bool (SObject<T, Ts...> &, T&)> make_value;
+    std::function<bool(const T&)> on_finish;
+  };
+
+  SObject(const Args &args)
+      : Object<Ts...>(args.args),
+        _make_value(args.make_value), _on_finish(args.on_finish) {}
+
+  SObject(const SObject &) = delete;
+
+  using Object<Ts...>::get;
+
+  Type &get() { 
+    return _value;
+  }
+
+  virtual bool finish() override {
+    if (!_make_value(*this, _value)) {
+      return false;
+    }
+    if (!_on_finish) {
+      return true;
+    }
+    return _on_finish(_value);
+  }
+
+  virtual void reset() override {
+    ObjectBase::reset();
+    _value = {};
+  }
+
+ private:
+  T _value;
+  std::function<bool (SObject<T, Ts...> &, T&)> _make_value;
+  std::function<bool(const T&)> _on_finish;
+};
+
 class ArrayBase : public Token {
  public:
   ArrayBase(std::function<bool()> on_finish) : _on_finish(on_finish) {}
@@ -221,7 +274,7 @@ class ArrayBase : public Token {
   bool _started = false;
 };
 
-template <typename T, bool InternalVector = false>
+template <typename T>
 class Array : public ArrayBase {
  public:
   struct Args {
@@ -231,35 +284,51 @@ class Array : public ArrayBase {
     Args(const EltArgs &args) : args(args) {}
 
     EltArgs args;
-    std::function<bool()> on_finish = nullptr;
+    std::function<bool()> on_finish;
   };
 
   Array(const Args &args) : ArrayBase(args.on_finish), _parser(args.args) {
     ArrayBase::_parser = &_parser;
   }
 
- private:
+  Array(const Array &) = delete;
+
+ protected:
   T _parser;
 };
 
-template <typename T> class Array<T, true> : public Array<T, false> {
+template <typename T> class SArray : public Array<T> {
  public:
-  using Args = std::function<bool(Array<T, true> &)>;
   using EltType = typename T::Type;
+  using Type = std::vector<EltType>;
 
-  Array(const Args &args = nullptr)
-      : Array<T, false>({[this](const EltType &value) {
-                           this->_values.push_back(value);
-                           return true;
-                         },
-                         nullptr}), _on_finish(args) {}
-  std::vector<EltType> &get() { return _values; }
+  struct Args {
+    using EltArgs = typename T::Args;
+    Args(const EltArgs &args, const std::function<bool(const Type &)> &on_finish)
+        : args(args), on_finish(on_finish) {}
+    Args(const EltArgs &args) : args(args) {}
+    Args() {}
+
+    EltArgs args;
+    std::function<bool(const Type &)> on_finish;
+  };
+
+  SArray(const Args &args)
+      : Array<T>(args.args), _on_finish(args.on_finish) {}
+
+  SArray(const SArray &) = delete;
+
+  virtual void childParsed() override {
+    _values.push_back(Array<T>::_parser.get());
+  }
+
+  Type &get() { return _values; }
 
   virtual bool finish() override {
     if (!_on_finish) {
       return true;
     }
-    return _on_finish(*this);
+    return _on_finish(_values);
   }
 
   virtual void reset() override {
@@ -268,7 +337,7 @@ template <typename T> class Array<T, true> : public Array<T, false> {
 
  private:
   std::vector<EltType> _values;
-  std::function<bool(Array<T, true> &)> _on_finish;
+  std::function<bool(const Type &)> _on_finish;
 };
 
 class Dispatcher {
@@ -300,7 +369,7 @@ class ParserImpl {
 
 template <typename T> class Parser {
  public:
-  Parser(const typename T::Args &args = nullptr)
+  Parser(const typename T::Args &args = {})
       : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
   bool parse(const std::string &data) { return _impl->parse(data); }
   bool finish() { return _impl->finish(); }
@@ -331,11 +400,5 @@ template <typename T> const T &Value<T>::get() {
     throw std::runtime_error("Can't get value, parser is unset");
   }
   return _value;
-}
-
-template <typename T> const T &Value<T>::pop() {
-  auto &ret = get();
-  reset();
-  return ret;
 }
 }

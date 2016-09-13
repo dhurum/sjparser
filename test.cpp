@@ -143,10 +143,35 @@ TEST(Parser, objectOfObjects) {
   ASSERT_EQ(true, parser.parser().get<2>().get<0>().get());
 }
 
-TEST(Parser, array) {
+TEST(Parser, storageObject) {
+  std::string buf(R"({"key": "value", "key2": 10})");
+
+  struct TestStruct {
+    std::string str_value;
+    int64_t int_value;
+  };
+
+  using ParserType = SObject<TestStruct, Value<std::string>, Value<int64_t>>;
+
+  auto makeCb = [&](ParserType &parser, TestStruct &value) {
+    value.str_value = parser.get<0>().get();
+    value.int_value = parser.get<1>().get();
+    return true;
+  };
+
+  Parser<ParserType> parser({{"key", "key2"}, makeCb});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get().str_value);
+  ASSERT_EQ(10, parser.parser().get().int_value);
+}
+
+TEST(Parser, storageArray) {
   std::string buf(R"(["value", "value2"])");
 
-  Parser<Array<Value<std::string>, true>> parser;
+  Parser<SArray<Value<std::string>>> parser;
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -175,10 +200,30 @@ TEST(Parser, arrayWithEltCallback) {
   ASSERT_EQ("value2", values[1]);
 }
 
+TEST(Parser, storageArrayWithCallback) {
+  std::string buf(
+      R"(["value", "value2"])");
+  std::vector<std::string> values;
+
+  auto arrayCb = [&](const std::vector<std::string> &array_values) {
+    values = array_values;
+    return true;
+  };
+
+  Parser<SArray<Value<std::string>>> parser({{}, arrayCb});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(2, values.size());
+  ASSERT_EQ("value", values[0]);
+  ASSERT_EQ("value2", values[1]);
+}
+
 TEST(Parser, emptyArray) {
   std::string buf(R"([])");
 
-  Parser<Array<Value<std::string>, true>> parser;
+  Parser<SArray<Value<std::string>>> parser;
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -188,26 +233,19 @@ TEST(Parser, emptyArray) {
 
 TEST(Parser, arrayOfArrays) {
   std::string buf(R"([["value", "value2"], ["value3", "value4"]])");
-  std::vector<std::vector<std::string>> values;
 
-  auto innerArrayCb = [&](Array<Value<std::string>, true> &parser) {
-    values.push_back(parser.get());
-    parser.reset();
-    return true;
-  };
-
-  Parser<Array<Array<Value<std::string>, true>>> parser({innerArrayCb});
+  Parser<SArray<SArray<Value<std::string>>>> parser;
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(2, values.size());
-  ASSERT_EQ(2, values[0].size());
-  ASSERT_EQ(2, values[1].size());
-  ASSERT_EQ("value", values[0][0]);
-  ASSERT_EQ("value2", values[0][1]);
-  ASSERT_EQ("value3", values[1][0]);
-  ASSERT_EQ("value4", values[1][1]);
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ(2, parser.parser().get()[0].size());
+  ASSERT_EQ(2, parser.parser().get()[1].size());
+  ASSERT_EQ("value", parser.parser().get()[0][0]);
+  ASSERT_EQ("value2", parser.parser().get()[0][1]);
+  ASSERT_EQ("value3", parser.parser().get()[1][0]);
+  ASSERT_EQ("value4", parser.parser().get()[1][1]);
 }
 
 struct ObjectStruct {
@@ -239,6 +277,36 @@ TEST(Parser, arrayOfObjects) {
   ASSERT_EQ(20, values[1].field2);
 }
 
+TEST(Parser, arrayOfStorageObjects) {
+  std::string buf(
+      R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
+
+  struct TestStruct {
+    std::string str_value;
+    int64_t int_value;
+  };
+
+  using ParserType = SObject<TestStruct, Value<std::string>, Value<int64_t>>;
+
+  auto makeCb = [&](ParserType &parser, TestStruct &value) {
+    value.str_value = parser.get<0>().get();
+    value.int_value = parser.get<1>().get();
+    return true;
+  };
+
+  Parser<SArray<ParserType>> parser({{{"key", "key2"}, makeCb}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ("value", parser.parser().get()[0].str_value);
+  ASSERT_EQ(10, parser.parser().get()[0].int_value);
+  ASSERT_EQ("value2", parser.parser().get()[1].str_value);
+  ASSERT_EQ(20, parser.parser().get()[1].int_value);
+}
+
+//XXX: move into test
 struct ObjectWArrayStruct {
   std::string field1;
   int64_t field2;
@@ -288,4 +356,46 @@ TEST(Parser, objectWithArray) {
   ASSERT_EQ("elt1", object.array[0]);
   ASSERT_EQ("elt2", object.array[1]);
   ASSERT_EQ("elt3", object.array[2]);
+}
+
+TEST(Parser, storageObjectWithArray) {
+  std::string buf(
+      R"(
+{
+  "key": "value",
+  "key2": 10,
+  "key3": [
+    "elt1",
+    "elt2",
+    "elt3"
+  ]
+})");
+
+  struct TestStruct {
+    std::string str_value;
+    int64_t int_value;
+    std::vector<std::string> array;
+  };
+
+  using ParserType =
+      SObject<TestStruct, Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
+
+  auto makeCb = [&](ParserType &parser, TestStruct &value) {
+    value.str_value = parser.get<0>().get();
+    value.int_value = parser.get<1>().get();
+    value.array = parser.get<2>().get();
+    return true;
+  };
+
+  Parser<ParserType> parser({{"key", "key2", "key3"}, makeCb});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get().str_value);
+  ASSERT_EQ(10, parser.parser().get().int_value);
+  ASSERT_EQ(3, parser.parser().get().array.size());
+  ASSERT_EQ("elt1", parser.parser().get().array[0]);
+  ASSERT_EQ("elt2", parser.parser().get().array[1]);
+  ASSERT_EQ("elt3", parser.parser().get().array[2]);
 }

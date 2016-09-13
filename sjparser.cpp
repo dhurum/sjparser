@@ -15,10 +15,12 @@ void Token::reset() {
 }
 
 bool Token::endParsing() {
+  bool ret = finish();
+
   if (_dispatcher) {
     _dispatcher->popParser();
   }
-  return finish();
+  return ret;
 }
 
 void ObjectBase::setDispatcher(Dispatcher *dispatcher) {
@@ -58,19 +60,35 @@ void ArrayBase::reset() {
 }
 
 bool ArrayBase::on(const bool &value) {
-  return _parser->on(value);
+  if (!_parser->on(value)) {
+    return false;
+  }
+  childParsed();
+  return true;
 }
 
 bool ArrayBase::on(const int64_t &value) {
-  return _parser->on(value);
+  if (!_parser->on(value)) {
+    return false;
+  }
+  childParsed();
+  return true;
 }
 
 bool ArrayBase::on(const double &value) {
-  return _parser->on(value);
+  if (!_parser->on(value)) {
+    return false;
+  }
+  childParsed();
+  return true;
 }
 
 bool ArrayBase::on(const std::string &value) {
-  return _parser->on(value);
+  if (!_parser->on(value)) {
+    return false;
+  }
+  childParsed();
+  return true;
 }
 
 bool ArrayBase::on(const MapStartT) {
@@ -81,6 +99,7 @@ bool ArrayBase::on(const MapStartT) {
 
 bool ArrayBase::on(const ArrayStartT) {
   if (!_started) {
+    reset();
     _started = true;
     return true;
   }
@@ -113,6 +132,10 @@ void Dispatcher::pushParser(Token *parser) {
 
 void Dispatcher::popParser() {
   _parsers.pop();
+
+  if (!_parsers.empty()) {
+    _parsers.top()->childParsed();
+  }
 }
 
 template <typename T>
