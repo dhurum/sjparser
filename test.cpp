@@ -220,7 +220,7 @@ TEST(Parser, storageArrayWithCallback) {
   ASSERT_EQ("value2", values[1]);
 }
 
-TEST(Parser, emptyArray) {
+TEST(Parser, emptyStorageArray) {
   std::string buf(R"([])");
 
   Parser<SArray<Value<std::string>>> parser;
@@ -231,7 +231,7 @@ TEST(Parser, emptyArray) {
   ASSERT_EQ(0, parser.parser().get().size());
 }
 
-TEST(Parser, arrayOfArrays) {
+TEST(Parser, storageArrayOfStorageArrays) {
   std::string buf(R"([["value", "value2"], ["value3", "value4"]])");
 
   Parser<SArray<SArray<Value<std::string>>>> parser;
@@ -248,14 +248,15 @@ TEST(Parser, arrayOfArrays) {
   ASSERT_EQ("value4", parser.parser().get()[1][1]);
 }
 
-struct ObjectStruct {
-  std::string field1;
-  int64_t field2;
-};
-
 TEST(Parser, arrayOfObjects) {
   std::string buf(
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
+
+  struct ObjectStruct {
+    std::string field1;
+    int64_t field2;
+  };
+
   std::vector<ObjectStruct> values;
 
   using ParserType = Object<Value<std::string>, Value<int64_t>>;
@@ -277,7 +278,7 @@ TEST(Parser, arrayOfObjects) {
   ASSERT_EQ(20, values[1].field2);
 }
 
-TEST(Parser, arrayOfStorageObjects) {
+TEST(Parser, storageArrayOfStorageObjects) {
   std::string buf(
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
 
@@ -306,13 +307,6 @@ TEST(Parser, arrayOfStorageObjects) {
   ASSERT_EQ(20, parser.parser().get()[1].int_value);
 }
 
-// XXX: move into test
-struct ObjectWArrayStruct {
-  std::string field1;
-  int64_t field2;
-  std::vector<std::string> array;
-};
-
 TEST(Parser, objectWithArray) {
   std::string buf(
       R"(
@@ -325,6 +319,12 @@ TEST(Parser, objectWithArray) {
     "elt3"
   ]
 })");
+
+  struct ObjectWArrayStruct {
+    std::string field1;
+    int64_t field2;
+    std::vector<std::string> array;
+  };
 
   using ParserType =
       Object<Value<std::string>, Value<int64_t>, Array<Value<std::string>>>;

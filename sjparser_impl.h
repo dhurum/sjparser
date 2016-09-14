@@ -1,6 +1,5 @@
 #pragma once
 
-#include <yajl/yajl_parse.h>
 #include <functional>
 #include <memory>
 #include <stack>
@@ -19,7 +18,7 @@ struct ArrayEndT {};
 
 class Dispatcher;
 
-class Token {
+class TokenParser {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher);
   bool isSet();
@@ -39,14 +38,14 @@ class Token {
 
   virtual void childParsed() {}
 
-  virtual ~Token() = default;
+  virtual ~TokenParser() = default;
 
  protected:
   Dispatcher *_dispatcher = nullptr;
   bool _set = false;
 };
 
-class ObjectBase : public Token {
+class ObjectParser : public TokenParser {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher) override;
   virtual void reset() override;
@@ -56,23 +55,12 @@ class ObjectBase : public Token {
   virtual bool on(const MapEndT) override;
 
  protected:
-  std::unordered_map<std::string, Token *> _fields_map;
+  std::unordered_map<std::string, TokenParser *> _fields_map;
 };
 
-template <typename T> struct FieldArg {
-  using Args = typename T::Args;
-
-  FieldArg(const std::string &name, const Args &value);
-  FieldArg(const std::string &name);
-  FieldArg(const char *name);
-
-  std::string name;
-  Args value;
-};
-
-class ArrayBase : public Token {
+class ArrayParser : public TokenParser {
  public:
-  ArrayBase(std::function<bool()> on_finish) : _on_finish(on_finish) {}
+  ArrayParser(std::function<bool()> on_finish) : _on_finish(on_finish) {}
   virtual void reset() override;
 
   virtual bool on(const bool &value) override;
@@ -86,7 +74,7 @@ class ArrayBase : public Token {
   virtual bool finish() override;
 
  protected:
-  Token *_parser;
+  TokenParser *_parser;
   std::function<bool()> _on_finish;
 
  private:
@@ -95,28 +83,29 @@ class ArrayBase : public Token {
 
 class Dispatcher {
  public:
-  Dispatcher(Token *parser);
-  void pushParser(Token *parser);
+  Dispatcher(TokenParser *parser);
+  void pushParser(TokenParser *parser);
   void popParser();
 
   template <typename T> bool on(const T &value);
 
  protected:
-  std::stack<Token *> _parsers;
+  std::stack<TokenParser *> _parsers;
   std::function<void()> _on_completion;
 };
 
+struct YajlInfo;
+
 class ParserImpl {
  public:
-  ParserImpl(Token *parser);
+  ParserImpl(TokenParser *parser);
   ~ParserImpl();
   bool parse(const std::string &data);
   bool finish();
   std::string getError();
 
  private:
-  const yajl_callbacks _callbacks;
-  yajl_handle _handle;
+  std::unique_ptr<YajlInfo> _yajl_info;
   Dispatcher _dispatcher;
 };
 }
