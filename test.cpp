@@ -306,7 +306,7 @@ TEST(Parser, arrayOfStorageObjects) {
   ASSERT_EQ(20, parser.parser().get()[1].int_value);
 }
 
-//XXX: move into test
+// XXX: move into test
 struct ObjectWArrayStruct {
   std::string field1;
   int64_t field2;
@@ -377,8 +377,8 @@ TEST(Parser, storageObjectWithArray) {
     std::vector<std::string> array;
   };
 
-  using ParserType =
-      SObject<TestStruct, Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
+  using ParserType = SObject<TestStruct, Value<std::string>, Value<int64_t>,
+                             SArray<Value<std::string>>>;
 
   auto makeCb = [&](ParserType &parser, TestStruct &value) {
     value.str_value = parser.get<0>().get();

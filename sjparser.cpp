@@ -1,4 +1,4 @@
-#include "sjparser.h"
+#include "sjparser_impl.h"
 
 using namespace SJParser;
 
@@ -138,8 +138,7 @@ void Dispatcher::popParser() {
   }
 }
 
-template <typename T>
-bool Dispatcher::on(const T &value) {
+template <typename T> bool Dispatcher::on(const T &value) {
   if (_parsers.empty()) {
     return false;
   }
@@ -207,7 +206,8 @@ ParserImpl::~ParserImpl() {
 
 bool ParserImpl::parse(const std::string &data) {
   if (yajl_parse(_handle, reinterpret_cast<const unsigned char *>(data.data()),
-                 data.size()) != yajl_status_ok) {
+                 data.size())
+      != yajl_status_ok) {
     return false;
   }
   return true;
