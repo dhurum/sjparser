@@ -91,12 +91,10 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
 
   struct Args {
     Args(const FieldArgs &args,
-         const std::function<bool(SObject<T, Ts...> &, T &)> &make_value,
-         const std::function<bool(const T &)> &on_finish = nullptr);
+         const std::function<bool(SObject<T, Ts...> &, T &)> &on_finish);
 
     FieldArgs args;
-    std::function<bool(SObject<T, Ts...> &, T &)> make_value;
-    std::function<bool(const T &)> on_finish;
+    std::function<bool(SObject<T, Ts...> &, T &)> on_finish;
   };
 
   SObject(const Args &args);
@@ -107,8 +105,7 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
 
  private:
   T _value;
-  std::function<bool(SObject<T, Ts...> &, T &)> _make_value;
-  std::function<bool(const T &)> _on_finish;
+  std::function<bool(SObject<T, Ts...> &, T &)> _on_finish;
 
   virtual bool finish() override;
   virtual void reset() override;
@@ -240,14 +237,12 @@ template <typename... Ts> bool Object<Ts...>::finish() {
 template <typename T, typename... Ts>
 SObject<T, Ts...>::Args::Args(
     const FieldArgs &args,
-    const std::function<bool(SObject<T, Ts...> &, T &)> &make_value,
-    const std::function<bool(const T &)> &on_finish)
-    : args(args), make_value(make_value), on_finish(on_finish) {}
+    const std::function<bool(SObject<T, Ts...> &, T &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
 
 template <typename T, typename... Ts>
 SObject<T, Ts...>::SObject(const Args &args)
     : Object<Ts...>(args.args),
-      _make_value(args.make_value),
       _on_finish(args.on_finish) {}
 
 template <typename T, typename... Ts>
@@ -256,13 +251,7 @@ typename SObject<T, Ts...>::Type &SObject<T, Ts...>::get() {
 }
 
 template <typename T, typename... Ts> bool SObject<T, Ts...>::finish() {
-  if (!_make_value(*this, _value)) {
-    return false;
-  }
-  if (!_on_finish) {
-    return true;
-  }
-  return _on_finish(_value);
+  return _on_finish(*this, _value);
 }
 
 template <typename T, typename... Ts> void SObject<T, Ts...>::reset() {
