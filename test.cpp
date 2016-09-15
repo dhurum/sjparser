@@ -62,7 +62,7 @@ TEST(Parser, string) {
 TEST(Parser, object) {
   std::string buf(R"({"key": "value", "key2": 10})");
 
-  Parser<Object<Value<std::string>, Value<int64_t>>> parser({{"key", "key2"}});
+  Parser<Object<Value<std::string>, Value<int64_t>>> parser({"key", "key2"});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -74,7 +74,7 @@ TEST(Parser, object) {
 TEST(Parser, emptyObject) {
   std::string buf(R"({})");
 
-  Parser<Object<Value<std::string>, Value<int64_t>>> parser({{"key", "key2"}});
+  Parser<Object<Value<std::string>, Value<int64_t>>> parser({"key", "key2"});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -97,7 +97,7 @@ TEST(Parser, objectWithObject) {
 
   Parser<Object<Value<std::string>, Value<int64_t>,
                 Object<Value<int64_t>, Value<std::string>>, Value<bool>>>
-      parser({{"key", "key2", {"key3", {{"key", "key2"}}}, "key4"}});
+      parser({"key", "key2", {"key3", {"key", "key2"}}, "key4"});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -129,9 +129,9 @@ TEST(Parser, objectOfObjects) {
   Parser<Object<Object<Value<std::string>, Value<int64_t>>,
                 Object<Value<int64_t>, Value<std::string>>,
                 Object<Value<bool>>>>
-      parser({{{"key", {{"key", "key2"}}},
-               {"key2", {{"key", "key2"}}},
-               {"key3", {{"key"}}}}});
+      parser({{"key", {"key", "key2"}},
+               {"key2", {"key", "key2"}},
+               {"key3", {"key"}}});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -190,7 +190,7 @@ TEST(Parser, arrayWithEltCallback) {
     return true;
   };
 
-  Parser<Array<Value<std::string>>> parser({elementCb});
+  Parser<Array<Value<std::string>>> parser(elementCb);
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -210,7 +210,7 @@ TEST(Parser, storageArrayWithCallback) {
     return true;
   };
 
-  Parser<SArray<Value<std::string>>> parser({{}, arrayCb});
+  Parser<SArray<Value<std::string>>> parser(arrayCb);
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -266,7 +266,7 @@ TEST(Parser, arrayOfObjects) {
     return true;
   };
 
-  Parser<Array<ParserType>> parser({{{"key", "key2"}, objectCb}});
+  Parser<Array<ParserType>> parser({{"key", "key2"}, objectCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -295,7 +295,7 @@ TEST(Parser, storageArrayOfStorageObjects) {
     return true;
   };
 
-  Parser<SArray<ParserType>> parser({{{"key", "key2"}, makeCb}});
+  Parser<SArray<ParserType>> parser({{"key", "key2"}, makeCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -345,7 +345,7 @@ TEST(Parser, objectWithArray) {
   };
 
   Parser<ParserType> parser(
-      {{"key", "key2", {"key3", {{arrayEltCb}}}}, objectCb});
+      {{"key", "key2", {"key3", arrayEltCb}}, objectCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());

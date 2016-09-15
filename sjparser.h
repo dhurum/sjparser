@@ -31,6 +31,8 @@ template <typename T> struct FieldArg {
   using Args = typename T::Args;
 
   FieldArg(const std::string &name, const Args &value = {});
+  template<typename U = T>
+  FieldArg(const std::string &name, const typename U::ChildArgs &value);
   FieldArg(const char *name);
 
   std::string name;
@@ -39,12 +41,12 @@ template <typename T> struct FieldArg {
 
 template <typename... Ts> class Object : public ObjectParser {
  public:
-  using FieldArgs = std::tuple<FieldArg<Ts>...>;
+  using ChildArgs = std::tuple<FieldArg<Ts>...>;
   struct Args {
-    Args(const FieldArgs &args,
+    Args(const ChildArgs &args,
          const std::function<bool(Object<Ts...> &)> &on_finish = nullptr);
 
-    FieldArgs args;
+    ChildArgs args;
     std::function<bool(Object<Ts...> &)> on_finish;
   };
 
@@ -65,14 +67,14 @@ template <typename... Ts> class Object : public ObjectParser {
   template <size_t, typename...> struct Field {
     Field(std::array<TokenParser *, sizeof...(Ts)> & /*fields_array*/,
           std::unordered_map<std::string, TokenParser *> & /*fields_map*/,
-          const FieldArgs & /*args*/) {}
+          const ChildArgs & /*args*/) {}
   };
 
   template <size_t n, typename T, typename... TDs>
   struct Field<n, T, TDs...> : private Field<n + 1, TDs...> {
     Field(std::array<TokenParser *, sizeof...(Ts)> &fields_array,
           std::unordered_map<std::string, TokenParser *> &fields_map,
-          const FieldArgs &args);
+          const ChildArgs &args);
 
     T _field;
   };
@@ -86,14 +88,14 @@ template <typename... Ts> class Object : public ObjectParser {
 
 template <typename T, typename... Ts> class SObject : public Object<Ts...> {
  public:
-  using FieldArgs = typename Object<Ts...>::FieldArgs;
+  using ChildArgs = typename Object<Ts...>::ChildArgs;
   using Type = T;
 
   struct Args {
-    Args(const FieldArgs &args,
+    Args(const ChildArgs &args,
          const std::function<bool(SObject<T, Ts...> &, T &)> &on_finish);
 
-    FieldArgs args;
+    ChildArgs args;
     std::function<bool(SObject<T, Ts...> &, T &)> on_finish;
   };
 
@@ -113,11 +115,12 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
 
 template <typename T> class Array : public ArrayParser {
  public:
-  struct Args {
-    using EltArgs = typename T::Args;
-    Args(const EltArgs &args, const std::function<bool()> &on_finish = nullptr);
+  using ChildArgs = typename T::Args;
 
-    EltArgs args;
+  struct Args {
+    Args(const ChildArgs &args, const std::function<bool()> &on_finish = nullptr);
+
+    ChildArgs args;
     std::function<bool()> on_finish;
   };
 
@@ -130,15 +133,17 @@ template <typename T> class Array : public ArrayParser {
 
 template <typename T> class SArray : public Array<T> {
  public:
+  using ChildArgs = typename T::Args;
   using EltType = typename T::Type;
   using Type = std::vector<EltType>;
+  using CallbackType = std::function<bool(const Type &)>;
 
   struct Args {
-    using EltArgs = typename T::Args;
-    Args(const EltArgs &args = {},
-         const std::function<bool(const Type &)> &on_finish = nullptr);
+    Args(const ChildArgs &args = {},
+         const CallbackType &on_finish = nullptr);
+    Args(const CallbackType &on_finish);
 
-    EltArgs args;
+    ChildArgs args;
     std::function<bool(const Type &)> on_finish;
   };
 
@@ -159,6 +164,10 @@ template <typename T> class SArray : public Array<T> {
 template <typename T> class Parser {
  public:
   Parser(const typename T::Args &args = {});
+  template<typename U = T>
+  Parser(const typename U::ChildArgs &args);
+  template<typename U = T>
+  Parser(const typename U::CallbackType &callback);
   bool parse(const std::string &data);
   bool finish();
   std::string getError();
@@ -196,10 +205,15 @@ template <typename T>
 FieldArg<T>::FieldArg(const std::string &name, const Args &value)
     : name(name), value(value) {}
 
+template <typename T>
+template <typename U>
+FieldArg<T>::FieldArg(const std::string &name, const typename U::ChildArgs &value)
+    : name(name), value(value) {}
+
 template <typename T> FieldArg<T>::FieldArg(const char *name) : name(name) {}
 
 template <typename... Ts>
-Object<Ts...>::Args::Args(const FieldArgs &args,
+Object<Ts...>::Args::Args(const ChildArgs &args,
                           const std::function<bool(Object<Ts...> &)> &on_finish)
     : args(args), on_finish(on_finish) {}
 
@@ -220,7 +234,7 @@ template <size_t n, typename T, typename... TDs>
 Object<Ts...>::Field<n, T, TDs...>::Field(
     std::array<TokenParser *, sizeof...(Ts)> &fields_array,
     std::unordered_map<std::string, TokenParser *> &fields_map,
-    const FieldArgs &args)
+    const ChildArgs &args)
     : Field<n + 1, TDs...>(fields_array, fields_map, args),
       _field(std::get<n>(args).value) {
   fields_array[n] = &_field;
@@ -236,7 +250,7 @@ template <typename... Ts> bool Object<Ts...>::finish() {
 
 template <typename T, typename... Ts>
 SObject<T, Ts...>::Args::Args(
-    const FieldArgs &args,
+    const ChildArgs &args,
     const std::function<bool(SObject<T, Ts...> &, T &)> &on_finish)
     : args(args), on_finish(on_finish) {}
 
@@ -260,7 +274,7 @@ template <typename T, typename... Ts> void SObject<T, Ts...>::reset() {
 }
 
 template <typename T>
-Array<T>::Args::Args(const EltArgs &args,
+Array<T>::Args::Args(const ChildArgs &args,
                      const std::function<bool()> &on_finish)
     : args(args), on_finish(on_finish) {}
 
@@ -271,9 +285,13 @@ Array<T>::Array(const Args &args)
 }
 
 template <typename T>
-SArray<T>::Args::Args(const EltArgs &args,
+SArray<T>::Args::Args(const ChildArgs &args,
                       const std::function<bool(const Type &)> &on_finish)
     : args(args), on_finish(on_finish) {}
+
+template <typename T>
+SArray<T>::Args::Args(const std::function<bool(const Type &)> &on_finish)
+    : on_finish(on_finish) {}
 
 template <typename T>
 SArray<T>::SArray(const Args &args)
@@ -301,6 +319,16 @@ template <typename T> void SArray<T>::reset() {
 template <typename T>
 Parser<T>::Parser(const typename T::Args &args)
     : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+
+template <typename T>
+template <typename U>
+Parser<T>::Parser(const typename U::ChildArgs &args)
+    : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+
+template <typename T>
+template <typename U>
+Parser<T>::Parser(const typename U::CallbackType &callback)
+    : _parser(callback), _impl(std::make_unique<ParserImpl>(&_parser)) {}
 
 template <typename T> bool Parser<T>::parse(const std::string &data) {
   return _impl->parse(data);
