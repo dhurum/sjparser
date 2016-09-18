@@ -193,21 +193,20 @@ static int yajl_end_array(void *ctx) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
   return dispatcher->on(ArrayEndT{});
 }
-  
-static const yajl_callbacks parser_yajl_callbacks {
+
+static const yajl_callbacks parser_yajl_callbacks{
     nullptr,      yajl_boolean,     yajl_integer,   yajl_double,
-                 nullptr,      yajl_string,      yajl_start_map, yajl_map_key,
-                 yajl_end_map, yajl_start_array, yajl_end_array
-};
+    nullptr,      yajl_string,      yajl_start_map, yajl_map_key,
+    yajl_end_map, yajl_start_array, yajl_end_array};
 
 struct SJParser::YajlInfo {
   yajl_handle handle;
 };
 
 ParserImpl::ParserImpl(TokenParser *parser)
-    : _yajl_info(std::make_unique<YajlInfo>()),
-      _dispatcher(parser) {
-  _yajl_info->handle = yajl_alloc(&parser_yajl_callbacks, nullptr, &_dispatcher);
+    : _yajl_info(std::make_unique<YajlInfo>()), _dispatcher(parser) {
+  _yajl_info->handle =
+      yajl_alloc(&parser_yajl_callbacks, nullptr, &_dispatcher);
 }
 
 ParserImpl::~ParserImpl() {
@@ -215,7 +214,8 @@ ParserImpl::~ParserImpl() {
 }
 
 bool ParserImpl::parse(const std::string &data) {
-  if (yajl_parse(_yajl_info->handle, reinterpret_cast<const unsigned char *>(data.data()),
+  if (yajl_parse(_yajl_info->handle,
+                 reinterpret_cast<const unsigned char *>(data.data()),
                  data.size())
       != yajl_status_ok) {
     return false;

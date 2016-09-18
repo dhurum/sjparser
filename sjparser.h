@@ -31,7 +31,7 @@ template <typename T> struct FieldArg {
   using Args = typename T::Args;
 
   FieldArg(const std::string &name, const Args &value = {});
-  template<typename U = T>
+  template <typename U = T>
   FieldArg(const std::string &name, const typename U::ChildArgs &value);
   FieldArg(const char *name);
 
@@ -118,7 +118,8 @@ template <typename T> class Array : public ArrayParser {
   using ChildArgs = typename T::Args;
 
   struct Args {
-    Args(const ChildArgs &args, const std::function<bool()> &on_finish = nullptr);
+    Args(const ChildArgs &args,
+         const std::function<bool()> &on_finish = nullptr);
 
     ChildArgs args;
     std::function<bool()> on_finish;
@@ -139,8 +140,7 @@ template <typename T> class SArray : public Array<T> {
   using CallbackType = std::function<bool(const Type &)>;
 
   struct Args {
-    Args(const ChildArgs &args = {},
-         const CallbackType &on_finish = nullptr);
+    Args(const ChildArgs &args = {}, const CallbackType &on_finish = nullptr);
     Args(const CallbackType &on_finish);
 
     ChildArgs args;
@@ -164,10 +164,8 @@ template <typename T> class SArray : public Array<T> {
 template <typename T> class Parser {
  public:
   Parser(const typename T::Args &args = {});
-  template<typename U = T>
-  Parser(const typename U::ChildArgs &args);
-  template<typename U = T>
-  Parser(const typename U::CallbackType &callback);
+  template <typename U = T> Parser(const typename U::ChildArgs &args);
+  template <typename U = T> Parser(const typename U::CallbackType &callback);
   bool parse(const std::string &data);
   bool finish();
   std::string getError();
@@ -207,7 +205,8 @@ FieldArg<T>::FieldArg(const std::string &name, const Args &value)
 
 template <typename T>
 template <typename U>
-FieldArg<T>::FieldArg(const std::string &name, const typename U::ChildArgs &value)
+FieldArg<T>::FieldArg(const std::string &name,
+                      const typename U::ChildArgs &value)
     : name(name), value(value) {}
 
 template <typename T> FieldArg<T>::FieldArg(const char *name) : name(name) {}
@@ -256,8 +255,7 @@ SObject<T, Ts...>::Args::Args(
 
 template <typename T, typename... Ts>
 SObject<T, Ts...>::SObject(const Args &args)
-    : Object<Ts...>(args.args),
-      _on_finish(args.on_finish) {}
+    : Object<Ts...>(args.args), _on_finish(args.on_finish) {}
 
 template <typename T, typename... Ts>
 typename SObject<T, Ts...>::Type &SObject<T, Ts...>::get() {

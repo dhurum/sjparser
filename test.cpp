@@ -130,8 +130,8 @@ TEST(Parser, objectOfObjects) {
                 Object<Value<int64_t>, Value<std::string>>,
                 Object<Value<bool>>>>
       parser({{"key", {"key", "key2"}},
-               {"key2", {"key", "key2"}},
-               {"key3", {"key"}}});
+              {"key2", {"key", "key2"}},
+              {"key3", {"key"}}});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -344,8 +344,7 @@ TEST(Parser, objectWithArray) {
     return true;
   };
 
-  Parser<ParserType> parser(
-      {{"key", "key2", {"key3", arrayEltCb}}, objectCb});
+  Parser<ParserType> parser({{"key", "key2", {"key3", arrayEltCb}}, objectCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
