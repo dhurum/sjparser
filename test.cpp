@@ -15,6 +15,10 @@ TEST(Parser, boolean) {
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_EQ(true, parser.parser().get());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_EQ(true, parser.parser().pop());
+  ASSERT_FALSE(parser.parser().isSet());
 }
 
 TEST(Parser, integer) {
@@ -29,6 +33,10 @@ TEST(Parser, integer) {
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_EQ(10, parser.parser().get());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_EQ(10, parser.parser().pop());
+  ASSERT_FALSE(parser.parser().isSet());
 }
 
 TEST(Parser, double) {
@@ -43,6 +51,10 @@ TEST(Parser, double) {
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_EQ(1.3, parser.parser().get());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_EQ(1.3, parser.parser().pop());
+  ASSERT_FALSE(parser.parser().isSet());
 }
 
 TEST(Parser, string) {
@@ -57,6 +69,10 @@ TEST(Parser, string) {
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_EQ("value", parser.parser().get());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_EQ("value", parser.parser().pop());
+  ASSERT_FALSE(parser.parser().isSet());
 }
 
 TEST(Parser, object) {
@@ -78,8 +94,6 @@ TEST(Parser, emptyObject) {
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
-
-  ASSERT_FALSE(parser.parser().isSet());
 }
 
 TEST(Parser, objectWithObject) {
@@ -154,8 +168,8 @@ TEST(Parser, storageObject) {
   using ParserType = SObject<TestStruct, Value<std::string>, Value<int64_t>>;
 
   auto makeCb = [&](ParserType &parser, TestStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
+    value.str_value = parser.get<0>().pop();
+    value.int_value = parser.get<1>().pop();
     return true;
   };
 
@@ -166,6 +180,10 @@ TEST(Parser, storageObject) {
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
+
+  ASSERT_TRUE(parser.parser().isSet());
+  parser.parser().pop();
+  ASSERT_FALSE(parser.parser().isSet());
 }
 
 TEST(Parser, storageArray) {
@@ -179,6 +197,10 @@ TEST(Parser, storageArray) {
   ASSERT_EQ(2, parser.parser().get().size());
   ASSERT_EQ("value", parser.parser().get()[0]);
   ASSERT_EQ("value2", parser.parser().get()[1]);
+
+  ASSERT_TRUE(parser.parser().isSet());
+  parser.parser().pop();
+  ASSERT_FALSE(parser.parser().isSet());
 }
 
 TEST(Parser, arrayWithEltCallback) {
@@ -262,7 +284,7 @@ TEST(Parser, arrayOfObjects) {
   using ParserType = Object<Value<std::string>, Value<int64_t>>;
 
   auto objectCb = [&](ParserType &parser) {
-    values.push_back({parser.get<0>().get(), parser.get<1>().get()});
+    values.push_back({parser.get<0>().pop(), parser.get<1>().pop()});
     return true;
   };
 
@@ -290,8 +312,8 @@ TEST(Parser, storageArrayOfStorageObjects) {
   using ParserType = SObject<TestStruct, Value<std::string>, Value<int64_t>>;
 
   auto makeCb = [&](ParserType &parser, TestStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
+    value.str_value = parser.get<0>().pop();
+    value.int_value = parser.get<1>().pop();
     return true;
   };
 
@@ -338,8 +360,8 @@ TEST(Parser, objectWithArray) {
   };
 
   auto objectCb = [&](ParserType &parser) {
-    object.field1 = parser.get<0>().get();
-    object.field2 = parser.get<1>().get();
+    object.field1 = parser.get<0>().pop();
+    object.field2 = parser.get<1>().pop();
 
     return true;
   };
@@ -380,9 +402,9 @@ TEST(Parser, storageObjectWithArray) {
                              SArray<Value<std::string>>>;
 
   auto makeCb = [&](ParserType &parser, TestStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
-    value.array = parser.get<2>().get();
+    value.str_value = parser.get<0>().pop();
+    value.int_value = parser.get<1>().pop();
+    value.array = parser.get<2>().pop();
     return true;
   };
 

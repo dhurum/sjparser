@@ -9,6 +9,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <vector>
+#include <type_traits>
 
 namespace SJParser {
 
@@ -21,6 +22,10 @@ template <typename T> class Value : public TokenParser {
   virtual bool on(const T &value) override;
   virtual bool finish() override;
   const T &get();
+  template <typename U = T>
+  typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&pop();
+  template <typename U = T>
+  const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &pop();
 
  private:
   T _value;
@@ -104,10 +109,13 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
 
   using Object<Ts...>::get;
   Type &get();
+  Type &&pop();
 
  private:
   T _value;
   std::function<bool(SObject<T, Ts...> &, T &)> _on_finish;
+  using TokenParser::_set;
+  using TokenParser::checkSet;
 
   virtual bool finish() override;
   virtual void reset() override;
@@ -151,10 +159,13 @@ template <typename T> class SArray : public Array<T> {
   SArray(const SArray &) = delete;
 
   Type &get();
+  Type &&pop();
 
  private:
   std::vector<EltType> _values;
   std::function<bool(const Type &)> _on_finish;
+  using TokenParser::_set;
+  using TokenParser::checkSet;
 
   virtual void childParsed() override;
   virtual bool finish() override;
@@ -180,7 +191,6 @@ template <typename T> class Parser {
 
 template <typename T> bool Value<T>::on(const T &value) {
   _value = value;
-  _set = true;
 
   return endParsing();
 }
@@ -193,9 +203,23 @@ template <typename T> bool Value<T>::finish() {
 }
 
 template <typename T> const T &Value<T>::get() {
-  if (!isSet()) {
-    throw std::runtime_error("Can't get value, parser is unset");
-  }
+  checkSet();
+  return _value;
+}
+
+template <typename T>
+template <typename U>
+typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&Value<T>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_value);
+}
+
+template <typename T>
+template <typename U>
+const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &Value<T>::pop() {
+  checkSet();
+  _set = false;
   return _value;
 }
 
@@ -259,7 +283,15 @@ SObject<T, Ts...>::SObject(const Args &args)
 
 template <typename T, typename... Ts>
 typename SObject<T, Ts...>::Type &SObject<T, Ts...>::get() {
+  checkSet();
   return _value;
+}
+
+template <typename T, typename... Ts>
+typename SObject<T, Ts...>::Type &&SObject<T, Ts...>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_value);
 }
 
 template <typename T, typename... Ts> bool SObject<T, Ts...>::finish() {
@@ -268,7 +300,7 @@ template <typename T, typename... Ts> bool SObject<T, Ts...>::finish() {
 
 template <typename T, typename... Ts> void SObject<T, Ts...>::reset() {
   ObjectParser::reset();
-  _value = {};
+  _value = Type();
 }
 
 template <typename T>
@@ -296,11 +328,18 @@ SArray<T>::SArray(const Args &args)
     : Array<T>(args.args), _on_finish(args.on_finish) {}
 
 template <typename T> typename SArray<T>::Type &SArray<T>::get() {
+  checkSet();
   return _values;
 }
 
+template <typename T> typename SArray<T>::Type &&SArray<T>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_values);
+}
+
 template <typename T> void SArray<T>::childParsed() {
-  _values.push_back(Array<T>::_parser.get());
+  _values.push_back(Array<T>::_parser.pop());
 }
 
 template <typename T> bool SArray<T>::finish() {
@@ -311,7 +350,7 @@ template <typename T> bool SArray<T>::finish() {
 }
 
 template <typename T> void SArray<T>::reset() {
-  _values.clear();
+  _values = Type();
 }
 
 template <typename T>

@@ -17,12 +17,19 @@ void TokenParser::reset() {
 }
 
 bool TokenParser::endParsing() {
+  _set = true;
   bool ret = finish();
 
   if (_dispatcher) {
     _dispatcher->popParser();
   }
   return ret;
+}
+
+void TokenParser::checkSet() {
+  if (!isSet()) {
+    throw std::runtime_error("Can't get value, parser is unset");
+  }
 }
 
 void ObjectParser::setDispatcher(Dispatcher *dispatcher) {
@@ -33,6 +40,8 @@ void ObjectParser::setDispatcher(Dispatcher *dispatcher) {
 }
 
 void ObjectParser::reset() {
+  TokenParser::reset();
+
   for (auto &field : _fields_map) {
     field.second->reset();
   }
@@ -58,6 +67,8 @@ bool ObjectParser::on(const MapEndT) {
 }
 
 void ArrayParser::reset() {
+  TokenParser::reset();
+
   _parser->reset();
 }
 

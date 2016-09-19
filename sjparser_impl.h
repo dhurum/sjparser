@@ -43,6 +43,8 @@ class TokenParser {
  protected:
   Dispatcher *_dispatcher = nullptr;
   bool _set = false;
+
+  void checkSet();
 };
 
 class ObjectParser : public TokenParser {
