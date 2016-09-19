@@ -7,9 +7,9 @@
 #include <memory>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
-#include <type_traits>
 
 namespace SJParser {
 
@@ -25,7 +25,8 @@ template <typename T> class Value : public TokenParser {
   template <typename U = T>
   typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&pop();
   template <typename U = T>
-  const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &pop();
+  const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &
+  pop();
 
  private:
   T _value;
@@ -209,7 +210,8 @@ template <typename T> const T &Value<T>::get() {
 
 template <typename T>
 template <typename U>
-typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&Value<T>::pop() {
+typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&
+Value<T>::pop() {
   checkSet();
   _set = false;
   return std::move(_value);
@@ -217,7 +219,8 @@ typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&Value<T>
 
 template <typename T>
 template <typename U>
-const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &Value<T>::pop() {
+const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &
+Value<T>::pop() {
   checkSet();
   _set = false;
   return _value;
