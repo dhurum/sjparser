@@ -247,10 +247,10 @@ ParserImpl::~ParserImpl() {
   yajl_free(_yajl_info->handle);
 }
 
-bool ParserImpl::parse(const std::string &data) {
+bool ParserImpl::parse(const char *data, size_t len) {
   if (yajl_parse(_yajl_info->handle,
-                 reinterpret_cast<const unsigned char *>(data.data()),
-                 data.size())
+                 reinterpret_cast<const unsigned char *>(data),
+                 len)
       != yajl_status_ok) {
     return false;
   }

@@ -125,7 +125,7 @@ class ParserImpl {
  public:
   ParserImpl(TokenParser *parser);
   ~ParserImpl();
-  bool parse(const std::string &data);
+  bool parse(const char *data, size_t len);
   bool finish();
   std::string getError();
 

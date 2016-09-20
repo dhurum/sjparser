@@ -202,6 +202,7 @@ template <typename T> class Parser {
   template <typename U = T> Parser(const typename U::ChildArgs &args);
   template <typename U = T> Parser(const typename U::CallbackType &callback);
   bool parse(const std::string &data);
+  bool parse(const char *data, size_t len);
   bool finish();
   std::string getError();
   T &parser();
@@ -394,7 +395,11 @@ Parser<T>::Parser(const typename U::CallbackType &callback)
     : _parser(callback), _impl(std::make_unique<ParserImpl>(&_parser)) {}
 
 template <typename T> bool Parser<T>::parse(const std::string &data) {
-  return _impl->parse(data);
+  return _impl->parse(data.data(), data.size());
+}
+
+template <typename T> bool Parser<T>::parse(const char *data, size_t len) {
+  return _impl->parse(data, len);
 }
 
 template <typename T> bool Parser<T>::finish() {
