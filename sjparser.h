@@ -36,24 +36,40 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
+/*
+ * Simple value parser.
+ * T can be:
+ *   - std::string
+ *   - int64_t
+ *   - bool
+ *   - double
+ */
 template <typename T> class Value : public TokenParser {
  public:
-  using Args = std::function<bool(const T &)>;
   using Type = T;
+  using Args = std::function<bool(const Type &)>;
 
+  //After value is parsed, on_finish callback is called.
   Value(const Args &on_finish) : _on_finish(on_finish) {}
-  virtual bool on(const T &value) override;
-  virtual bool finish() override;
-  const T &get();
-  template <typename U = T>
+  //Method to check if value is set, returns boolean.
+  using TokenParser::isSet;
+  //Returns a reference to parsed value.  If value is unset, throws
+  //std::runtime_error.
+  const Type &get();
+  template <typename U = Type>
+  //Returns an rvalue reference to value for std::string and reference for other
+  //types. After call of this method value is unset.
   typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&pop();
-  template <typename U = T>
+  template <typename U = Type>
   const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &
   pop();
 
  private:
-  T _value;
+  Type _value;
   Args _on_finish;
+
+  virtual bool on(const Type &value) override;
+  virtual bool finish() override;
 };
 
 template <typename T> struct FieldArg {
@@ -68,6 +84,11 @@ template <typename T> struct FieldArg {
   Args value;
 };
 
+/*
+ * Object parser.
+ * Ts is list of any entity parsers.
+ */
+
 template <typename... Ts> class Object : public ObjectParser {
  public:
   using ChildArgs = std::tuple<FieldArg<Ts>...>;
@@ -79,6 +100,20 @@ template <typename... Ts> class Object : public ObjectParser {
     std::function<bool(Object<Ts...> &)> on_finish;
   };
 
+  /*
+   * Constructor receives a structure.
+   * It's first element is a tuple of object fields arguments,
+   * and second element is a callback that will be called after the object is
+   * parsed.
+   * If you do not specify the callback - you can provide only a tuple of object
+   * fields arguments to constructor.
+   * Field argument is a structure where a first element is a string with field
+   * name, and a second field is an argument for respective parser.
+   * If you do not want to provide an argument to a field parser - you can
+   * provide only name.
+   * For example: {"field1", {"field2", ...}, "field3"}
+   * Callback is called with a reference to this parser as an argument.
+   */
   Object(const Args &args);
   Object(const Object &) = delete;
 
@@ -90,6 +125,7 @@ template <typename... Ts> class Object : public ObjectParser {
     using type = T;
   };
 
+  //Returns reference to a parser of n-th field.
   template <size_t n> typename NthType<n, Ts...>::type &get();
 
  private:
@@ -115,6 +151,14 @@ template <typename... Ts> class Object : public ObjectParser {
   std::function<bool(Object<Ts...> &)> _on_finish;
 };
 
+/*
+ * Object parser, that can store result.
+ * T is type of result value (structure or object). It must have default
+ * constructor. If you want to store it in SArray it should have move
+ * constructor, to avoid unnecessary copy operations.
+ * Ts is list of any parsers.
+ */
+
 template <typename T, typename... Ts> class SObject : public Object<Ts...> {
  public:
   using ChildArgs = typename Object<Ts...>::ChildArgs;
@@ -122,17 +166,39 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
 
   struct Args {
     Args(const ChildArgs &args,
-         const std::function<bool(SObject<T, Ts...> &, T &)> &on_finish);
+         const std::function<bool(SObject<Type, Ts...> &, Type &)> &on_finish);
 
     ChildArgs args;
-    std::function<bool(SObject<T, Ts...> &, T &)> on_finish;
+    std::function<bool(SObject<Type, Ts...> &, Type &)> on_finish;
   };
 
+  /*
+   * Constructor receives a structure.
+   * It's first element is a tuple of object fields arguments,
+   * and second element is a callback that will be called after the object is
+   * parsed.
+   * If you do not specify the callback - you can provide only tuple of object
+   * fields arguments to constructor.
+   * Field argument is a structure where a first element is a string with field
+   * name, and a second field is an argument for respective parser.
+   * If you do not want to provide an argument to a field parser - you can
+   * provide only name.
+   * For example: {"field1", {"field2", ...}, "field3"}
+   * Callback is called with a reference to this parser as an argument and a
+   * reference to internal value. You should set it in this callback.
+   */
   SObject(const Args &args);
   SObject(const SObject &) = delete;
 
+  //Method to check if value is set, returns boolean.
+  using TokenParser::isSet;
+  //Returns reference to a parser of n-th field.
   using Object<Ts...>::get;
+  //Returns reference to parsed value. If value is unset, throws
+  //std::runtime_error.
   Type &get();
+  //Returns an rvalue reference to value. After call of this method value is
+  //unset.
   Type &&pop();
 
  private:
@@ -144,6 +210,11 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
   virtual bool finish() override;
   virtual void reset() override;
 };
+
+/*
+ * Array parser.
+ * T is any parser.
+ */
 
 template <typename T> class Array : public ArrayParser {
  public:
@@ -157,12 +228,26 @@ template <typename T> class Array : public ArrayParser {
     std::function<bool()> on_finish;
   };
 
+  /*
+   * Constructor receives a structure.
+   * It's first element is an argument of T's constructor,
+   * and second element is a callback that will be called after the array is
+   * parsed.
+   * If you do not specify the callback - you can provide only T's argument to
+   * constructor.
+   * Callback is called without arguments.
+   */
   Array(const Args &args);
   Array(const Array &) = delete;
 
  protected:
   T _parser;
 };
+
+/*
+ * Array parser, that stores a vector of T's values.
+ * T is any parser.
+ */
 
 template <typename T> class SArray : public Array<T> {
  public:
@@ -179,10 +264,26 @@ template <typename T> class SArray : public Array<T> {
     std::function<bool(const Type &)> on_finish;
   };
 
+  /*
+   * Constructor receives a structure.
+   * It's first element is an argument of T's constructor,
+   * and second element is a callback that will be called after the array is
+   * parsed.
+   * If you do not specify the callback - you can provide only T's argument to
+   * constructor.
+   * If you do not specify T's arguments - you can specify callback only.
+   * Callback is called with a reference to this parser as argument.
+   */
   SArray(const Args &args);
   SArray(const SArray &) = delete;
 
+  //Method to check if vector of values is set, returns boolean.
+  using TokenParser::isSet;
+  //Returns reference to vecor of values. If vector is unset, throws
+  //std::runtime_error.
   Type &get();
+  //Returns an rvalue reference to vector of values. After call of this method
+  //value is unset.
   Type &&pop();
 
  private:
@@ -196,15 +297,28 @@ template <typename T> class SArray : public Array<T> {
   virtual void reset() override;
 };
 
+/*
+ * Main parser.
+ * T is one of the entities parsers (value, object, array).
+ */
+
 template <typename T> class Parser {
  public:
+  /*
+   * Constructor receives same arguments as T's constructor.
+   */
   Parser(const typename T::Args &args = {});
   template <typename U = T> Parser(const typename U::ChildArgs &args);
   template <typename U = T> Parser(const typename U::CallbackType &callback);
+  //Parse a piece of json. Returns false in case of error.
   bool parse(const std::string &data);
+  //Parse a piece of json. Returns false in case of error.
   bool parse(const char *data, size_t len);
+  //Finish parsing. Returns false in case of error.
   bool finish();
+  //Returns parser error.
   std::string getError();
+  //Returns reference to root entity parser.
   T &parser();
 
  private:
