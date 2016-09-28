@@ -11,7 +11,10 @@ using namespace SJParser;
 using ParserType = Object<Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
 
 auto objectCb = [&](ParserType &parser) {
-  DB.writeObject(parser.get<0>().pop(), parser.get<1>().isSet() ? parser.get<1>().get() : 0, parser.get<2>().pop());
+  DB.writeObject(
+    parser.get<0>().pop(),
+    parser.get<1>().isSet() ? parser.get<1>().get() : 0,
+    parser.get<2>().pop());
   return true;
 };
 
@@ -92,6 +95,12 @@ Parser<Class> parser(X);
 Parser<Class> parser;
 
 ```
+
+Fields, specified for `SJParser::Object` and `SJParser::SObject` are not mandatory, even empty object would be successfully parsed.  
+The validation should be done in finish callback.  
+If you call `get()` or `pop()` on a parser of a field, that was not present in the parsed object, exception will be thrown.  
+You can check if field was parsed with method `isSet()`.  
+So, for your mandatory fields you can just use `get()` or `pop()`, and for optional you can do checks with `isSet()` first.
 
 ###Entity parsers
 
