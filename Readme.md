@@ -3,8 +3,98 @@
 Streaming json parser, written on top of yajl.  
 You specify expected structure of json and callbacks to be called for certain entities.
 
+##Example
+
+```c++
+using namespace SJParser;
+
+using ParserType = Object<Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
+
+auto objectCb = [&](ParserType &parser) {
+  DB.writeObject(parser.get<0>().pop(), parser.get<1>().isSet() ? parser.get<1>().get() : 0, parser.get<2>().pop());
+  return true;
+};
+
+Parser<Array<ParserType>> parser({{"string", "integer", "array"}, objectCb});
+
+parser.parse(R"(
+[{
+  "string": "str1",
+  "integer": 1,
+  "array": ["1", "2"]
+}, {
+  "string": "str2",
+  "array": ["3", "4"]
+}])");
+
+parser.finish();
+```
+
+For more examples, please see file [test.cpp](https://github.com/dhurum/sjparser/blob/master/test.cpp).
+
 ##Concepts
+
+Expected json structure is specified as template parameters of `SJParser::Parser` and entities parsers.  
+Then you pass a structure of arguments for those parameters into the constructor.
+Each class constructor receives a `struct`.
+
+If constructor description  mentions that *If you do not want to provide Y you can pass only X* or *If you don't want to provide X, you can call constructor without arguments*, you can write this:
+
+```c++
+//Providing both fields
+Class obj({X, Y})z;
+
+//Providing one field
+Class obj(X);
+
+//Providing nothing
+Class obj;
+```
+
+Constructors of `SJParser::Object`, `SJParser::SObject`, `SJParser::Array` and `SJParser::SArray` take arguments for nested types:
+
+```c++
+//Providing both fields
+Object<Class> obj({"field", {X, Y}});
+
+//Providing one field
+Object<Class> obj({"field", X});
+
+//Providing nothing
+Object<Class> obj({"field"});
+
+//Providing nothing to field 1, two arguments to field 2 and one argument to field 3
+Object<Class, Class, Class> obj({"field 1", {"field 2", {X, Y}}, {"field 3", X}});
+```
+
+Constructor of `SJParser::Parser` takes exactly the same arguments as it's template type:
+
+```c++
+//Providing both fields
+Parser<Object<Class>> parser({"field", {X, Y}});
+
+//Providing one field
+Parser<Object<Class>> parser({"field", X});
+
+//Providing nothing
+Parser<Object<Class>> parser({"field"});
+
+//Providing nothing to field 1, two arguments to field 2 and one argument to field 3
+Parser<Object<Class, Class, Class>>({"field 1", {"field 2", {X, Y}}, {"field 3", X}})
+
+//Providing both fields
+Parser<Class> parser({X, Y});
+
+//Providing one field
+Parser<Class> parser(X);
+
+//Providing nothing
+Parser<Class> parser;
+
+```
+
 ###Entity parsers
+
 * `SJParser::Value`: Parser for simple value.  
   Takes value type as a template parameter. It can be:
   * `std::string`
@@ -12,7 +102,8 @@ You specify expected structure of json and callbacks to be called for certain en
   * `bool`
   * `double`
 
-  Constructor receives a finish callback, that will be called after value is parsed: `std::function<bool(const T &value)>`, where `value` is parsed value.
+  Constructor receives a finish callback, that will be called after value is parsed: `std::function<bool(const T &value)>`, where `value` is parsed value.  
+  If you don't want to provide finish callback, you can call constructor without arguments.
 
   `SJParser::Value` has methods:
   * `bool isSet()`: returns true if parser parsed some value, false otherwise.
@@ -98,32 +189,3 @@ You specify expected structure of json and callbacks to be called for certain en
   * `bool finish()`: finishes parsing. Returns false in case of error.
   * `std::string getError()`: returns parsing error.
   * `T &parser()`: returns root element parser.
-
-##Example
-```c++
-using namespace SJParser;
-
-using ParserType = Object<Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
-
-auto objectCb = [&](ParserType &parser) {
-  DB.writeObject(parser.get<0>().pop(), parser.get<1>().pop(), parser.get<2>().pop());
-  return true;
-};
-
-Parser<Array<ParserType>> parser({{"string", "integer", "array"}, objectCb});
-
-parser.parse(R"(
-[{
-  "string": "str1",
-  "integer": 1,
-  "array": ["1", "2"]
-}, {
-  "string": "str2",
-  "integer": 2,
-  "array": ["3", "4"]
-}])");
-
-parser.finish();
-```
-
-For more examples, please see file [test.cpp](https://github.com/dhurum/sjparser/blob/master/test.cpp).
