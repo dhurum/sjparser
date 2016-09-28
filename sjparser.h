@@ -49,16 +49,17 @@ template <typename T> class Value : public TokenParser {
   using Type = T;
   using Args = std::function<bool(const Type &)>;
 
-  //After value is parsed, on_finish callback is called.
+  // After value is parsed, on_finish callback is called.
   Value(const Args &on_finish) : _on_finish(on_finish) {}
-  //Method to check if value is set, returns boolean.
+  // Method to check if value is set, returns boolean.
   using TokenParser::isSet;
-  //Returns a reference to parsed value.  If value is unset, throws
-  //std::runtime_error.
+  // Returns a reference to parsed value.  If value is unset, throws
+  // std::runtime_error.
   const Type &get();
   template <typename U = Type>
-  //Returns an rvalue reference to value for std::string and reference for other
-  //types. After call of this method value is unset.
+  // Returns an rvalue reference to value for std::string and reference for
+  // other
+  // types. After call of this method value is unset.
   typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&pop();
   template <typename U = Type>
   const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &
@@ -125,7 +126,7 @@ template <typename... Ts> class Object : public ObjectParser {
     using type = T;
   };
 
-  //Returns reference to a parser of n-th field.
+  // Returns reference to a parser of n-th field.
   template <size_t n> typename NthType<n, Ts...>::type &get();
 
  private:
@@ -190,15 +191,15 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
   SObject(const Args &args);
   SObject(const SObject &) = delete;
 
-  //Method to check if value is set, returns boolean.
+  // Method to check if value is set, returns boolean.
   using TokenParser::isSet;
-  //Returns reference to a parser of n-th field.
+  // Returns reference to a parser of n-th field.
   using Object<Ts...>::get;
-  //Returns reference to parsed value. If value is unset, throws
-  //std::runtime_error.
+  // Returns reference to parsed value. If value is unset, throws
+  // std::runtime_error.
   Type &get();
-  //Returns an rvalue reference to value. After call of this method value is
-  //unset.
+  // Returns an rvalue reference to value. After call of this method value is
+  // unset.
   Type &&pop();
 
  private:
@@ -277,13 +278,13 @@ template <typename T> class SArray : public Array<T> {
   SArray(const Args &args);
   SArray(const SArray &) = delete;
 
-  //Method to check if vector of values is set, returns boolean.
+  // Method to check if vector of values is set, returns boolean.
   using TokenParser::isSet;
-  //Returns reference to vecor of values. If vector is unset, throws
-  //std::runtime_error.
+  // Returns reference to vecor of values. If vector is unset, throws
+  // std::runtime_error.
   Type &get();
-  //Returns an rvalue reference to vector of values. After call of this method
-  //value is unset.
+  // Returns an rvalue reference to vector of values. After call of this method
+  // value is unset.
   Type &&pop();
 
  private:
@@ -310,15 +311,15 @@ template <typename T> class Parser {
   Parser(const typename T::Args &args = {});
   template <typename U = T> Parser(const typename U::ChildArgs &args);
   template <typename U = T> Parser(const typename U::CallbackType &callback);
-  //Parse a piece of json. Returns false in case of error.
+  // Parse a piece of json. Returns false in case of error.
   bool parse(const std::string &data);
-  //Parse a piece of json. Returns false in case of error.
+  // Parse a piece of json. Returns false in case of error.
   bool parse(const char *data, size_t len);
-  //Finish parsing. Returns false in case of error.
+  // Finish parsing. Returns false in case of error.
   bool finish();
-  //Returns parser error.
+  // Returns parser error.
   std::string getError();
-  //Returns reference to root entity parser.
+  // Returns reference to root entity parser.
   T &parser();
 
  private:

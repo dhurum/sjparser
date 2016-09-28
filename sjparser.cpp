@@ -249,8 +249,7 @@ ParserImpl::~ParserImpl() {
 
 bool ParserImpl::parse(const char *data, size_t len) {
   if (yajl_parse(_yajl_info->handle,
-                 reinterpret_cast<const unsigned char *>(data),
-                 len)
+                 reinterpret_cast<const unsigned char *>(data), len)
       != yajl_status_ok) {
     return false;
   }
