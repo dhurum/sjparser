@@ -41,7 +41,7 @@ Expected json structure is specified as template parameters of `SJParser::Parser
 Then you pass a structure of arguments for those parameters into the constructor.
 Each class constructor receives a `struct`.
 
-If constructor description  mentions that *If you do not want to provide Y you can pass only X* or *If you don't want to provide X, you can call constructor without arguments*, you can write this:
+If constructor description  mentions that *«If you do not want to provide Y you can pass only X»* or *«If you don't want to provide X, you can call constructor without arguments»*, you can write this:
 
 ```c++
 //Providing both fields
