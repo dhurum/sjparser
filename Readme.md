@@ -33,7 +33,7 @@ parser.parse(R"(
 parser.finish();
 ```
 
-For more examples, please see file [test.cpp](https://github.com/dhurum/sjparser/blob/master/test.cpp).
+For more examples, please see file [test.cpp](https://github.com/dhurum/sjparser/blob/master/tests/test.cpp).
 
 ##Concepts
 
