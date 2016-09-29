@@ -11,16 +11,19 @@ set(SJPARSER_LIB
 
 include_directories(${SJPARSER_INCLUDES})
 
+set(SRCS sjparser.cpp)
+
 add_library(${TARGET} STATIC
-  sjparser.cpp
+  ${SRCS}
 )
+target_link_libraries(${TARGET} ${YAJL_LIB})
 
 add_library(${TARGET}_shared SHARED
-  sjparser.cpp
+  ${SRCS}
 )
+target_link_libraries(${TARGET}_shared ${YAJL_LIB})
 set_target_properties(${TARGET}_shared PROPERTIES OUTPUT_NAME ${TARGET})
 
-target_link_libraries(${TARGET} ${YAJL_LIB})
 
 install(TARGETS ${TARGET} ${TARGET}_shared DESTINATION lib/sjparser)
 install(
