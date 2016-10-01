@@ -31,10 +31,6 @@ void TokenParser::setDispatcher(Dispatcher *dispatcher) {
   _dispatcher = dispatcher;
 }
 
-bool TokenParser::isSet() {
-  return _set;
-}
-
 void TokenParser::reset() {
   _set = false;
 }
@@ -47,12 +43,6 @@ bool TokenParser::endParsing() {
     _dispatcher->popParser();
   }
   return ret;
-}
-
-void TokenParser::checkSet() {
-  if (!isSet()) {
-    throw std::runtime_error("Can't get value, parser is unset");
-  }
 }
 
 void ObjectParser::setDispatcher(Dispatcher *dispatcher) {

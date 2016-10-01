@@ -44,7 +44,7 @@ class Dispatcher;
 class TokenParser {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher);
-  bool isSet();
+  inline bool isSet() const;
   virtual void reset();
   bool endParsing();
   virtual bool finish() = 0;
@@ -67,7 +67,7 @@ class TokenParser {
   Dispatcher *_dispatcher = nullptr;
   bool _set = false;
 
-  void checkSet();
+  inline void checkSet() const;
 };
 
 class ObjectParser : public TokenParser {
@@ -133,4 +133,16 @@ class ParserImpl {
   std::unique_ptr<YajlInfo> _yajl_info;
   Dispatcher _dispatcher;
 };
+
+/******************************** Definitions ********************************/
+
+bool TokenParser::isSet() const {
+  return _set;
+}
+
+void TokenParser::checkSet() const {
+  if (!isSet()) {
+    throw std::runtime_error("Can't get value, parser is unset");
+  }
+}
 }

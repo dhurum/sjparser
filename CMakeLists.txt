@@ -33,6 +33,8 @@ set (CMAKE_CXX_FLAGS_DEBUG -g3)
 #transform list to string
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_subdirectory(src)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
