@@ -60,7 +60,7 @@ void ObjectParser::reset() {
   }
 }
 
-bool ObjectParser::on(const MapStartT) {
+bool ObjectParser::on(const MapStartT /*unused*/) {
   reset();
   return true;
 }
@@ -75,7 +75,7 @@ bool ObjectParser::on(const MapKeyT &key) {
   return true;
 }
 
-bool ObjectParser::on(const MapEndT) {
+bool ObjectParser::on(const MapEndT /*unused*/) {
   return endParsing();
 }
 
@@ -117,13 +117,13 @@ bool ArrayParser::on(const std::string &value) {
   return true;
 }
 
-bool ArrayParser::on(const MapStartT) {
+bool ArrayParser::on(const MapStartT /*unused*/) {
   _parser->setDispatcher(_dispatcher);
   _dispatcher->pushParser(_parser);
   return _parser->on(MapStartT{});
 }
 
-bool ArrayParser::on(const ArrayStartT) {
+bool ArrayParser::on(const ArrayStartT /*unused*/) {
   if (!_started) {
     reset();
     _started = true;
@@ -135,7 +135,7 @@ bool ArrayParser::on(const ArrayStartT) {
   return _parser->on(ArrayStartT{});
 }
 
-bool ArrayParser::on(const ArrayEndT) {
+bool ArrayParser::on(const ArrayEndT /*unused*/) {
   _started = false;
   return endParsing();
 }
@@ -173,49 +173,49 @@ template <typename T> bool Dispatcher::on(const T &value) {
 
 static int yajl_boolean(void *ctx, int value) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return dispatcher->on(static_cast<bool>(value));
+  return static_cast<int>(dispatcher->on(static_cast<bool>(value)));
 }
 
 static int yajl_integer(void *ctx, long long value) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return dispatcher->on(static_cast<int64_t>(value));
+  return static_cast<int>(dispatcher->on(static_cast<int64_t>(value)));
 }
 
 static int yajl_double(void *ctx, double value) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return dispatcher->on(value);
+  return static_cast<int>(dispatcher->on(value));
 }
 
 static int yajl_string(void *ctx, const unsigned char *value, size_t len) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return dispatcher->on(
-      std::string(reinterpret_cast<const char *>(value), len));
+  return static_cast<int>(
+      dispatcher->on(std::string(reinterpret_cast<const char *>(value), len)));
 }
 
 static int yajl_start_map(void *ctx) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return dispatcher->on(MapStartT{});
+  return static_cast<int>(dispatcher->on(MapStartT{}));
 }
 
 static int yajl_map_key(void *ctx, const unsigned char *value, size_t len) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return dispatcher->on(
-      MapKeyT{std::string(reinterpret_cast<const char *>(value), len)});
+  return static_cast<int>(dispatcher->on(
+      MapKeyT{std::string(reinterpret_cast<const char *>(value), len)}));
 }
 
 static int yajl_end_map(void *ctx) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return dispatcher->on(MapEndT{});
+  return static_cast<int>(dispatcher->on(MapEndT{}));
 }
 
 static int yajl_start_array(void *ctx) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return dispatcher->on(ArrayStartT{});
+  return static_cast<int>(dispatcher->on(ArrayStartT{}));
 }
 
 static int yajl_end_array(void *ctx) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return dispatcher->on(ArrayEndT{});
+  return static_cast<int>(dispatcher->on(ArrayEndT{}));
 }
 
 static const yajl_callbacks parser_yajl_callbacks{
@@ -238,19 +238,13 @@ ParserImpl::~ParserImpl() {
 }
 
 bool ParserImpl::parse(const char *data, size_t len) {
-  if (yajl_parse(_yajl_info->handle,
-                 reinterpret_cast<const unsigned char *>(data), len)
-      != yajl_status_ok) {
-    return false;
-  }
-  return true;
+  return yajl_parse(_yajl_info->handle,
+                    reinterpret_cast<const unsigned char *>(data), len)
+         == yajl_status_ok;
 }
 
 bool ParserImpl::finish() {
-  if (yajl_complete_parse(_yajl_info->handle) != yajl_status_ok) {
-    return false;
-  }
-  return true;
+  return yajl_complete_parse(_yajl_info->handle) == yajl_status_ok;
 }
 
 std::string ParserImpl::getError() {
