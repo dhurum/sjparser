@@ -6,31 +6,52 @@ You specify expected structure of json and callbacks to be called for certain en
 ##Example
 
 ```c++
-using namespace SJParser;
+#include <sjparser.h>
 
-using ParserType = Object<Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
+using SJParser::Parser;
+using SJParser::Object;
+using SJParser::Value;
+using SJParser::Array;
+using SJParser::SArray;
 
-auto objectCb = [&](ParserType &parser) {
-  DB.writeObject(
-    parser.get<0>().pop(),
-    parser.get<1>().isSet() ? parser.get<1>().get() : 0,
-    parser.get<2>().pop());
-  return true;
-};
+int main() {
+  //Type alias for object parser, for easier callback declaration.
+  //Object has 3 fields - std::string, int64_t, std::vector<std::string>
+  using ParserType = Object<Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
 
-Parser<Array<ParserType>> parser({{"string", "integer", "array"}, objectCb});
+  //Callback, will be called once object is parsed
+  auto objectCb = [&](ParserType &parser) {
+    //Some external API call
+    DB.writeObject(
+      //Rvalue reference to the first object field (std::string)
+      parser.get<0>().pop(),
+      //If second field is present use it, otherwise use some default value
+      parser.get<1>().isSet() ? parser.get<1>().get() : 0,
+      //Rvalue reference to the third object field (std::vector<std::string>)
+      parser.get<2>().pop());
+    //Returning false from the callback with make parser stop with an error
+    return true;
+  };
 
-parser.parse(R"(
-[{
-  "string": "str1",
-  "integer": 1,
-  "array": ["1", "2"]
-}, {
-  "string": "str2",
-  "array": ["3", "4"]
-}])");
+  //Declare parser. It expects an array of objects.
+  //List of field names and a callback are pased as an argument to the object parser
+  Parser<Array<ParserType>> parser({{"string", "integer", "array"}, objectCb});
 
-parser.finish();
+  //Parse a piece of json. During parsing object callback will be called.
+  parser.parse(R"(
+  [{
+    "string": "str1",
+    "integer": 1,
+    "array": ["1", "2"]
+  }, {
+    "string": "str2",
+    "array": ["3", "4"]
+  }])");
+
+  //Finish parsing
+  parser.finish();
+  return 0;
+}
 ```
 
 For more examples, please see file [test.cpp](https://github.com/dhurum/sjparser/blob/master/tests/test.cpp).
@@ -112,6 +133,7 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
   * `double`
 
   Constructor receives a finish callback, that will be called after value is parsed: `std::function<bool(const T &value)>`, where `value` is parsed value.  
+  Returning false from callback will cause parser to stop parsing.
   If you don't want to provide finish callback, you can call constructor without arguments.
 
   `SJParser::Value` has methods:
@@ -132,7 +154,8 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
 
       If you do not want to provide any arguments to field parser, you can pass only string.
 
-  2. Finish callback,  that will be called after object is parsed: `std::function<bool(T &parser)>`, where `parser` is this parser.
+  2. Finish callback,  that will be called after object is parsed: `std::function<bool(T &parser)>`, where `parser` is this parser.  
+     Returning false from callback will cause parser to stop parsing.
 
   If you don't want to provide finish callback, you can pass only `std::tuple` to the constructor.
 
@@ -149,7 +172,8 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
 
       If you do not want to provide any arguments to field parser, you can pass only string.
 
-  2. Finish callback,  that will be called after object is parsed: `std::function<bool(T &parser, V &value)>`, where `parser` is this parser and `value` is a value that this parser stores. You should set it from this callback.
+  2. Finish callback,  that will be called after object is parsed: `std::function<bool(T &parser, V &value)>`, where `parser` is this parser and `value` is a value that this parser stores. You should set it from this callback.  
+     Returning false from callback will cause parser to stop parsing.
 
   `SJParser::SObject` has methods:
   * `T& get<n>()`: returns a reference to n-th field parser.  
@@ -165,7 +189,8 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
   Takes entity parser type for elements as a template parameter.  
   Constructor receives a `struct` with two elements:
   1. Argument for elements parser
-  2. Finish callback, that will be called after array is parsed: `std::function<bool()>`.
+  2. Finish callback, that will be called after array is parsed: `std::function<bool()>`.  
+     Returning false from callback will cause parser to stop parsing.
 
   If you don't want to provide finish callback, you can pass only elements parser argument to the constructor.
 
@@ -174,7 +199,8 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
   Takes entity parser type for elements as a template parameter.  
   Constructor receives a `struct` with two elements:
   1. Argument for elements parser
-  2. Finish callback, that will be called after array is parsed: `std::function<bool(T &value)>`, where `value` is a vector of elements parser's storage type.
+  2. Finish callback, that will be called after array is parsed: `std::function<bool(T &value)>`, where `value` is a vector of elements parser's storage type.  
+     Returning false from callback will cause parser to stop parsing.
 
   If you don't want to provide finish callback, you can pass only elements parser argument to the constructor.
 
