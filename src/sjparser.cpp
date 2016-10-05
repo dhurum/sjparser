@@ -27,11 +27,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using namespace SJParser;
 
-void TokenParser::setDispatcher(Dispatcher *dispatcher) {
+void TokenParser::setDispatcher(Dispatcher *dispatcher) noexcept {
   _dispatcher = dispatcher;
 }
 
-void TokenParser::reset() {
+void TokenParser::reset() noexcept {
   _set = false;
 }
 
@@ -45,14 +45,14 @@ bool TokenParser::endParsing() {
   return ret;
 }
 
-void ObjectParser::setDispatcher(Dispatcher *dispatcher) {
+void ObjectParser::setDispatcher(Dispatcher *dispatcher) noexcept {
   TokenParser::setDispatcher(dispatcher);
   for (auto &field : _fields_map) {
     field.second->setDispatcher(dispatcher);
   }
 }
 
-void ObjectParser::reset() {
+void ObjectParser::reset() noexcept {
   TokenParser::reset();
 
   for (auto &field : _fields_map) {
@@ -60,12 +60,12 @@ void ObjectParser::reset() {
   }
 }
 
-bool ObjectParser::on(const MapStartT /*unused*/) {
+bool ObjectParser::on(const MapStartT /*unused*/) noexcept {
   reset();
   return true;
 }
 
-bool ObjectParser::on(const MapKeyT &key) {
+bool ObjectParser::on(const MapKeyT &key) noexcept {
   try {
     auto &parser = _fields_map.at(key.key);
     _dispatcher->pushParser(parser);
@@ -79,7 +79,7 @@ bool ObjectParser::on(const MapEndT /*unused*/) {
   return endParsing();
 }
 
-void ArrayParser::reset() {
+void ArrayParser::reset() noexcept {
   TokenParser::reset();
 
   _parser->reset();

@@ -43,9 +43,9 @@ class Dispatcher;
 
 class TokenParser {
  public:
-  virtual void setDispatcher(Dispatcher *dispatcher);
-  inline bool isSet() const;
-  virtual void reset();
+  virtual void setDispatcher(Dispatcher *dispatcher) noexcept;
+  inline bool isSet() const noexcept;
+  virtual void reset() noexcept;
   bool endParsing();
   virtual bool finish() = 0;
 
@@ -72,11 +72,11 @@ class TokenParser {
 
 class ObjectParser : public TokenParser {
  public:
-  virtual void setDispatcher(Dispatcher *dispatcher) override;
-  virtual void reset() override;
+  virtual void setDispatcher(Dispatcher *dispatcher) noexcept override;
+  virtual void reset() noexcept override;
 
-  virtual bool on(const MapStartT) override;
-  virtual bool on(const MapKeyT &key) override;
+  virtual bool on(const MapStartT) noexcept override;
+  virtual bool on(const MapKeyT &key) noexcept override;
   virtual bool on(const MapEndT) override;
 
  protected:
@@ -86,7 +86,7 @@ class ObjectParser : public TokenParser {
 class ArrayParser : public TokenParser {
  public:
   ArrayParser(std::function<bool()> on_finish) : _on_finish(on_finish) {}
-  virtual void reset() override;
+  virtual void reset() noexcept override;
 
   virtual bool on(const bool &value) override;
   virtual bool on(const int64_t &value) override;
@@ -136,7 +136,7 @@ class ParserImpl {
 
 /******************************** Definitions ********************************/
 
-bool TokenParser::isSet() const {
+bool TokenParser::isSet() const noexcept {
   return _set;
 }
 

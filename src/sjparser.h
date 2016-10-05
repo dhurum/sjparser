@@ -52,7 +52,7 @@ template <typename T> class Value : public TokenParser {
   // After value is parsed, on_finish callback is called.
   Value(const Args &on_finish);
   // Returns true if value is set.
-  inline bool isSet() const;
+  inline bool isSet() const noexcept;
   // Returns a reference to parsed value.  If value is unset, throws
   // std::runtime_error.
   inline const Type &get() const;
@@ -195,7 +195,7 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
   SObject(const SObject &) = delete;
 
   // Returns true if value is set.
-  inline bool isSet() const;
+  inline bool isSet() const noexcept;
   // Returns reference to a parser of n-th field.
   using Object<Ts...>::get;
   // Returns reference to parsed value. If value is unset, throws
@@ -212,7 +212,7 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
   using TokenParser::checkSet;
 
   virtual bool finish() override;
-  virtual void reset() override;
+  virtual void reset() noexcept override;
 };
 
 /*
@@ -282,7 +282,7 @@ template <typename T> class SArray : public Array<T> {
   SArray(const SArray &) = delete;
 
   // Returns true if value is set.
-  inline bool isSet() const;
+  inline bool isSet() const noexcept;
   // Returns reference to vecor of values. If vector is unset, throws
   // std::runtime_error.
   inline const Type &get() const;
@@ -298,7 +298,7 @@ template <typename T> class SArray : public Array<T> {
 
   virtual void childParsed() override;
   virtual bool finish() override;
-  virtual void reset() override;
+  virtual void reset() noexcept override;
 };
 
 /*
@@ -335,7 +335,7 @@ template <typename T> class Parser {
 template <typename T>
 Value<T>::Value(const Args &on_finish) : _on_finish(on_finish) {}
 
-template <typename T> bool Value<T>::isSet() const {
+template <typename T> bool Value<T>::isSet() const noexcept {
   return TokenParser::isSet();
 }
 
@@ -433,7 +433,7 @@ template <typename T, typename... Ts>
 SObject<T, Ts...>::SObject(const Args &args)
     : Object<Ts...>(args.args), _on_finish(args.on_finish) {}
 
-template <typename T, typename... Ts> bool SObject<T, Ts...>::isSet() const {
+template <typename T, typename... Ts> bool SObject<T, Ts...>::isSet() const noexcept {
   return TokenParser::isSet();
 }
 
@@ -454,7 +454,7 @@ template <typename T, typename... Ts> bool SObject<T, Ts...>::finish() {
   return _on_finish(*this, _value);
 }
 
-template <typename T, typename... Ts> void SObject<T, Ts...>::reset() {
+template <typename T, typename... Ts> void SObject<T, Ts...>::reset() noexcept {
   ObjectParser::reset();
   _value = Type();
 }
@@ -483,7 +483,7 @@ template <typename T>
 SArray<T>::SArray(const Args &args)
     : Array<T>(args.args), _on_finish(args.on_finish) {}
 
-template <typename T> bool SArray<T>::isSet() const {
+template <typename T> bool SArray<T>::isSet() const noexcept {
   return TokenParser::isSet();
 }
 
@@ -509,7 +509,7 @@ template <typename T> bool SArray<T>::finish() {
   return _on_finish(_values);
 }
 
-template <typename T> void SArray<T>::reset() {
+template <typename T> void SArray<T>::reset() noexcept {
   _values = Type();
 }
 
