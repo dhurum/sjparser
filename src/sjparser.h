@@ -321,7 +321,7 @@ template <typename T> class Parser {
   // Finish parsing. Returns false in case of error.
   inline bool finish();
   // Returns parser error.
-  inline std::string getError();
+  inline std::string getError(bool verbose = false);
   // Returns reference to root entity parser.
   inline T &parser();
 
@@ -433,7 +433,8 @@ template <typename T, typename... Ts>
 SObject<T, Ts...>::SObject(const Args &args)
     : Object<Ts...>(args.args), _on_finish(args.on_finish) {}
 
-template <typename T, typename... Ts> bool SObject<T, Ts...>::isSet() const noexcept {
+template <typename T, typename... Ts>
+bool SObject<T, Ts...>::isSet() const noexcept {
   return TokenParser::isSet();
 }
 
@@ -539,8 +540,8 @@ template <typename T> bool Parser<T>::finish() {
   return _impl->finish();
 }
 
-template <typename T> std::string Parser<T>::getError() {
-  return _impl->getError();
+template <typename T> std::string Parser<T>::getError(bool verbose) {
+  return _impl->getError(verbose);
 }
 
 template <typename T> T &Parser<T>::parser() {

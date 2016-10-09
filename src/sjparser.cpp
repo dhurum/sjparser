@@ -45,6 +45,42 @@ bool TokenParser::endParsing() {
   return ret;
 }
 
+bool TokenParser::on(const bool & /*value*/) {
+  return unexpectedToken("boolean");
+}
+
+bool TokenParser::on(const int64_t & /*value*/) {
+  return unexpectedToken("integer");
+}
+
+bool TokenParser::on(const double & /*value*/) {
+  return unexpectedToken("double");
+}
+
+bool TokenParser::on(const std::string & /*value*/) {
+  return unexpectedToken("string");
+}
+
+bool TokenParser::on(const MapStartT) {
+  return unexpectedToken("map start");
+}
+
+bool TokenParser::on(const MapKeyT & /*key*/) {
+  return unexpectedToken("map key");
+}
+
+bool TokenParser::on(const MapEndT) {
+  return unexpectedToken("map end");
+}
+
+bool TokenParser::on(const ArrayStartT) {
+  return unexpectedToken("array start");
+}
+
+bool TokenParser::on(const ArrayEndT) {
+  return unexpectedToken("array end");
+}
+
 void ObjectParser::setDispatcher(Dispatcher *dispatcher) noexcept {
   TokenParser::setDispatcher(dispatcher);
   for (auto &field : _fields_map) {
@@ -70,6 +106,7 @@ bool ObjectParser::on(const MapKeyT &key) noexcept {
     auto &parser = _fields_map.at(key.key);
     _dispatcher->pushParser(parser);
   } catch (...) {
+    _dispatcher->setError("Unexpected object key " + key.key);
     return false;
   }
   return true;
@@ -166,6 +203,7 @@ void Dispatcher::popParser() {
 
 template <typename T> bool Dispatcher::on(const T &value) {
   if (_parsers.empty()) {
+    setError("Parsers stack is empty");
     return false;
   }
   return _parsers.top()->on(value);
@@ -238,19 +276,29 @@ ParserImpl::~ParserImpl() {
 }
 
 bool ParserImpl::parse(const char *data, size_t len) {
-  return yajl_parse(_yajl_info->handle,
-                    reinterpret_cast<const unsigned char *>(data), len)
-         == yajl_status_ok;
+  _data = reinterpret_cast<const unsigned char *>(data);
+  _len = len;
+  _dispatcher.setError("");
+
+  return yajl_parse(_yajl_info->handle, _data, _len) == yajl_status_ok;
 }
 
 bool ParserImpl::finish() {
   return yajl_complete_parse(_yajl_info->handle) == yajl_status_ok;
 }
 
-std::string ParserImpl::getError() {
-  auto err = yajl_get_error(_yajl_info->handle, 0, nullptr, 0);
-  std::string error_str = reinterpret_cast<char *>(err);
+std::string ParserImpl::getError(bool verbose) {
+  auto internal_error = _dispatcher.getError();
+
+  if (internal_error.size() && !verbose) {
+    return internal_error;
+  }
+
+  auto err = yajl_get_error(_yajl_info->handle, static_cast<int>(verbose),
+                            _data, _len);
+  std::string yajl_error = reinterpret_cast<char *>(err);
 
   yajl_free_error(_yajl_info->handle, err);
-  return error_str;
+
+  return yajl_error + internal_error + "\n";
 }

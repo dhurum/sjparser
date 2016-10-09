@@ -49,15 +49,15 @@ class TokenParser {
   bool endParsing();
   virtual bool finish() = 0;
 
-  virtual bool on(const bool & /*value*/) { return false; }
-  virtual bool on(const int64_t & /*value*/) { return false; }
-  virtual bool on(const double & /*value*/) { return false; }
-  virtual bool on(const std::string & /*value*/) { return false; }
-  virtual bool on(const MapStartT) { return false; }
-  virtual bool on(const MapKeyT & /*key*/) { return false; }
-  virtual bool on(const MapEndT) { return false; }
-  virtual bool on(const ArrayStartT) { return false; }
-  virtual bool on(const ArrayEndT) { return false; }
+  virtual bool on(const bool & /*value*/);
+  virtual bool on(const int64_t & /*value*/);
+  virtual bool on(const double & /*value*/);
+  virtual bool on(const std::string & /*value*/);
+  virtual bool on(const MapStartT);
+  virtual bool on(const MapKeyT & /*key*/);
+  virtual bool on(const MapEndT);
+  virtual bool on(const ArrayStartT);
+  virtual bool on(const ArrayEndT);
 
   virtual void childParsed() {}
 
@@ -68,6 +68,8 @@ class TokenParser {
   bool _set = false;
 
   inline void checkSet() const;
+
+  inline bool unexpectedToken(const std::string &type);
 };
 
 class ObjectParser : public TokenParser {
@@ -114,9 +116,13 @@ class Dispatcher {
 
   template <typename T> bool on(const T &value);
 
+  inline void setError(const std::string &error);
+  inline std::string &getError() noexcept;
+
  protected:
   std::stack<TokenParser *> _parsers;
   std::function<void()> _on_completion;
+  std::string _error;
 };
 
 struct YajlInfo;
@@ -127,11 +133,13 @@ class ParserImpl {
   ~ParserImpl();
   bool parse(const char *data, size_t len);
   bool finish();
-  std::string getError();
+  std::string getError(bool verbose);
 
  private:
   std::unique_ptr<YajlInfo> _yajl_info;
   Dispatcher _dispatcher;
+  const unsigned char *_data;
+  size_t _len;
 };
 
 /******************************** Definitions ********************************/
@@ -144,5 +152,18 @@ void TokenParser::checkSet() const {
   if (!isSet()) {
     throw std::runtime_error("Can't get value, parser is unset");
   }
+}
+
+bool TokenParser::unexpectedToken(const std::string &type) {
+  _dispatcher->setError("Unexpected token " + type);
+  return false;
+}
+
+void Dispatcher::setError(const std::string &error) {
+  _error = error;
+}
+
+std::string &Dispatcher::getError() noexcept {
+  return _error;
 }
 }

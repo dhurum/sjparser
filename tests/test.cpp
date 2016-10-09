@@ -119,6 +119,17 @@ TEST(Parser, emptyObject) {
   ASSERT_TRUE(parser.finish());
 }
 
+TEST(Parser, objectWithOneField) {
+  std::string buf(R"({"key": "value"})");
+
+  Parser<Object<Value<std::string>>> parser("key");
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get<0>().get());
+}
+
 TEST(Parser, objectWithObject) {
   std::string buf(
       R"(
@@ -442,4 +453,34 @@ TEST(Parser, storageObjectWithStorageArray) {
   ASSERT_EQ("elt1", parser.parser().get().array[0]);
   ASSERT_EQ("elt2", parser.parser().get().array[1]);
   ASSERT_EQ("elt3", parser.parser().get().array[2]);
+}
+
+TEST(Parser, error) {
+  std::string buf(R"("error")");
+
+  Parser<Value<bool>> parser;
+
+  ASSERT_FALSE(parser.parse(buf));
+  ASSERT_EQ("Unexpected token string", parser.getError());
+}
+
+TEST(Parser, errorVerbose) {
+  std::string buf(R"("error")");
+
+  Parser<Value<bool>> parser;
+
+  ASSERT_FALSE(parser.parse(buf));
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                 "error"
+                     (right here) ------^
+Unexpected token string
+)",
+      parser.getError(true));
+}
+
+TEST(Parser, getUnsetValue) {
+  Parser<Value<bool>> parser;
+
+  ASSERT_ANY_THROW(parser.parser().get());
 }
