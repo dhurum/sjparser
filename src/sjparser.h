@@ -119,6 +119,7 @@ template <typename... Ts> class Object : public ObjectParser {
    * Callback is called with a reference to this parser as an argument.
    */
   Object(const Args &args);
+  Object(const ChildArgs &args);
   Object(const Object &) = delete;
 
   template <size_t n, typename T, typename... TDs> struct NthType {
@@ -192,6 +193,7 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
    * reference to internal value. You should set it in this callback.
    */
   SObject(const Args &args);
+  SObject(const ChildArgs &args);
   SObject(const SObject &) = delete;
 
   // Returns true if value is set.
@@ -398,6 +400,9 @@ Object<Ts...>::Object(const Args &args)
       _on_finish(args.on_finish) {}
 
 template <typename... Ts>
+Object<Ts...>::Object(const ChildArgs &args) : Object({args, nullptr}) {}
+
+template <typename... Ts>
 template <size_t n>
 typename Object<Ts...>::template NthType<n, Ts...>::type &Object<Ts...>::get() {
   return *reinterpret_cast<typename NthType<n, Ts...>::type *>(
@@ -432,6 +437,9 @@ SObject<T, Ts...>::Args::Args(
 template <typename T, typename... Ts>
 SObject<T, Ts...>::SObject(const Args &args)
     : Object<Ts...>(args.args), _on_finish(args.on_finish) {}
+
+template <typename T, typename... Ts>
+SObject<T, Ts...>::SObject(const ChildArgs &args) : SObject({args, nullptr}) {}
 
 template <typename T, typename... Ts>
 bool SObject<T, Ts...>::isSet() const noexcept {
