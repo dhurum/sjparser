@@ -25,7 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <functional>
 #include <memory>
-#include <stack>
+#include <deque>
 #include <string>
 #include <unordered_map>
 
@@ -113,6 +113,7 @@ class Dispatcher {
   Dispatcher(TokenParser *parser);
   void pushParser(TokenParser *parser);
   void popParser();
+  void reset();
 
   template <typename T> bool on(const T &value);
 
@@ -120,12 +121,13 @@ class Dispatcher {
   inline std::string &getError() noexcept;
 
  protected:
-  std::stack<TokenParser *> _parsers;
+  std::deque<TokenParser *> _parsers;
+  TokenParser *_root_parser = nullptr;
   std::function<void()> _on_completion;
   std::string _error;
 };
 
-struct YajlInfo;
+class YajlInfo;
 
 class ParserImpl {
  public:
@@ -136,8 +138,8 @@ class ParserImpl {
   std::string getError(bool verbose);
 
  private:
-  std::unique_ptr<YajlInfo> _yajl_info;
   Dispatcher _dispatcher;
+  std::unique_ptr<YajlInfo> _yajl_info;
   const unsigned char *_data;
   size_t _len;
 };

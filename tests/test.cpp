@@ -484,3 +484,15 @@ TEST(Parser, getUnsetValue) {
 
   ASSERT_ANY_THROW(parser.parser().get());
 }
+
+TEST(Parser, repeatedParsing) {
+  std::string buf(R"(true)");
+
+  Parser<Value<bool>> parser;
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+}

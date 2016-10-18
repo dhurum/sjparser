@@ -185,20 +185,27 @@ bool ArrayParser::finish() {
 }
 
 Dispatcher::Dispatcher(TokenParser *parser) {
-  _parsers.push(parser);
+  _root_parser = parser;
+  _parsers.push_back(parser);
   parser->setDispatcher(this);
 }
 
 void Dispatcher::pushParser(TokenParser *parser) {
-  _parsers.push(parser);
+  _parsers.push_back(parser);
 }
 
 void Dispatcher::popParser() {
-  _parsers.pop();
+  _parsers.pop_back();
 
   if (!_parsers.empty()) {
-    _parsers.top()->childParsed();
+    _parsers.back()->childParsed();
   }
+}
+
+void Dispatcher::reset() {
+  _parsers.clear();
+  _parsers.push_back(_root_parser);
+  setError("");
 }
 
 template <typename T> bool Dispatcher::on(const T &value) {
@@ -206,7 +213,7 @@ template <typename T> bool Dispatcher::on(const T &value) {
     setError("Parsers stack is empty");
     return false;
   }
-  return _parsers.top()->on(value);
+  return _parsers.back()->on(value);
 }
 
 static int yajl_boolean(void *ctx, int value) {
@@ -261,30 +268,63 @@ static const yajl_callbacks parser_yajl_callbacks{
     nullptr,      yajl_string,      yajl_start_map, yajl_map_key,
     yajl_end_map, yajl_start_array, yajl_end_array};
 
-struct SJParser::YajlInfo {
-  yajl_handle handle;
+class SJParser::YajlInfo {
+ public:
+  YajlInfo(Dispatcher *dispatcher);
+  ~YajlInfo();
+  void reset();
+  yajl_handle handle();
+
+ private:
+  void unset();
+
+  yajl_handle _handle = nullptr;
+  Dispatcher *_dispatcher;
 };
 
-ParserImpl::ParserImpl(TokenParser *parser)
-    : _yajl_info(std::make_unique<YajlInfo>()), _dispatcher(parser) {
-  _yajl_info->handle =
-      yajl_alloc(&parser_yajl_callbacks, nullptr, &_dispatcher);
+YajlInfo::YajlInfo(Dispatcher *dispatcher) : _dispatcher(dispatcher) {
+  reset();
 }
 
-ParserImpl::~ParserImpl() {
-  yajl_free(_yajl_info->handle);
+YajlInfo::~YajlInfo() {
+  unset();
 }
+
+void YajlInfo::reset() {
+  unset();
+  _handle = yajl_alloc(&parser_yajl_callbacks, nullptr, _dispatcher);
+}
+
+yajl_handle YajlInfo::handle() {
+  return _handle;
+}
+
+void YajlInfo::unset() {
+  if (_handle) {
+    yajl_free(_handle);
+    _handle = nullptr;
+  }
+}
+
+ParserImpl::ParserImpl(TokenParser *parser)
+    : _dispatcher(parser), _yajl_info(std::make_unique<YajlInfo>(&_dispatcher)) {}
+
+ParserImpl::~ParserImpl() = default;
 
 bool ParserImpl::parse(const char *data, size_t len) {
   _data = reinterpret_cast<const unsigned char *>(data);
   _len = len;
-  _dispatcher.setError("");
 
-  return yajl_parse(_yajl_info->handle, _data, _len) == yajl_status_ok;
+  return yajl_parse(_yajl_info->handle(), _data, _len) == yajl_status_ok;
 }
 
 bool ParserImpl::finish() {
-  return yajl_complete_parse(_yajl_info->handle) == yajl_status_ok;
+  bool ret = yajl_complete_parse(_yajl_info->handle()) == yajl_status_ok;
+
+  _dispatcher.reset();
+  _yajl_info->reset();
+
+  return ret;
 }
 
 std::string ParserImpl::getError(bool verbose) {
@@ -294,11 +334,11 @@ std::string ParserImpl::getError(bool verbose) {
     return internal_error;
   }
 
-  auto err = yajl_get_error(_yajl_info->handle, static_cast<int>(verbose),
+  auto err = yajl_get_error(_yajl_info->handle(), static_cast<int>(verbose),
                             _data, _len);
   std::string yajl_error = reinterpret_cast<char *>(err);
 
-  yajl_free_error(_yajl_info->handle, err);
+  yajl_free_error(_yajl_info->handle(), err);
 
   return yajl_error + internal_error + "\n";
 }
