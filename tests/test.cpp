@@ -110,6 +110,20 @@ TEST(Parser, object) {
   ASSERT_EQ(10, parser.parser().get<1>().get());
 }
 
+TEST(Parser, objectStdString) {
+  std::string buf(R"({"key": "value", "key2": 10})");
+
+  std::string key1 = "key";
+  std::string key2 = "key2";
+  Parser<Object<Value<std::string>, Value<int64_t>>> parser({key1, key2});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get<0>().get());
+  ASSERT_EQ(10, parser.parser().get<1>().get());
+}
+
 TEST(Parser, emptyObject) {
   std::string buf(R"({})");
 
@@ -154,6 +168,47 @@ TEST(Parser, objectWithObject) {
   ASSERT_EQ(10, parser.parser().get<1>().get());
   ASSERT_EQ(1, parser.parser().get<2>().get<0>().get());
   ASSERT_EQ("in_value", parser.parser().get<2>().get<1>().get());
+  ASSERT_EQ(true, parser.parser().get<3>().get());
+}
+
+TEST(Parser, objectWithObjectWithCallback) {
+  std::string buf(
+      R"(
+{
+  "key": "value",
+  "key2": 10,
+  "key3": {
+    "key": 1,
+    "key2": "in_value"
+  },
+  "key4": true
+})");
+
+  struct ObjectStruct {
+    int64_t int_field;
+    std::string str_field;
+  };
+
+  ObjectStruct value;
+
+  using ParserType = Object<Value<int64_t>, Value<std::string>>;
+
+  auto callback = [&](ParserType &parser) {
+    value.int_field = parser.get<0>().get();
+    value.str_field = parser.get<1>().get();
+    return true;
+  };
+
+  Parser<Object<Value<std::string>, Value<int64_t>, ParserType, Value<bool>>>
+      parser({"key", "key2", {"key3", {{"key", "key2"}, callback}}, "key4"});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get<0>().get());
+  ASSERT_EQ(10, parser.parser().get<1>().get());
+  ASSERT_EQ(1, value.int_field);
+  ASSERT_EQ("in_value", value.str_field);
   ASSERT_EQ(true, parser.parser().get<3>().get());
 }
 
@@ -495,4 +550,234 @@ TEST(Parser, repeatedParsing) {
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
+}
+
+TEST(Parser, unionObject) {
+  std::string buf(
+      R"(
+{
+  "id": 10,
+  "type": 1,
+  "bool": true
+})");
+
+  Parser<Object<Value<int64_t>,
+                Union<int64_t, Object<Value<bool>>, Object<Value<int64_t>>>>>
+      parser({"id", {"type", {{1, "bool"}, {2, "int"}}}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().get<1>().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().get<1>().isSet());
+
+  ASSERT_EQ(10, parser.parser().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>().get());
+
+  std::string buf2(
+      R"(
+{
+  "id": 20,
+  "type": 2,
+  "int": 100
+})");
+
+  ASSERT_TRUE(parser.parse(buf2));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().get<1>().get<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().get<1>().isSet());
+
+  ASSERT_EQ(20, parser.parser().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>().get());
+}
+
+TEST(Parser, unionObjectString) {
+  std::string buf(
+      R"(
+{
+  "id": 10,
+  "type": "1",
+  "bool": true
+})");
+
+  Parser<Object<Value<int64_t>, Union<std::string, Object<Value<bool>>,
+                                      Object<Value<int64_t>>>>>
+      parser({"id", {"type", {{"1", "bool"}, {"2", "int"}}}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().get<1>().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().get<1>().isSet());
+
+  ASSERT_EQ(10, parser.parser().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>().get());
+
+  std::string buf2(
+      R"(
+{
+  "id": 20,
+  "type": "2",
+  "int": 100
+})");
+
+  ASSERT_TRUE(parser.parse(buf2));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().get<1>().get<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().get<1>().isSet());
+
+  ASSERT_EQ(20, parser.parser().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>().get());
+}
+
+TEST(Parser, unionStandAlone) {
+  std::string buf(
+      R"(
+{
+  "type": 1,
+  "bool": true
+})");
+
+  Parser<Union<int64_t, Object<Value<bool>>, Object<Value<int64_t>>>> parser(
+      {"type", {{1, "bool"}, {2, "int"}}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().isSet());
+
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
+
+  std::string buf2(
+      R"(
+{
+  "type": 2,
+  "int": 100
+})");
+
+  ASSERT_TRUE(parser.parse(buf2));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().isSet());
+
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+}
+
+TEST(Parser, unionStandAloneString) {
+  std::string buf(
+      R"(
+{
+  "type": "1",
+  "bool": true
+})");
+
+  Parser<Union<std::string, Object<Value<bool>>, Object<Value<int64_t>>>>
+      parser({"type", {{"1", "bool"}, {"2", "int"}}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().isSet());
+
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
+
+  std::string buf2(
+      R"(
+{
+  "type": "2",
+  "int": 100
+})");
+
+  ASSERT_TRUE(parser.parse(buf2));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().isSet());
+
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+}
+
+TEST(Parser, unionStandAloneStdString) {
+  std::string buf(
+      R"(
+{
+  "type": "1",
+  "bool": true
+})");
+
+  std::string type_field = "type";
+  Parser<Union<std::string, Object<Value<bool>>, Object<Value<int64_t>>>>
+      parser({type_field, {{"1", "bool"}, {"2", "int"}}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().isSet());
+
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
+
+  std::string buf2(
+      R"(
+{
+  "type": "2",
+  "int": 100
+})");
+
+  ASSERT_TRUE(parser.parse(buf2));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().isSet());
+
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+}
+
+TEST(Parser, objectWithUnion) {
+  std::string buf(
+      R"(
+{
+  "id": 10,
+  "data": {
+    "type": "1",
+    "bool": true
+  }
+})");
+
+  Parser<Object<Value<int64_t>, Union<std::string, Object<Value<bool>>,
+                                      Object<Value<int64_t>>>>>
+      parser({"id", {"data", {"type", {{"1", "bool"}, {"2", "int"}}}}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().get<1>().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().get<1>().isSet());
+
+  ASSERT_EQ(10, parser.parser().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>().get());
+
+  std::string buf2(
+      R"(
+{
+  "id": 10,
+  "data": {
+    "type": "2",
+    "int": 100
+  }
+})");
+
+  ASSERT_TRUE(parser.parse(buf2));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().get<1>().get<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().get<1>().isSet());
+
+  ASSERT_EQ(10, parser.parser().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>().get());
 }

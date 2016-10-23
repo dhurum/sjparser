@@ -23,9 +23,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include <deque>
 #include <functional>
 #include <memory>
-#include <deque>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 
@@ -59,7 +60,7 @@ class TokenParser {
   virtual bool on(const ArrayStartT);
   virtual bool on(const ArrayEndT);
 
-  virtual void childParsed() {}
+  virtual bool childParsed();
 
   virtual ~TokenParser() = default;
 
@@ -72,17 +73,78 @@ class TokenParser {
   inline bool unexpectedToken(const std::string &type);
 };
 
-class ObjectParser : public TokenParser {
+// std::string can be constructed from {"x", "y"}, so this wrapper is used
+// instead
+class FieldName {
  public:
+  FieldName(const std::string &str);
+  FieldName(const char *str);
+  operator const std::string &() const;
+  bool operator==(const FieldName &other) const;
+  const std::string &str() const;
+
+ private:
+  std::string _str;
+};
+
+template <typename I, typename... Ts>
+class KeyValueParser : public TokenParser {
+ public:
+  template <typename T> struct FieldArgs {
+    using Args = typename T::Args;
+
+    FieldArgs(const I &field, const Args &value);
+    template <typename U = T>
+    FieldArgs(const I &field, const typename U::ChildArgs &value);
+    FieldArgs(const I &field);
+    template <typename U = I>
+    FieldArgs(
+        const char *field,
+        typename std::enable_if<std::is_same<U, FieldName>::value>::type * = 0);
+    template <typename U = I>
+    FieldArgs(
+        const std::string &field,
+        typename std::enable_if<std::is_same<U, FieldName>::value>::type * = 0);
+
+    I field;
+    Args value;
+  };
+
   virtual void setDispatcher(Dispatcher *dispatcher) noexcept override;
   virtual void reset() noexcept override;
 
   virtual bool on(const MapStartT) noexcept override;
-  virtual bool on(const MapKeyT &key) noexcept override;
   virtual bool on(const MapEndT) override;
 
+  bool onField(const I &field);
+
+  template <size_t n, typename T, typename... TDs> struct NthType {
+    using type = typename NthType<n - 1, TDs...>::type;
+  };
+
+  template <typename T, typename... TDs> struct NthType<0, T, TDs...> {
+    using type = T;
+  };
+
+  template <size_t n> inline typename NthType<n, Ts...>::type &get();
+
  protected:
-  std::unordered_map<std::string, TokenParser *> _fields_map;
+  template <size_t, typename Args, typename...> struct Field {
+    Field(std::array<TokenParser *, sizeof...(Ts)> & /*fields_array*/,
+          std::unordered_map<I, TokenParser *> & /*fields_map*/,
+          const Args & /*args*/) {}
+  };
+
+  template <size_t n, typename Args, typename T, typename... TDs>
+  struct Field<n, Args, T, TDs...> : private Field<n + 1, Args, TDs...> {
+    Field(std::array<TokenParser *, sizeof...(Ts)> &fields_array,
+          std::unordered_map<I, TokenParser *> &fields_map, const Args &args);
+
+    T _field;
+  };
+
+  std::array<TokenParser *, sizeof...(Ts)> _fields_array;
+  std::unordered_map<I, TokenParser *> _fields_map;
 };
 
 class ArrayParser : public TokenParser {
@@ -112,7 +174,7 @@ class Dispatcher {
  public:
   Dispatcher(TokenParser *parser);
   void pushParser(TokenParser *parser);
-  void popParser();
+  bool popParser();
   void reset();
 
   template <typename T> bool on(const T &value);
@@ -161,6 +223,101 @@ bool TokenParser::unexpectedToken(const std::string &type) {
   return false;
 }
 
+template <typename I, typename... Ts>
+template <typename T>
+KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(const I &field,
+                                                  const Args &value)
+    : field(field), value(value) {}
+
+template <typename I, typename... Ts>
+template <typename T>
+template <typename U>
+KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
+    const I &field, const typename U::ChildArgs &value)
+    : field(field), value(value) {}
+
+template <typename I, typename... Ts>
+template <typename T>
+KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(const I &field)
+    : field(field) {}
+
+template <typename I, typename... Ts>
+template <typename T>
+template <typename U>
+KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
+    const char *field,
+    typename std::enable_if<std::is_same<U, FieldName>::value>::type *)
+    : field(field) {}
+
+template <typename I, typename... Ts>
+template <typename T>
+template <typename U>
+KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
+    const std::string &field,
+    typename std::enable_if<std::is_same<U, FieldName>::value>::type *)
+    : field(field) {}
+
+template <typename I, typename... Ts>
+void KeyValueParser<I, Ts...>::setDispatcher(Dispatcher *dispatcher) noexcept {
+  TokenParser::setDispatcher(dispatcher);
+  for (auto &field : _fields_map) {
+    field.second->setDispatcher(dispatcher);
+  }
+}
+
+template <typename I, typename... Ts>
+void KeyValueParser<I, Ts...>::reset() noexcept {
+  TokenParser::reset();
+
+  for (auto &field : _fields_map) {
+    field.second->reset();
+  }
+}
+
+template <typename I, typename... Ts>
+bool KeyValueParser<I, Ts...>::on(const MapStartT /*unused*/) noexcept {
+  reset();
+  return true;
+}
+
+template <typename I, typename... Ts>
+bool KeyValueParser<I, Ts...>::on(const MapEndT /*unused*/) {
+  return endParsing();
+}
+
+template <typename I, typename... Ts>
+bool KeyValueParser<I, Ts...>::onField(const I &field) {
+  try {
+    auto &parser = _fields_map.at(field);
+    _dispatcher->pushParser(parser);
+  } catch (...) {
+    std::stringstream error;
+    error << "Unexpected field " << field;
+    _dispatcher->setError(error.str());
+    return false;
+  }
+  return true;
+}
+
+template <typename I, typename... Ts>
+template <size_t n>
+typename KeyValueParser<I, Ts...>::template NthType<n, Ts...>::type &
+KeyValueParser<I, Ts...>::get() {
+  return *reinterpret_cast<typename NthType<n, Ts...>::type *>(
+      _fields_array[n]);
+}
+
+template <typename I, typename... Ts>
+template <size_t n, typename Args, typename T, typename... TDs>
+KeyValueParser<I, Ts...>::Field<n, Args, T, TDs...>::Field(
+    std::array<TokenParser *, sizeof...(Ts)> &fields_array,
+    std::unordered_map<I, TokenParser *> &fields_map, const Args &args)
+    : Field<n + 1, Args, TDs...>(fields_array, fields_map, args),
+      _field(std::get<n>(args).value) {
+  fields_array[n] = &_field;
+  fields_map[std::get<n>(args).field] = &_field;
+}
+
 void Dispatcher::setError(const std::string &error) {
   _error = error;
 }
@@ -168,4 +325,13 @@ void Dispatcher::setError(const std::string &error) {
 std::string &Dispatcher::getError() noexcept {
   return _error;
 }
+}
+
+namespace std {
+template <> struct hash<SJParser::FieldName> {
+  std::size_t operator()(const SJParser::FieldName &key) const;
+};
+
+std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
+                                     const SJParser::FieldName &str);
 }

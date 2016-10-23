@@ -40,7 +40,7 @@ bool TokenParser::endParsing() {
   bool ret = finish();
 
   if (_dispatcher) {
-    _dispatcher->popParser();
+    ret = ret && _dispatcher->popParser();
   }
   return ret;
 }
@@ -81,39 +81,8 @@ bool TokenParser::on(const ArrayEndT) {
   return unexpectedToken("array end");
 }
 
-void ObjectParser::setDispatcher(Dispatcher *dispatcher) noexcept {
-  TokenParser::setDispatcher(dispatcher);
-  for (auto &field : _fields_map) {
-    field.second->setDispatcher(dispatcher);
-  }
-}
-
-void ObjectParser::reset() noexcept {
-  TokenParser::reset();
-
-  for (auto &field : _fields_map) {
-    field.second->reset();
-  }
-}
-
-bool ObjectParser::on(const MapStartT /*unused*/) noexcept {
-  reset();
+bool TokenParser::childParsed() {
   return true;
-}
-
-bool ObjectParser::on(const MapKeyT &key) noexcept {
-  try {
-    auto &parser = _fields_map.at(key.key);
-    _dispatcher->pushParser(parser);
-  } catch (...) {
-    _dispatcher->setError("Unexpected object key " + key.key);
-    return false;
-  }
-  return true;
-}
-
-bool ObjectParser::on(const MapEndT /*unused*/) {
-  return endParsing();
 }
 
 void ArrayParser::reset() noexcept {
@@ -126,32 +95,28 @@ bool ArrayParser::on(const bool &value) {
   if (!_parser->on(value)) {
     return false;
   }
-  childParsed();
-  return true;
+  return childParsed();
 }
 
 bool ArrayParser::on(const int64_t &value) {
   if (!_parser->on(value)) {
     return false;
   }
-  childParsed();
-  return true;
+  return childParsed();
 }
 
 bool ArrayParser::on(const double &value) {
   if (!_parser->on(value)) {
     return false;
   }
-  childParsed();
-  return true;
+  return childParsed();
 }
 
 bool ArrayParser::on(const std::string &value) {
   if (!_parser->on(value)) {
     return false;
   }
-  childParsed();
-  return true;
+  return childParsed();
 }
 
 bool ArrayParser::on(const MapStartT /*unused*/) {
@@ -194,12 +159,13 @@ void Dispatcher::pushParser(TokenParser *parser) {
   _parsers.push_back(parser);
 }
 
-void Dispatcher::popParser() {
+bool Dispatcher::popParser() {
   _parsers.pop_back();
 
   if (!_parsers.empty()) {
-    _parsers.back()->childParsed();
+    return _parsers.back()->childParsed();
   }
+  return true;
 }
 
 void Dispatcher::reset() {
@@ -307,7 +273,8 @@ void YajlInfo::unset() {
 }
 
 ParserImpl::ParserImpl(TokenParser *parser)
-    : _dispatcher(parser), _yajl_info(std::make_unique<YajlInfo>(&_dispatcher)) {}
+    : _dispatcher(parser),
+      _yajl_info(std::make_unique<YajlInfo>(&_dispatcher)) {}
 
 ParserImpl::~ParserImpl() = default;
 
@@ -341,4 +308,31 @@ std::string ParserImpl::getError(bool verbose) {
   yajl_free_error(_yajl_info->handle(), err);
 
   return yajl_error + internal_error + "\n";
+}
+
+FieldName::FieldName(const std::string &str) : _str(str) {}
+
+FieldName::FieldName(const char *str) : _str(str) {}
+
+FieldName::operator const std::string &() const {
+  return _str;
+}
+
+bool FieldName::operator==(const FieldName &other) const {
+  return _str == other._str;
+}
+
+const std::string &FieldName::str() const {
+  return _str;
+}
+
+namespace std {
+size_t hash<SJParser::FieldName>::operator()(
+    const SJParser::FieldName &key) const {
+  return hash<std::string>()(key.str());
+}
+basic_ostream<char> &operator<<(basic_ostream<char> &stream,
+                                const SJParser::FieldName &name) {
+  return stream << name.str();
+}
 }

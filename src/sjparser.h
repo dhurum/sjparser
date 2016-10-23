@@ -51,8 +51,6 @@ template <typename T> class Value : public TokenParser {
 
   // After value is parsed, on_finish callback is called.
   Value(const Args &on_finish);
-  // Returns true if value is set.
-  inline bool isSet() const noexcept;
   // Returns a reference to parsed value.  If value is unset, throws
   // std::runtime_error.
   inline const Type &get() const;
@@ -76,26 +74,18 @@ template <typename T> class Value : public TokenParser {
   virtual bool finish() override;
 };
 
-template <typename T> struct FieldArg {
-  using Args = typename T::Args;
-
-  FieldArg(const std::string &name, const Args &value = {});
-  template <typename U = T>
-  FieldArg(const std::string &name, const typename U::ChildArgs &value);
-  FieldArg(const char *name);
-
-  std::string name;
-  Args value;
-};
-
 /*
  * Object parser.
  * Ts is list of any entity parsers.
  */
 
-template <typename... Ts> class Object : public ObjectParser {
+template <typename... Ts>
+class Object : public KeyValueParser<FieldName, Ts...> {
+ protected:
+  using KVParser = KeyValueParser<FieldName, Ts...>;
+
  public:
-  using ChildArgs = std::tuple<FieldArg<Ts>...>;
+  using ChildArgs = std::tuple<typename KVParser::template FieldArgs<Ts>...>;
   struct Args {
     Args(const ChildArgs &args,
          const std::function<bool(Object<Ts...> &)> &on_finish = nullptr);
@@ -122,37 +112,15 @@ template <typename... Ts> class Object : public ObjectParser {
   Object(const ChildArgs &args);
   Object(const Object &) = delete;
 
-  template <size_t n, typename T, typename... TDs> struct NthType {
-    using type = typename NthType<n - 1, TDs...>::type;
-  };
-
-  template <typename T, typename... TDs> struct NthType<0, T, TDs...> {
-    using type = T;
-  };
-
   // Returns reference to a parser of n-th field.
-  template <size_t n> inline typename NthType<n, Ts...>::type &get();
 
  private:
-  template <size_t, typename...> struct Field {
-    Field(std::array<TokenParser *, sizeof...(Ts)> & /*fields_array*/,
-          std::unordered_map<std::string, TokenParser *> & /*fields_map*/,
-          const ChildArgs & /*args*/) {}
-  };
-
-  template <size_t n, typename T, typename... TDs>
-  struct Field<n, T, TDs...> : private Field<n + 1, TDs...> {
-    Field(std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-          std::unordered_map<std::string, TokenParser *> &fields_map,
-          const ChildArgs &args);
-
-    T _field;
-  };
+  using KVParser::on;
+  virtual bool on(const MapKeyT &key) override;
 
   virtual bool finish() override;
 
-  std::array<TokenParser *, sizeof...(Ts)> _fields_array;
-  Field<0, Ts...> _fields;
+  typename KVParser::template Field<0, ChildArgs, Ts...> _fields;
   std::function<bool(Object<Ts...> &)> _on_finish;
 };
 
@@ -196,8 +164,6 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
   SObject(const ChildArgs &args);
   SObject(const SObject &) = delete;
 
-  // Returns true if value is set.
-  inline bool isSet() const noexcept;
   // Returns reference to a parser of n-th field.
   using Object<Ts...>::get;
   // Returns reference to parsed value. If value is unset, throws
@@ -215,6 +181,46 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
 
   virtual bool finish() override;
   virtual void reset() noexcept override;
+};
+
+template <typename T> struct UnionFieldType { using type = T; };
+
+template <> struct UnionFieldType<std::string> { using type = FieldName; };
+
+template <typename I, typename... Ts>
+class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
+ protected:
+  using KVParser = KeyValueParser<typename UnionFieldType<I>::type, Ts...>;
+
+ public:
+  using ChildArgs = std::tuple<typename KVParser::template FieldArgs<Ts>...>;
+  struct Args {
+    Args(const ChildArgs &args,
+         const std::function<bool(Union<I, Ts...> &)> &on_finish = nullptr);
+    Args(const FieldName &type_field, const ChildArgs &args,
+         const std::function<bool(Union<I, Ts...> &)> &on_finish = nullptr);
+
+    std::string type_field;
+    ChildArgs args;
+    std::function<bool(Union<I, Ts...> &)> on_finish;
+  };
+
+  Union(const Args &args);
+  Union(const ChildArgs &args);
+  Union(const Union &) = delete;
+
+ private:
+  virtual bool on(const I &value) override;
+  virtual bool on(const MapStartT) noexcept override;
+  virtual bool on(const MapKeyT &key) override;
+  virtual bool on(const MapEndT) override;
+
+  virtual bool childParsed() override;
+  virtual bool finish() override;
+
+  typename KVParser::template Field<0, ChildArgs, Ts...> _fields;
+  std::string _type_field;
+  std::function<bool(Union<I, Ts...> &)> _on_finish;
 };
 
 /*
@@ -283,8 +289,6 @@ template <typename T> class SArray : public Array<T> {
   SArray(const Args &args);
   SArray(const SArray &) = delete;
 
-  // Returns true if value is set.
-  inline bool isSet() const noexcept;
   // Returns reference to vecor of values. If vector is unset, throws
   // std::runtime_error.
   inline const Type &get() const;
@@ -298,7 +302,7 @@ template <typename T> class SArray : public Array<T> {
   using TokenParser::_set;
   using TokenParser::checkSet;
 
-  virtual void childParsed() override;
+  virtual bool childParsed() override;
   virtual bool finish() override;
   virtual void reset() noexcept override;
 };
@@ -337,10 +341,6 @@ template <typename T> class Parser {
 template <typename T>
 Value<T>::Value(const Args &on_finish) : _on_finish(on_finish) {}
 
-template <typename T> bool Value<T>::isSet() const noexcept {
-  return TokenParser::isSet();
-}
-
 template <typename T> bool Value<T>::on(const T &value) {
   _value = value;
 
@@ -377,18 +377,6 @@ Value<T>::pop() {
   return _value;
 }
 
-template <typename T>
-FieldArg<T>::FieldArg(const std::string &name, const Args &value)
-    : name(name), value(value) {}
-
-template <typename T>
-template <typename U>
-FieldArg<T>::FieldArg(const std::string &name,
-                      const typename U::ChildArgs &value)
-    : name(name), value(value) {}
-
-template <typename T> FieldArg<T>::FieldArg(const char *name) : name(name) {}
-
 template <typename... Ts>
 Object<Ts...>::Args::Args(const ChildArgs &args,
                           const std::function<bool(Object<Ts...> &)> &on_finish)
@@ -396,29 +384,14 @@ Object<Ts...>::Args::Args(const ChildArgs &args,
 
 template <typename... Ts>
 Object<Ts...>::Object(const Args &args)
-    : _fields(_fields_array, _fields_map, args.args),
+    : _fields(KVParser::_fields_array, KVParser::_fields_map, args.args),
       _on_finish(args.on_finish) {}
 
 template <typename... Ts>
 Object<Ts...>::Object(const ChildArgs &args) : Object({args, nullptr}) {}
 
-template <typename... Ts>
-template <size_t n>
-typename Object<Ts...>::template NthType<n, Ts...>::type &Object<Ts...>::get() {
-  return *reinterpret_cast<typename NthType<n, Ts...>::type *>(
-      _fields_array[n]);
-}
-
-template <typename... Ts>
-template <size_t n, typename T, typename... TDs>
-Object<Ts...>::Field<n, T, TDs...>::Field(
-    std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-    std::unordered_map<std::string, TokenParser *> &fields_map,
-    const ChildArgs &args)
-    : Field<n + 1, TDs...>(fields_array, fields_map, args),
-      _field(std::get<n>(args).value) {
-  fields_array[n] = &_field;
-  fields_map[std::get<n>(args).name] = &_field;
+template <typename... Ts> bool Object<Ts...>::on(const MapKeyT &key) {
+  return KVParser::onField(key.key);
 }
 
 template <typename... Ts> bool Object<Ts...>::finish() {
@@ -442,11 +415,6 @@ template <typename T, typename... Ts>
 SObject<T, Ts...>::SObject(const ChildArgs &args) : SObject({args, nullptr}) {}
 
 template <typename T, typename... Ts>
-bool SObject<T, Ts...>::isSet() const noexcept {
-  return TokenParser::isSet();
-}
-
-template <typename T, typename... Ts>
 const typename SObject<T, Ts...>::Type &SObject<T, Ts...>::get() const {
   checkSet();
   return _value;
@@ -464,8 +432,71 @@ template <typename T, typename... Ts> bool SObject<T, Ts...>::finish() {
 }
 
 template <typename T, typename... Ts> void SObject<T, Ts...>::reset() noexcept {
-  ObjectParser::reset();
+  Object<Ts...>::KVParser::reset();
   _value = Type();
+}
+
+template <typename I, typename... Ts>
+Union<I, Ts...>::Args::Args(
+    const ChildArgs &args,
+    const std::function<bool(Union<I, Ts...> &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename I, typename... Ts>
+Union<I, Ts...>::Args::Args(
+    const FieldName &type_field, const ChildArgs &args,
+    const std::function<bool(Union<I, Ts...> &)> &on_finish)
+    : type_field(type_field), args(args), on_finish(on_finish) {}
+
+template <typename I, typename... Ts>
+Union<I, Ts...>::Union(const Args &args)
+    : _fields(KVParser::_fields_array, KVParser::_fields_map, args.args),
+      _type_field(args.type_field),
+      _on_finish(args.on_finish) {}
+
+template <typename I, typename... Ts>
+Union<I, Ts...>::Union(const ChildArgs &args) : Union({args, nullptr}) {}
+
+template <typename I, typename... Ts> bool Union<I, Ts...>::on(const I &value) {
+  KVParser::reset();
+  return KVParser::onField(value);
+}
+
+template <typename I, typename... Ts>
+bool Union<I, Ts...>::on(const MapStartT) noexcept {
+  if (_type_field.empty()) {
+    return false;
+  }
+  return true;
+}
+
+template <typename I, typename... Ts>
+bool Union<I, Ts...>::on(const MapKeyT &key) {
+  if (_type_field.empty()) {
+    return false;
+  }
+  if (key.key != _type_field) {
+    std::stringstream error;
+    error << "Unexpected field " << key.key;
+    KVParser::_dispatcher->setError(error.str());
+    return false;
+  }
+  return true;
+}
+
+template <typename I, typename... Ts> bool Union<I, Ts...>::on(const MapEndT) {
+  return false;
+}
+
+template <typename I, typename... Ts> bool Union<I, Ts...>::childParsed() {
+  return KVParser::endParsing();
+}
+
+template <typename I, typename... Ts> bool Union<I, Ts...>::finish() {
+  if (!_on_finish) {
+    return true;
+  }
+  return _on_finish(*this);
 }
 
 template <typename T>
@@ -492,10 +523,6 @@ template <typename T>
 SArray<T>::SArray(const Args &args)
     : Array<T>(args.args), _on_finish(args.on_finish) {}
 
-template <typename T> bool SArray<T>::isSet() const noexcept {
-  return TokenParser::isSet();
-}
-
 template <typename T> const typename SArray<T>::Type &SArray<T>::get() const {
   checkSet();
   return _values;
@@ -507,8 +534,9 @@ template <typename T> typename SArray<T>::Type &&SArray<T>::pop() {
   return std::move(_values);
 }
 
-template <typename T> void SArray<T>::childParsed() {
+template <typename T> bool SArray<T>::childParsed() {
   _values.push_back(Array<T>::_parser.pop());
+  return true;
 }
 
 template <typename T> bool SArray<T>::finish() {
