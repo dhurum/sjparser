@@ -570,6 +570,7 @@ TEST(Parser, unionObject) {
 
   ASSERT_TRUE(parser.parser().get<1>().get<0>().isSet());
   ASSERT_FALSE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_EQ(0, parser.parser().get<1>().currentMemberId());
 
   ASSERT_EQ(10, parser.parser().get<0>().get());
   ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>().get());
@@ -587,6 +588,7 @@ TEST(Parser, unionObject) {
 
   ASSERT_FALSE(parser.parser().get<1>().get<0>().isSet());
   ASSERT_TRUE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_EQ(1, parser.parser().get<1>().currentMemberId());
 
   ASSERT_EQ(20, parser.parser().get<0>().get());
   ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>().get());
@@ -610,6 +612,7 @@ TEST(Parser, unionObjectString) {
 
   ASSERT_TRUE(parser.parser().get<1>().get<0>().isSet());
   ASSERT_FALSE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_EQ(0, parser.parser().get<1>().currentMemberId());
 
   ASSERT_EQ(10, parser.parser().get<0>().get());
   ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>().get());
@@ -627,6 +630,7 @@ TEST(Parser, unionObjectString) {
 
   ASSERT_FALSE(parser.parser().get<1>().get<0>().isSet());
   ASSERT_TRUE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_EQ(1, parser.parser().get<1>().currentMemberId());
 
   ASSERT_EQ(20, parser.parser().get<0>().get());
   ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>().get());
@@ -648,6 +652,7 @@ TEST(Parser, unionStandAlone) {
 
   ASSERT_TRUE(parser.parser().get<0>().isSet());
   ASSERT_FALSE(parser.parser().get<1>().isSet());
+  ASSERT_EQ(0, parser.parser().currentMemberId());
 
   ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
 
@@ -663,6 +668,7 @@ TEST(Parser, unionStandAlone) {
 
   ASSERT_FALSE(parser.parser().get<0>().isSet());
   ASSERT_TRUE(parser.parser().get<1>().isSet());
+  ASSERT_EQ(1, parser.parser().currentMemberId());
 
   ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
 }
@@ -683,6 +689,7 @@ TEST(Parser, unionStandAloneString) {
 
   ASSERT_TRUE(parser.parser().get<0>().isSet());
   ASSERT_FALSE(parser.parser().get<1>().isSet());
+  ASSERT_EQ(0, parser.parser().currentMemberId());
 
   ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
 
@@ -698,6 +705,7 @@ TEST(Parser, unionStandAloneString) {
 
   ASSERT_FALSE(parser.parser().get<0>().isSet());
   ASSERT_TRUE(parser.parser().get<1>().isSet());
+  ASSERT_EQ(1, parser.parser().currentMemberId());
 
   ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
 }
@@ -719,6 +727,7 @@ TEST(Parser, unionStandAloneStdString) {
 
   ASSERT_TRUE(parser.parser().get<0>().isSet());
   ASSERT_FALSE(parser.parser().get<1>().isSet());
+  ASSERT_EQ(0, parser.parser().currentMemberId());
 
   ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
 
@@ -734,6 +743,7 @@ TEST(Parser, unionStandAloneStdString) {
 
   ASSERT_FALSE(parser.parser().get<0>().isSet());
   ASSERT_TRUE(parser.parser().get<1>().isSet());
+  ASSERT_EQ(1, parser.parser().currentMemberId());
 
   ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
 }
@@ -758,6 +768,7 @@ TEST(Parser, objectWithUnion) {
 
   ASSERT_TRUE(parser.parser().get<1>().get<0>().isSet());
   ASSERT_FALSE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_EQ(0, parser.parser().get<1>().currentMemberId());
 
   ASSERT_EQ(10, parser.parser().get<0>().get());
   ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>().get());
@@ -777,6 +788,7 @@ TEST(Parser, objectWithUnion) {
 
   ASSERT_FALSE(parser.parser().get<1>().get<0>().isSet());
   ASSERT_TRUE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_EQ(1, parser.parser().get<1>().currentMemberId());
 
   ASSERT_EQ(10, parser.parser().get<0>().get());
   ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>().get());

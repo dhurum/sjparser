@@ -51,9 +51,14 @@ template <typename T> class Value : public TokenParser {
 
   // After value is parsed, on_finish callback is called.
   Value(const Args &on_finish);
+
+  // Returns true if parser has some value stored and false otherwise
+  // bool isSet();
+
   // Returns a reference to parsed value.  If value is unset, throws
   // std::runtime_error.
   inline const Type &get() const;
+
   // Returns an rvalue reference to value for std::string and reference for
   // other
   // types. After call of this method value is unset.
@@ -63,8 +68,7 @@ template <typename T> class Value : public TokenParser {
       pop();
   template <typename U = Type>
   inline const typename std::enable_if<!std::is_same<U, std::string>::value,
-                                       U>::type &
-  pop();
+                                       U>::type &pop();
 
  private:
   Type _value;
@@ -76,7 +80,7 @@ template <typename T> class Value : public TokenParser {
 
 /*
  * Object parser.
- * Ts is list of any entity parsers.
+ * Ts is a list of any entity parsers.
  */
 
 template <typename... Ts>
@@ -96,7 +100,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
 
   /*
    * Constructor receives a structure.
-   * It's first element is a tuple of object fields arguments,
+   * It's first element is a tuple of object fields arguments structs,
    * and second element is a callback that will be called after the object is
    * parsed.
    * If you do not specify the callback - you can provide only a tuple of object
@@ -106,6 +110,8 @@ class Object : public KeyValueParser<FieldName, Ts...> {
    * If you do not want to provide an argument to a field parser - you can
    * provide only name.
    * For example: {"field1", {"field2", ...}, "field3"}
+   * If you have only one field without arguments, you need to pass it without
+   * brackets.
    * Callback is called with a reference to this parser as an argument.
    */
   Object(const Args &args);
@@ -113,6 +119,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
   Object(const Object &) = delete;
 
   // Returns reference to a parser of n-th field.
+  // template <size_t n> X &get<n>();
 
  private:
   using KVParser::on;
@@ -126,10 +133,10 @@ class Object : public KeyValueParser<FieldName, Ts...> {
 
 /*
  * Object parser, that can store result.
- * T is type of result value (structure or object). It must have default
- * constructor. If you want to store it in SArray it should have move
+ * T is a type of result value (structure or object). It must have a default
+ * constructor. If you want to store it in SArray it should have a move
  * constructor, to avoid unnecessary copy operations.
- * Ts is list of any parsers.
+ * Ts is a list of any parsers.
  */
 
 template <typename T, typename... Ts> class SObject : public Object<Ts...> {
@@ -147,7 +154,7 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
 
   /*
    * Constructor receives a structure.
-   * It's first element is a tuple of object fields arguments,
+   * It's first element is a tuple of object fields arguments structs,
    * and second element is a callback that will be called after the object is
    * parsed.
    * If you do not specify the callback - you can provide only tuple of object
@@ -164,29 +171,45 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
   SObject(const ChildArgs &args);
   SObject(const SObject &) = delete;
 
+  // Returns true if parser has some value stored and false otherwise
+  // bool isSet();
+
   // Returns reference to a parser of n-th field.
+  // template <size_t n> X &get<n>();
   using Object<Ts...>::get;
+
   // Returns reference to parsed value. If value is unset, throws
   // std::runtime_error.
   inline const Type &get() const;
+
   // Returns an rvalue reference to value. After call of this method value is
   // unset.
   inline Type &&pop();
 
  private:
   T _value;
-  std::function<bool(SObject<T, Ts...> &, T &)> _on_finish;
   using TokenParser::_set;
   using TokenParser::checkSet;
 
   virtual bool finish() override;
   virtual void reset() noexcept override;
+
+  std::function<bool(SObject<T, Ts...> &, T &)> _on_finish;
 };
 
 template <typename T> struct UnionFieldType { using type = T; };
 
 template <> struct UnionFieldType<std::string> { using type = FieldName; };
 
+/*
+ * Union of objects parser. It can be used to parse an object from a list,
+ * based on key field value.
+ * I is key field type, can be int64_t, bool, std::string.
+ * Ts is a list of object parsers.
+ * You can use it stand-alone (in this case first field of object must be a key
+ * field) or embedded in an object (in this case object fields after key field
+ * will be parsed by one of union's object parsers).
+ */
 template <typename I, typename... Ts>
 class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
  protected:
@@ -205,11 +228,45 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
     std::function<bool(Union<I, Ts...> &)> on_finish;
   };
 
+  /*
+   * Constructor can receive two structures.
+   *
+   * In stand-alone mode it's first element is key field name,
+   * second element is a tuple of union members arguments structs,
+   * and third element is a callback that will be called after the union is
+   * parsed.
+   * If you do not specify the callback - you can provide only key field name
+   * and tuple of union members arguments to constructor.
+   *
+   * In embedded mode first element is a tuple of union members arguments,
+   * and second element is a callback that will be called after the union is
+   * parsed.
+   * If you do not specify the callback - you can provide only tuple of union
+   * members arguments to constructor.
+   *
+   * Member argument is a structure where a first element is a string with key
+   * field value, and a second field is an argument for respective parser.
+   *
+   * For example: {"key", {{"1", ...}, {"2", ...}}}
+   * Callback is called with a reference to this parser as an argument.
+   */
   Union(const Args &args);
   Union(const ChildArgs &args);
   Union(const Union &) = delete;
 
+  //Returns id of parsed member. If no members were parsed, throws std::runtime
+  //exception.
+  size_t currentMemberId();
+
+  // Returns true if parser has parsed something and false otherwise
+  // bool isSet();
+
+  // Returns reference to a parser of n-th member.
+  // template <size_t n> X &get<n>();
+
  private:
+  using TokenParser::checkSet;
+
   virtual bool on(const I &value) override;
   virtual bool on(const MapStartT) noexcept override;
   virtual bool on(const MapKeyT &key) override;
@@ -221,6 +278,8 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
   typename KVParser::template Field<0, ChildArgs, Ts...> _fields;
   std::string _type_field;
   std::function<bool(Union<I, Ts...> &)> _on_finish;
+  std::unordered_map <TokenParser*, size_t> _fields_ids_map;
+  size_t _current_member_id;
 };
 
 /*
@@ -289,9 +348,13 @@ template <typename T> class SArray : public Array<T> {
   SArray(const Args &args);
   SArray(const SArray &) = delete;
 
+  // Returns true if parser has some value stored and false otherwise
+  // bool isSet();
+
   // Returns reference to vecor of values. If vector is unset, throws
   // std::runtime_error.
   inline const Type &get() const;
+
   // Returns an rvalue reference to vector of values. After call of this method
   // value is unset.
   inline Type &&pop();
@@ -320,14 +383,19 @@ template <typename T> class Parser {
   Parser(const typename T::Args &args = {});
   template <typename U = T> Parser(const typename U::ChildArgs &args);
   template <typename U = T> Parser(const typename U::CallbackType &callback);
+
   // Parse a piece of json. Returns false in case of error.
   inline bool parse(const std::string &data);
+
   // Parse a piece of json. Returns false in case of error.
   inline bool parse(const char *data, size_t len);
+
   // Finish parsing. Returns false in case of error.
   inline bool finish();
+
   // Returns parser error.
   inline std::string getError(bool verbose = false);
+
   // Returns reference to root entity parser.
   inline T &parser();
 
@@ -452,14 +520,28 @@ template <typename I, typename... Ts>
 Union<I, Ts...>::Union(const Args &args)
     : _fields(KVParser::_fields_array, KVParser::_fields_map, args.args),
       _type_field(args.type_field),
-      _on_finish(args.on_finish) {}
+      _on_finish(args.on_finish) {
+  for (size_t i = 0; i < KVParser::_fields_array.size(); ++i) {
+    _fields_ids_map[KVParser::_fields_array[i]] = i;
+  }
+}
 
 template <typename I, typename... Ts>
 Union<I, Ts...>::Union(const ChildArgs &args) : Union({args, nullptr}) {}
 
+template <typename I, typename... Ts>
+size_t Union<I, Ts...>::currentMemberId() {
+  checkSet();
+  return _current_member_id;
+}
+
 template <typename I, typename... Ts> bool Union<I, Ts...>::on(const I &value) {
   KVParser::reset();
-  return KVParser::onField(value);
+  if (KVParser::onField(value)) {
+    _current_member_id = _fields_ids_map[KVParser::_fields_map[value]];
+    return true;
+  }
+  return false;
 }
 
 template <typename I, typename... Ts>

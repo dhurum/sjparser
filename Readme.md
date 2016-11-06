@@ -75,7 +75,7 @@ Class obj(X);
 Class obj;
 ```
 
-Constructors of `SJParser::Object`, `SJParser::SObject`, `SJParser::Array` and `SJParser::SArray` take arguments for nested types:
+Constructors of `Object`, `SObject`, `Union`, `Array` and `SArray` take arguments for nested types:
 
 ```c++
 //Providing both fields
@@ -117,7 +117,7 @@ Parser<Class> parser;
 
 ```
 
-Fields, specified for `SJParser::Object` and `SJParser::SObject` are not mandatory, even empty object would be successfully parsed.  
+Fields, specified for `Object` and `SObject` are not mandatory, even empty object would be successfully parsed.  
 The validation should be done in finish callback.  
 If you call `get()` or `pop()` on a parser of a field, that was not present in the parsed object, exception will be thrown.  
 You can check if field was parsed with method `isSet()`.  
@@ -139,9 +139,9 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
   `SJParser::Value` has methods:
   * `bool isSet()`: returns true if parser parsed some value, false otherwise.
   * `const T &get()`: T is parser's value type. Returns a reference to a parsed value.  
-    If `isSet` is false - throws an exception.
+    If `isSet` is false - throws a `std::runtime` exception.
   * `const T &&pop()`: T is parser's value type. Returns an rvalue reference to a parsed value.  
-    If `isSet` is false - throws an exception.  
+    If `isSet` is false - throws a `std::runtime` exception.  
     Makes parser unset.
 
 
@@ -157,7 +157,8 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
   2. Finish callback,  that will be called after object is parsed: `std::function<bool(T &parser)>`, where `parser` is this parser.  
      Returning false from callback will cause parser to stop parsing.
 
-  If you don't want to provide finish callback, you can pass only `std::tuple` to the constructor.
+  If you don't want to provide finish callback, you can pass only `std::tuple` to the constructor.  
+  If you have only one field without arguments, you need to pass it without brackets.
 
   `SJParser::Object` has methods:
   * `T& get<n>()`: returns a reference to n-th field parser.  
@@ -179,10 +180,40 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
   * `T& get<n>()`: returns a reference to n-th field parser.  
   * `bool isSet()`: returns true if parser parsed some value, false otherwise.
   * `const T &get()`: T is parser's value type. Returns a reference to a parsed value.  
-    If `isSet` is false - throws an exception.
+    If `isSet` is false - throws a `std::runtime` exception.
   * `const T &&pop()`: T is parser's value type. Returns an rvalue reference to a parsed value.  
-    If `isSet` is false - throws an exception.  
+    If `isSet` is false - throws a `std::runtime` exception.  
     Makes parser unset.
+
+
+* `SJParser::Union`: Parser for union of objects.
+  Takes key field type and list of possible object types as template parameters.  
+  Union can be stand-alone or a embedded in an object.  
+  In standalone union first field must be a key field, and the rest are those of respective object.  
+  If union is embedded into object, fields before key field are considered object's, and after - union's.  
+
+  In stand-alone mode constructor receives a `struct` with three elements:
+  1. `std::string` key field name.
+  2. `std::tuple` of `struct`s with two elements:
+      1. key field value
+      2. Arguments for respective member object
+
+  3. Finish callback (optional), that will be called after union is parsed: `std::function<bool(T &parser)>`, where `parser` is this parser.
+
+  In embedded mode constructor receives a `struct` with two elements:
+  1. `std::tuple` of `struct`s with two elements:
+      1. key field value
+      2. Arguments for respective member object
+
+  2. Finish callback (optional), that will be called after union is parsed: `std::function<bool(T &parser)>`, where `parser` is this parser.
+
+  If you don't want to provide finish callback, you can pass only `std::tuple` to the constructor.  
+
+  `SJParser::Union` has methods:
+  * `T& get<n>()`: returns a reference to n-th member parser.  
+  * `bool isSet()`: returns true if parser parsed some value, false otherwise.
+  * `size_t currentMemberId()`: Returns id of parsed member.
+    If `isSet` is false - throws a `std::runtime` exception.  
 
 
 * `SJParser::Array`: Parser for arrays.  
@@ -207,9 +238,9 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
   `SJParser::SArray` has methods:
   * `bool isSet()`: returns true if parser parsed some value, false otherwise.
   * `const T &get()`: T is parser's value type. Returns a reference to a parsed value.  
-    If `isSet` is false - throws an exception.
+    If `isSet` is false - throws a `std::runtime` exception.
   * `const T &&pop()`: T is parser's value type. Returns an rvalue reference to a parsed value.  
-    If `isSet` is false - throws an exception.  
+    If `isSet` is false - throws a `std::runtime` exception.  
     Makes parser unset.
 
 ###Main parser
