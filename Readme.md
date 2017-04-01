@@ -1,9 +1,9 @@
-#SJParser
+# SJParser
 
 Streaming json parser, written on top of yajl.  
 You specify expected structure of json and callbacks to be called for certain entities.
 
-##Example
+## Example
 
 ```c++
 #include <sjparser.h>
@@ -56,7 +56,7 @@ int main() {
 
 For more examples, please see file [test.cpp](https://github.com/dhurum/sjparser/blob/master/tests/test.cpp).
 
-##Concepts
+## Concepts
 
 Expected json structure is specified as template parameters of `SJParser::Parser` and entities parsers.  
 Then you pass a structure of arguments for those parameters into the constructor.
@@ -123,7 +123,7 @@ If you call `get()` or `pop()` on a parser of a field, that was not present in t
 You can check if field was parsed with method `isSet()`.  
 So, for your mandatory fields you can just use `get()` or `pop()`, and for optional you can do checks with `isSet()` first.
 
-###Entity parsers
+### Entity parsers
 
 * `SJParser::Value`: Parser for simple value.  
   Takes value type as a template parameter. It can be:
@@ -243,7 +243,7 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
     If `isSet` is false - throws a `std::runtime` exception.  
     Makes parser unset.
 
-###Main parser
+### Main parser
 
 * `SJParser::Parser`: Main parser class.  
   Takes entity parser for root element as a template parameter.  
