@@ -1,7 +1,10 @@
 # SJParser
 
 Streaming json parser, written on top of yajl.  
-You specify expected structure of json and callbacks to be called for certain entities.
+
+The main use case for this parser is very long json documents with known structure, e.g. importing some data from a json representation.  
+
+Basically it is a SAX parser on steroids - you specify the expected json structure and your callbacks, and they will be called after a whole object or array is parsed, not just on a `MapKey` or `ArrayEnd` events.
 
 ## Example
 
@@ -15,29 +18,31 @@ using SJParser::Array;
 using SJParser::SArray;
 
 int main() {
-  //Type alias for object parser, for easier callback declaration.
-  //Object has 3 fields - std::string, int64_t, std::vector<std::string>
+  // Type alias for object parser, for easier callback declaration.
+  // Object has 3 fields - std::string, int64_t, std::vector<std::string>
   using ParserType = Object<Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
 
-  //Callback, will be called once object is parsed
+  // Callback, will be called once object is parsed
   auto objectCb = [&](ParserType &parser) {
-    //Some external API call
+    // Some external API call
     DB.writeObject(
-      //Rvalue reference to the first object field (std::string)
+      // Rvalue reference to the first object field (std::string)
       parser.get<0>().pop(),
-      //If second field is present use it, otherwise use some default value
+      // If second field is present use it, otherwise use some default value
       parser.get<1>().isSet() ? parser.get<1>().get() : 0,
-      //Rvalue reference to the third object field (std::vector<std::string>)
+      // Rvalue reference to the third object field (std::vector<std::string>)
       parser.get<2>().pop());
-    //Returning false from the callback with make parser stop with an error
+    // Returning false from the callback with make parser stop with an error
     return true;
   };
 
-  //Declare parser. It expects an array of objects.
-  //List of field names and a callback are pased as an argument to the object parser
+  // Declare parser. It expects an array of objects.
+  // List of field names and a callback are pased as an argument to the object parser,
+  // array parser "understands" that they are not for its use and forwards them to
+  // the child parser.
   Parser<Array<ParserType>> parser({{"string", "integer", "array"}, objectCb});
 
-  //Parse a piece of json. During parsing object callback will be called.
+  // Parse a piece of json. During parsing object callback will be called.
   parser.parse(R"(
   [{
     "string": "str1",
@@ -48,7 +53,7 @@ int main() {
     "array": ["3", "4"]
   }])");
 
-  //Finish parsing
+  // Finish parsing
   parser.finish();
   return 0;
 }
