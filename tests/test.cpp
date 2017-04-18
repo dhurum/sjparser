@@ -157,9 +157,17 @@ TEST(Parser, objectWithObject) {
   "key4": true
 })");
 
-  Parser<Object<Value<std::string>, Value<int64_t>,
-                Object<Value<int64_t>, Value<std::string>>, Value<bool>>>
-      parser({"key", "key2", {"key3", {"key", "key2"}}, "key4"});
+  // clang-format off
+  Parser<Object<
+    Value<std::string>,
+    Value<int64_t>,
+    Object<
+      Value<int64_t>,
+      Value<std::string>
+    >,
+    Value<bool>
+  >> parser({"key", "key2", {"key3", {"key", "key2"}}, "key4"});
+  // clang-format on
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -191,16 +199,24 @@ TEST(Parser, objectWithObjectWithCallback) {
 
   ObjectStruct value;
 
-  using ParserType = Object<Value<int64_t>, Value<std::string>>;
+  using InnerObjectParser = Object<Value<int64_t>, Value<std::string>>;
 
-  auto callback = [&](ParserType &parser) {
+  auto callback = [&](InnerObjectParser &parser) {
     value.int_field = parser.get<0>().get();
     value.str_field = parser.get<1>().get();
     return true;
   };
 
-  Parser<Object<Value<std::string>, Value<int64_t>, ParserType, Value<bool>>>
-      parser({"key", "key2", {"key3", {{"key", "key2"}, callback}}, "key4"});
+  InnerObjectParser::Args inner_object_args{{"key", "key2"}, callback};
+
+  // clang-format off
+  Parser<Object<
+    Value<std::string>,
+    Value<int64_t>,
+    InnerObjectParser,
+    Value<bool>
+  >> parser({"key", "key2", {"key3", inner_object_args}, "key4"});
+  // clang-format on
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -370,14 +386,16 @@ TEST(Parser, arrayOfObjects) {
 
   std::vector<ObjectStruct> values;
 
-  using ParserType = Object<Value<std::string>, Value<int64_t>>;
+  using ObjectParser = Object<Value<std::string>, Value<int64_t>>;
 
-  auto objectCb = [&](ParserType &parser) {
+  auto objectCb = [&](ObjectParser &parser) {
     values.push_back({parser.get<0>().pop(), parser.get<1>().pop()});
     return true;
   };
 
-  Parser<Array<ParserType>> parser({{"key", "key2"}, objectCb});
+  ObjectParser::Args object_args{{"key", "key2"}, objectCb};
+
+  Parser<Array<ObjectParser>> parser(object_args);
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -398,15 +416,17 @@ TEST(Parser, storageArrayOfStorageObjects) {
     int64_t int_value;
   };
 
-  using ParserType = SObject<TestStruct, Value<std::string>, Value<int64_t>>;
+  using ObjectParser = SObject<TestStruct, Value<std::string>, Value<int64_t>>;
 
-  auto makeCb = [&](ParserType &parser, TestStruct &value) {
+  auto makeCb = [&](ObjectParser &parser, TestStruct &value) {
     value.str_value = parser.get<0>().pop();
     value.int_value = parser.get<1>().pop();
     return true;
   };
 
-  Parser<SArray<ParserType>> parser({{"key", "key2"}, makeCb});
+  ObjectParser::Args object_args{{"key", "key2"}, makeCb};
+
+  Parser<SArray<ObjectParser>> parser(object_args);
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -561,9 +581,15 @@ TEST(Parser, unionObject) {
   "bool": true
 })");
 
-  Parser<Object<Value<int64_t>,
-                Union<int64_t, Object<Value<bool>>, Object<Value<int64_t>>>>>
-      parser({"id", {"type", {{1, "bool"}, {2, "int"}}}});
+  // clang-format off
+  Parser<Object<
+    Value<int64_t>,
+    Union<
+      int64_t,
+      Object<Value<bool>>,
+      Object<Value<int64_t>>
+  >>> parser({"id", {"type", {{1, "bool"}, {2, "int"}}}});
+  // clang-format on
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -603,9 +629,15 @@ TEST(Parser, unionObjectString) {
   "bool": true
 })");
 
-  Parser<Object<Value<int64_t>, Union<std::string, Object<Value<bool>>,
-                                      Object<Value<int64_t>>>>>
-      parser({"id", {"type", {{"1", "bool"}, {"2", "int"}}}});
+  // clang-format off
+  Parser<Object<
+    Value<int64_t>,
+    Union<
+      std::string,
+      Object<Value<bool>>,
+      Object<Value<int64_t>>
+  >>> parser({"id", {"type", {{"1", "bool"}, {"2", "int"}}}});
+  // clang-format on
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -644,8 +676,13 @@ TEST(Parser, unionStandAlone) {
   "bool": true
 })");
 
-  Parser<Union<int64_t, Object<Value<bool>>, Object<Value<int64_t>>>> parser(
-      {"type", {{1, "bool"}, {2, "int"}}});
+  // clang-format off
+  Parser<Union<
+    int64_t,
+    Object<Value<bool>>,
+    Object<Value<int64_t>>
+  >> parser({"type", {{1, "bool"}, {2, "int"}}});
+  // clang-format on
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -718,9 +755,13 @@ TEST(Parser, unionStandAloneStdString) {
   "bool": true
 })");
 
-  std::string type_field = "type";
-  Parser<Union<std::string, Object<Value<bool>>, Object<Value<int64_t>>>>
-      parser({type_field, {{"1", "bool"}, {"2", "int"}}});
+  // clang-format off
+  Parser<Union<
+    std::string,
+    Object<Value<bool>>,
+    Object<Value<int64_t>>
+  >> parser({"type", {{"1", "bool"}, {"2", "int"}}});
+  // clang-format on
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -759,9 +800,15 @@ TEST(Parser, objectWithUnion) {
   }
 })");
 
-  Parser<Object<Value<int64_t>, Union<std::string, Object<Value<bool>>,
-                                      Object<Value<int64_t>>>>>
-      parser({"id", {"data", {"type", {{"1", "bool"}, {"2", "int"}}}}});
+  // clang-format off
+  Parser<Object<
+    Value<int64_t>,
+    Union<
+      std::string,
+      Object<Value<bool>>,
+      Object<Value<int64_t>>
+  >>> parser({"id", {"data", {"type", {{"1", "bool"}, {"2", "int"}}}}});
+  // clang-format on
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
