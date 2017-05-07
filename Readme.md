@@ -122,7 +122,7 @@ Parser<Class> parser;
 
 ```
 
-Fields, specified for `Object` and `SObject` are not mandatory, even empty object would be successfully parsed.  
+Fields, specified for `Object`, `SObject` with a custom value type and `SObject` with auto value type and a default value are not mandatory, even empty object would be successfully parsed.  
 The validation should be done in finish callback.  
 If you call `get()` or `pop()` on a parser of a field, that was not present in the parsed object, exception will be thrown.  
 You can check if field was parsed with method `isSet()`.  
@@ -170,16 +170,36 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
 
 
 * `SJParser::SObject`: Parser for object, that stores parsed result.  
-  Takes a type of value it stores and a list of entity parsers for its fields as template parameters.  
-  Constructor receives a `struct` with two elements:
-  1. `std::tuple` of `struct`s with two elements:
-      1. `std::string` field name
-      2. Constructor argument for appropriate parser
+  There are two variants, with a custom type and with auto type.  
+    * Custom type:  
+        Takes a type of value it stores and a list of entity parsers for its fields as template parameters.  
+        Constructor receives a `struct` with two elements:
+        1. `std::tuple` of `struct`s with two elements:
+            1. `std::string` field name
+            2. Constructor argument for appropriate parser
 
-      If you do not want to provide any arguments to field parser, you can pass only string.
+            If you do not want to provide any arguments to field parser, you can pass only string.
 
-  2. Finish callback,  that will be called after object is parsed: `std::function<bool(T &parser, V &value)>`, where `parser` is this parser and `value` is a value that this parser stores. You should set it from this callback.  
-     Returning false from callback will cause parser to stop parsing.
+        2. Finish callback,  that will be called after object is parsed: `std::function<bool(T &parser, V &value)>`, where `parser` is this parser and `value` is a value that this parser stores. You should set it from this callback.  
+           Returning false from callback will cause parser to stop parsing.
+
+  * Auto type:  
+      Takes a list of entity parsers for its fields as template parameters, the stored value type is a tuple of field types.  
+      Constructor receives a `struct` with three elements:
+      1. `std::tuple` of `struct`s with two elements:
+          1. `std::string` field name
+          2. Constructor argument for appropriate parser
+
+          If you do not want to provide any arguments to field parser, you can pass only string.
+
+      2. A default value for stored value.
+
+          This is an optional field, if you do not provide it - all object fields will be mandatory.
+
+      3. Finish callback,  that will be called after object is parsed: `std::function<bool(V &value)>`, where  `value` is a value that this parser stores.  
+         Returning false from callback will cause parser to stop parsing.
+
+         This field is optional.
 
   `SJParser::SObject` has methods:
   * `T& get<n>()`: returns a reference to n-th field parser.  

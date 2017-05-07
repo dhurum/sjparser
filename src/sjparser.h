@@ -54,6 +54,7 @@ template <typename T> class Value : public TokenParser {
 
   // Returns true if parser has some value stored and false otherwise
   // bool isSet();
+  using TokenParser::isSet;
 
   // Returns a reference to parsed value.  If value is unset, throws
   // std::runtime_error.
@@ -68,7 +69,8 @@ template <typename T> class Value : public TokenParser {
       pop();
   template <typename U = Type>
   inline const typename std::enable_if<!std::is_same<U, std::string>::value,
-                                       U>::type &pop();
+                                       U>::type &
+  pop();
 
  private:
   Type _value;
@@ -120,6 +122,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
 
   // Returns reference to a parser of n-th field.
   // template <size_t n> X &get<n>();
+  using KVParser::get;
 
  private:
   using KVParser::on;
@@ -132,24 +135,30 @@ class Object : public KeyValueParser<FieldName, Ts...> {
 };
 
 /*
- * Object parser, that can store result.
+ * Object parser, that stores the result in a predefined type.
  * T is a type of result value (structure or object). It must have a default
  * constructor. If you want to store it in SArray it should have a move
  * constructor, to avoid unnecessary copy operations.
  * Ts is a list of any parsers.
+ *
+ * Instead of using this type directly you should use an SObject, it will
+ * automatically dispatch SCustomObject and SAutoObject based on the template
+ * parameters.
  */
 
-template <typename T, typename... Ts> class SObject : public Object<Ts...> {
+template <typename T, typename... Ts>
+class SCustomObject : public Object<Ts...> {
  public:
   using ChildArgs = typename Object<Ts...>::ChildArgs;
   using Type = T;
 
   struct Args {
     Args(const ChildArgs &args,
-         const std::function<bool(SObject<Type, Ts...> &, Type &)> &on_finish);
+         const std::function<bool(SCustomObject<Type, Ts...> &, Type &)>
+             &on_finish);
 
     ChildArgs args;
-    std::function<bool(SObject<Type, Ts...> &, Type &)> on_finish;
+    std::function<bool(SCustomObject<Type, Ts...> &, Type &)> on_finish;
   };
 
   /*
@@ -157,22 +166,20 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
    * It's first element is a tuple of object fields arguments structs,
    * and second element is a callback that will be called after the object is
    * parsed.
-   * If you do not specify the callback - you can provide only tuple of object
-   * fields arguments to constructor.
    * Field argument is a structure where a first element is a string with field
    * name, and a second field is an argument for respective parser.
    * If you do not want to provide an argument to a field parser - you can
    * provide only name.
    * For example: {"field1", {"field2", ...}, "field3"}
    * Callback is called with a reference to this parser as an argument and a
-   * reference to internal value. You should set it in this callback.
+   * reference to internal value. You must set it in this callback.
    */
-  SObject(const Args &args);
-  SObject(const ChildArgs &args);
-  SObject(const SObject &) = delete;
+  SCustomObject(const Args &args);
+  SCustomObject(const SCustomObject &) = delete;
 
   // Returns true if parser has some value stored and false otherwise
   // bool isSet();
+  using TokenParser::isSet;
 
   // Returns reference to a parser of n-th field.
   // template <size_t n> X &get<n>();
@@ -194,8 +201,113 @@ template <typename T, typename... Ts> class SObject : public Object<Ts...> {
   virtual bool finish() override;
   virtual void reset() noexcept override;
 
-  std::function<bool(SObject<T, Ts...> &, T &)> _on_finish;
+  std::function<bool(SCustomObject<T, Ts...> &, T &)> _on_finish;
 };
+
+/*
+ * Object parser, that stores the result in a tuple of field parsers types.
+ * Ts is a list of any parsers.
+ *
+ * Instead of using this type directly you should use an SObject, it will
+ * automatically dispatch SCustomObject and SAutoObject based on the template
+ * parameters.
+ */
+
+template <typename... Ts> class SAutoObject : public Object<Ts...> {
+ public:
+  using ChildArgs = typename Object<Ts...>::ChildArgs;
+  using Type = std::tuple<typename Ts::Type...>;
+
+  struct Args {
+    Args(const ChildArgs &args, const Type &default_value,
+         const std::function<bool(Type &)> &on_finish = nullptr);
+    Args(const ChildArgs &args,
+         const std::function<bool(Type &)> &on_finish = nullptr);
+
+    ChildArgs args;
+    Type default_value;
+    bool allow_default_value = true;
+    std::function<bool(Type &)> on_finish;
+  };
+
+  /*
+   * Constructor receives a structure.
+   * It's first element is a tuple of object fields arguments structs,
+   * second element is a default value of the stored tuple, and the third
+   * element is a callback that will be called after the object is
+   * parsed.
+   * Second and third srtucture elements are optional.
+   * If you do not specify default value for a tuple, all object fields are
+   * considered mandatory. Otherwise if some expected field is not present, the
+   * default value will be used for it.
+   * Field argument is a structure where a first element is a string with field
+   * name, and a second field is an argument for respective parser.
+   * If you do not want to provide an argument to a field parser - you can
+   * provide only name.
+   * For example: {"field1", {"field2", ...}, "field3"}
+   * Callback is called with a reference to the internal value as an argument.
+   */
+  SAutoObject(const Args &args);
+  SAutoObject(const ChildArgs &args);
+  SAutoObject(const SAutoObject &) = delete;
+
+  // Returns true if parser has some value stored and false otherwise
+  // bool isSet();
+  using TokenParser::isSet;
+
+  // Returns reference to a parser of n-th field.
+  // template <size_t n> X &get<n>();
+  using Object<Ts...>::get;
+
+  // Returns reference to parsed value. If value is unset, throws
+  // std::runtime_error.
+  inline const Type &get() const;
+
+  // Returns an rvalue reference to value. After call of this method value is
+  // unset.
+  inline Type &&pop();
+
+ private:
+  using TokenParser::_set;
+  using TokenParser::checkSet;
+
+  virtual bool finish() override;
+  virtual void reset() noexcept override;
+
+  template <size_t, typename...> struct ValueSetter {
+    ValueSetter(Type & /*value*/, SAutoObject<Ts...> & /*parser*/) {}
+  };
+
+  template <size_t n, typename T, typename... TDs>
+  struct ValueSetter<n, T, TDs...> : private ValueSetter<n + 1, TDs...> {
+    ValueSetter(Type &value, SAutoObject<Ts...> &parser);
+  };
+
+  Type _value;
+  Type _default_value;
+  bool _allow_default_value;
+  std::function<bool(Type &)> _on_finish;
+};
+
+template <bool auto_type, typename... Ts> struct SObjectDispatcher {};
+
+template <typename... Ts> struct SObjectDispatcher<false, Ts...> {
+  using Type = SCustomObject<Ts...>;
+};
+
+template <typename... Ts> struct SObjectDispatcher<true, Ts...> {
+  using Type = SAutoObject<Ts...>;
+};
+
+/* Dispatcher type alias, will point to SCustomObject or SAutoObject based on
+ * the template parameters. You should use it instead of using those types
+ * directly.
+ */
+
+template <typename T, typename... Ts>
+using SObject =
+    typename SObjectDispatcher<std::is_base_of<TokenParser, T>::value, T,
+                               Ts...>::Type;
 
 template <typename T> struct UnionFieldType { using type = T; };
 
@@ -254,15 +366,17 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
   Union(const ChildArgs &args);
   Union(const Union &) = delete;
 
-  //Returns id of parsed member. If no members were parsed, throws std::runtime
-  //exception.
+  // Returns id of parsed member. If no members were parsed, throws std::runtime
+  // exception.
   size_t currentMemberId();
 
   // Returns true if parser has parsed something and false otherwise
   // bool isSet();
+  using TokenParser::isSet;
 
   // Returns reference to a parser of n-th member.
   // template <size_t n> X &get<n>();
+  using KVParser::get;
 
  private:
   using TokenParser::checkSet;
@@ -278,7 +392,7 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
   typename KVParser::template Field<0, ChildArgs, Ts...> _fields;
   std::string _type_field;
   std::function<bool(Union<I, Ts...> &)> _on_finish;
-  std::unordered_map <TokenParser*, size_t> _fields_ids_map;
+  std::unordered_map<TokenParser *, size_t> _fields_ids_map;
   size_t _current_member_id;
 };
 
@@ -350,6 +464,7 @@ template <typename T> class SArray : public Array<T> {
 
   // Returns true if parser has some value stored and false otherwise
   // bool isSet();
+  using TokenParser::isSet;
 
   // Returns reference to vecor of values. If vector is unset, throws
   // std::runtime_error.
@@ -470,38 +585,98 @@ template <typename... Ts> bool Object<Ts...>::finish() {
 }
 
 template <typename T, typename... Ts>
-SObject<T, Ts...>::Args::Args(
+SCustomObject<T, Ts...>::Args::Args(
     const ChildArgs &args,
-    const std::function<bool(SObject<T, Ts...> &, T &)> &on_finish)
+    const std::function<bool(SCustomObject<T, Ts...> &, T &)> &on_finish)
     : args(args), on_finish(on_finish) {}
 
 template <typename T, typename... Ts>
-SObject<T, Ts...>::SObject(const Args &args)
+SCustomObject<T, Ts...>::SCustomObject(const Args &args)
     : Object<Ts...>(args.args), _on_finish(args.on_finish) {}
 
 template <typename T, typename... Ts>
-SObject<T, Ts...>::SObject(const ChildArgs &args) : SObject({args, nullptr}) {}
-
-template <typename T, typename... Ts>
-const typename SObject<T, Ts...>::Type &SObject<T, Ts...>::get() const {
+const typename SCustomObject<T, Ts...>::Type &SCustomObject<T, Ts...>::get()
+    const {
   checkSet();
   return _value;
 }
 
 template <typename T, typename... Ts>
-typename SObject<T, Ts...>::Type &&SObject<T, Ts...>::pop() {
+typename SCustomObject<T, Ts...>::Type &&SCustomObject<T, Ts...>::pop() {
   checkSet();
   _set = false;
   return std::move(_value);
 }
 
-template <typename T, typename... Ts> bool SObject<T, Ts...>::finish() {
+template <typename T, typename... Ts> bool SCustomObject<T, Ts...>::finish() {
   return _on_finish(*this, _value);
 }
 
-template <typename T, typename... Ts> void SObject<T, Ts...>::reset() noexcept {
+template <typename T, typename... Ts>
+void SCustomObject<T, Ts...>::reset() noexcept {
   Object<Ts...>::KVParser::reset();
   _value = Type();
+}
+
+template <typename... Ts>
+SAutoObject<Ts...>::Args::Args(const ChildArgs &args, const Type &default_value,
+                               const std::function<bool(Type &)> &on_finish)
+    : args(args), default_value(default_value), on_finish(on_finish) {}
+
+template <typename... Ts>
+SAutoObject<Ts...>::Args::Args(const ChildArgs &args,
+                               const std::function<bool(Type &)> &on_finish)
+    : args(args), allow_default_value(false), on_finish(on_finish) {}
+
+template <typename... Ts>
+SAutoObject<Ts...>::SAutoObject(const Args &args)
+    : Object<Ts...>(args.args),
+      _default_value(args.default_value),
+      _allow_default_value(args.allow_default_value),
+      _on_finish(args.on_finish) {}
+
+template <typename... Ts>
+SAutoObject<Ts...>::SAutoObject(const ChildArgs &args)
+    : SAutoObject<Ts...>({args, nullptr}) {}
+
+template <typename... Ts>
+const typename SAutoObject<Ts...>::Type &SAutoObject<Ts...>::get() const {
+  checkSet();
+  return _value;
+}
+
+template <typename... Ts>
+typename SAutoObject<Ts...>::Type &&SAutoObject<Ts...>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_value);
+}
+
+template <typename... Ts> bool SAutoObject<Ts...>::finish() {
+  ValueSetter<0, Ts...>(_value, *this);
+  if (_on_finish) {
+    return _on_finish(_value);
+  }
+  return true;
+}
+
+template <typename... Ts> void SAutoObject<Ts...>::reset() noexcept {
+  Object<Ts...>::KVParser::reset();
+  _value = _default_value;
+}
+
+template <typename... Ts>
+template <size_t n, typename T, typename... TDs>
+SAutoObject<Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
+    Type &value, SAutoObject<Ts...> &parser)
+    : ValueSetter<n + 1, TDs...>(value, parser) {
+  auto &field_parser = parser.template get<n>();
+  if (field_parser.isSet()) {
+    std::get<n>(value) = field_parser.pop();
+  } else if (!parser._allow_default_value) {
+    throw std::runtime_error(
+        "Not all fields are set in an storage object without a default value");
+  }
 }
 
 template <typename I, typename... Ts>

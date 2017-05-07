@@ -262,7 +262,7 @@ TEST(Parser, objectOfObjects) {
   ASSERT_EQ(true, parser.parser().get<2>().get<0>().get());
 }
 
-TEST(Parser, storageObject) {
+TEST(Parser, storageCustomObject) {
   std::string buf(R"({"key": "value", "key2": 10})");
 
   struct TestStruct {
@@ -289,6 +289,64 @@ TEST(Parser, storageObject) {
   ASSERT_TRUE(parser.parser().isSet());
   parser.parser().pop();
   ASSERT_FALSE(parser.parser().isSet());
+}
+
+TEST(Parser, storageAutoObject) {
+  std::string buf(R"({"key": "value", "key2": 10})");
+
+  using ParserType = SObject<Value<std::string>, Value<int64_t>>;
+
+  Parser<ParserType> parser({{"key", "key2"}, {"test", 1}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
+}
+
+TEST(Parser, storageAutoObjectDefault) {
+  std::string buf(R"({})");
+
+  using ParserType = SObject<Value<std::string>, Value<int64_t>>;
+
+  Parser<ParserType> parser({{"key", "key2"}, {"test", 1}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("test", std::get<0>(parser.parser().get()));
+  ASSERT_EQ(1, std::get<1>(parser.parser().get()));
+}
+
+TEST(Parser, storageAutoObjectMove) {
+  std::string buf(R"({"key": "value", "key2": 10})");
+
+  using ParserType = SObject<Value<std::string>, Value<int64_t>>;
+
+  Parser<ParserType> parser({{"key", "key2"}, {"test", 1}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  auto value = parser.parser().pop();
+  ASSERT_FALSE(parser.parser().isSet());
+
+  ASSERT_EQ("value", std::get<0>(value));
+  ASSERT_EQ(10, std::get<1>(value));
+
+  std::string buf2(R"({"key": "value2"})");
+
+  ASSERT_TRUE(parser.parse(buf2));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  auto value2 = parser.parser().pop();
+  ASSERT_FALSE(parser.parser().isSet());
+
+  ASSERT_EQ("value2", std::get<0>(value2));
+  ASSERT_EQ(1, std::get<1>(value2));
 }
 
 TEST(Parser, storageArray) {
@@ -407,7 +465,7 @@ TEST(Parser, arrayOfObjects) {
   ASSERT_EQ(20, values[1].field2);
 }
 
-TEST(Parser, storageArrayOfStorageObjects) {
+TEST(Parser, storageArrayOfStorageCustomObjects) {
   std::string buf(
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
 
@@ -436,6 +494,26 @@ TEST(Parser, storageArrayOfStorageObjects) {
   ASSERT_EQ(10, parser.parser().get()[0].int_value);
   ASSERT_EQ("value2", parser.parser().get()[1].str_value);
   ASSERT_EQ(20, parser.parser().get()[1].int_value);
+}
+
+TEST(Parser, storageArrayOfStorageAutoObjects) {
+  std::string buf(
+      R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
+
+  using ObjectParser = SObject<Value<std::string>, Value<int64_t>>;
+
+  ObjectParser::Args object_args{{"key", "key2"}};
+
+  Parser<SArray<ObjectParser>> parser(object_args);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()[0]));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()[0]));
+  ASSERT_EQ("value2", std::get<0>(parser.parser().get()[1]));
+  ASSERT_EQ(20, std::get<1>(parser.parser().get()[1]));
 }
 
 TEST(Parser, objectWithArray) {
@@ -488,7 +566,7 @@ TEST(Parser, objectWithArray) {
   ASSERT_EQ("elt3", object.array[2]);
 }
 
-TEST(Parser, storageObjectWithStorageArray) {
+TEST(Parser, storageCustomObjectWithStorageArray) {
   std::string buf(
       R"(
 {
@@ -528,6 +606,37 @@ TEST(Parser, storageObjectWithStorageArray) {
   ASSERT_EQ("elt1", parser.parser().get().array[0]);
   ASSERT_EQ("elt2", parser.parser().get().array[1]);
   ASSERT_EQ("elt3", parser.parser().get().array[2]);
+}
+
+TEST(Parser, storageAutoObjectWithStorageArray) {
+  std::string buf(
+      R"(
+{
+  "key": "value",
+  "key2": 10,
+  "key3": [
+    "elt1",
+    "elt2",
+    "elt3"
+  ]
+})");
+
+  using ParserType =
+      SObject<Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
+
+  Parser<ParserType> parser({"key", "key2", "key3"});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  auto value = parser.parser().get();
+
+  ASSERT_EQ("value", std::get<0>(value));
+  ASSERT_EQ(10, std::get<1>(value));
+  ASSERT_EQ(3, std::get<2>(value).size());
+  ASSERT_EQ("elt1", std::get<2>(value)[0]);
+  ASSERT_EQ("elt2", std::get<2>(value)[1]);
+  ASSERT_EQ("elt3", std::get<2>(value)[2]);
 }
 
 TEST(Parser, error) {
