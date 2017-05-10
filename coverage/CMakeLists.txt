@@ -20,6 +20,7 @@ set(BASE_INFO_FILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.base.info)
 set(TEST_INFO_FILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.test.info)
 
 add_custom_command(OUTPUT ${BASE_INFO_FILE} ${TEST_INFO_FILE}
+  COMMAND ${LCOV_BIN} --zerocounters --directory .
   COMMAND ${LCOV_BIN} --capture --initial --directory . --output-file ${BASE_INFO_FILE}
   COMMAND ctest
   COMMAND ${LCOV_BIN} --capture --directory . --output-file ${TEST_INFO_FILE}
