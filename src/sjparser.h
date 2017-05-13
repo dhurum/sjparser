@@ -220,14 +220,14 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
 
   struct Args {
     Args(const ChildArgs &args, const Type &default_value,
-         const std::function<bool(Type &)> &on_finish = nullptr);
+         const std::function<bool(const Type &)> &on_finish = nullptr);
     Args(const ChildArgs &args,
-         const std::function<bool(Type &)> &on_finish = nullptr);
+         const std::function<bool(const Type &)> &on_finish = nullptr);
 
     ChildArgs args;
     Type default_value;
     bool allow_default_value = true;
-    std::function<bool(Type &)> on_finish;
+    std::function<bool(const Type &)> on_finish;
   };
 
   /*
@@ -286,7 +286,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
   Type _value;
   Type _default_value;
   bool _allow_default_value;
-  std::function<bool(Type &)> _on_finish;
+  std::function<bool(const Type &)> _on_finish;
 };
 
 template <bool auto_type, typename... Ts> struct SObjectDispatcher {};
@@ -380,11 +380,11 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
 
  private:
   using TokenParser::checkSet;
+  using KVParser::on;
 
   virtual bool on(const I &value) override;
   virtual bool on(const MapStartT) noexcept override;
   virtual bool on(const MapKeyT &key) override;
-  virtual bool on(const MapEndT) override;
 
   virtual bool childParsed() override;
   virtual bool finish() override;
@@ -619,13 +619,14 @@ void SCustomObject<T, Ts...>::reset() noexcept {
 }
 
 template <typename... Ts>
-SAutoObject<Ts...>::Args::Args(const ChildArgs &args, const Type &default_value,
-                               const std::function<bool(Type &)> &on_finish)
+SAutoObject<Ts...>::Args::Args(
+    const ChildArgs &args, const Type &default_value,
+    const std::function<bool(const Type &)> &on_finish)
     : args(args), default_value(default_value), on_finish(on_finish) {}
 
 template <typename... Ts>
-SAutoObject<Ts...>::Args::Args(const ChildArgs &args,
-                               const std::function<bool(Type &)> &on_finish)
+SAutoObject<Ts...>::Args::Args(
+    const ChildArgs &args, const std::function<bool(const Type &)> &on_finish)
     : args(args), allow_default_value(false), on_finish(on_finish) {}
 
 template <typename... Ts>
@@ -637,7 +638,7 @@ SAutoObject<Ts...>::SAutoObject(const Args &args)
 
 template <typename... Ts>
 SAutoObject<Ts...>::SAutoObject(const ChildArgs &args)
-    : SAutoObject<Ts...>({args, nullptr}) {}
+    : SAutoObject<Ts...>({args, (std::function<bool(const Type &)>)nullptr}) {}
 
 template <typename... Ts>
 const typename SAutoObject<Ts...>::Type &SAutoObject<Ts...>::get() const {
@@ -653,7 +654,13 @@ typename SAutoObject<Ts...>::Type &&SAutoObject<Ts...>::pop() {
 }
 
 template <typename... Ts> bool SAutoObject<Ts...>::finish() {
-  ValueSetter<0, Ts...>(_value, *this);
+  try {
+    ValueSetter<0, Ts...>(_value, *this);
+  } catch (std::runtime_error &e) {
+    Object<Ts...>::KVParser::_dispatcher->setError(e.what());
+    _set = false;
+    return false;
+  }
   if (_on_finish) {
     return _on_finish(_value);
   }
@@ -722,6 +729,9 @@ template <typename I, typename... Ts> bool Union<I, Ts...>::on(const I &value) {
 template <typename I, typename... Ts>
 bool Union<I, Ts...>::on(const MapStartT) noexcept {
   if (_type_field.empty()) {
+    // Should never happen
+    KVParser::_dispatcher->setError(
+        "Union with an empty type field can't parse this");
     return false;
   }
   return true;
@@ -730,23 +740,28 @@ bool Union<I, Ts...>::on(const MapStartT) noexcept {
 template <typename I, typename... Ts>
 bool Union<I, Ts...>::on(const MapKeyT &key) {
   if (_type_field.empty()) {
+    // Should never happen
+    KVParser::_dispatcher->setError(
+        "Union with an empty type field can't parse this");
     return false;
   }
   if (key.key != _type_field) {
-    std::stringstream error;
-    error << "Unexpected field " << key.key;
-    KVParser::_dispatcher->setError(error.str());
+    KVParser::_dispatcher->setError("Unexpected field " + key.key);
     return false;
   }
   return true;
 }
 
-template <typename I, typename... Ts> bool Union<I, Ts...>::on(const MapEndT) {
-  return false;
-}
-
 template <typename I, typename... Ts> bool Union<I, Ts...>::childParsed() {
-  return KVParser::endParsing();
+  if (!KVParser::endParsing()) {
+    return false;
+  }
+  if (_type_field.empty()) {
+    // The union embedded into an object must propagate the end event to the
+    // parent.
+    return KVParser::_dispatcher->on(MapEndT());
+  }
+  return true;
 }
 
 template <typename I, typename... Ts> bool Union<I, Ts...>::finish() {

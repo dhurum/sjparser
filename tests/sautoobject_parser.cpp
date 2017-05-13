@@ -1,0 +1,673 @@
+/*******************************************************************************
+
+Copyright (c) 2016-2017 Denis Tikhomirov <dvtikhomirov@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*******************************************************************************/
+
+#include <gtest/gtest.h>
+#include "sjparser.h"
+
+using namespace SJParser;
+
+TEST(SAutoObject, Empty) {
+  std::string buf(R"({})");
+
+  Parser<SObject<Value<std::string>, Value<int64_t>>> parser(
+      {"string", "integer"});
+
+  ASSERT_FALSE(parser.parse(buf));
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ(
+      "Not all fields are set in an storage object without a default value",
+      parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                      {}
+                     (right here) ------^
+Not all fields are set in an storage object without a default value
+)",
+      parser.getError(true));
+}
+
+TEST(SAutoObject, EmptyDefault) {
+  std::string buf(R"({})");
+
+  Parser<SObject<Value<std::string>, Value<int64_t>>> parser(
+      {{"string", "integer"}, {"test", 1}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+
+  ASSERT_EQ("test", std::get<0>(parser.parser().get()));
+  ASSERT_EQ(1, std::get<1>(parser.parser().get()));
+}
+
+TEST(SAutoObject, AllValuesFields) {
+  std::string buf(
+      R"({"bool": true, "integer": 10, "double": 11.5, "string": "value"})");
+
+  // clang-format off
+  Parser<SObject<
+    Value<bool>,
+    Value<int64_t>,
+    Value<double>,
+    Value<std::string>
+  >> parser({"bool", "integer", "double", "string"});
+  // clang-format on
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
+  ASSERT_EQ(11.5, std::get<2>(parser.parser().get()));
+  ASSERT_EQ("value", std::get<3>(parser.parser().get()));
+}
+
+TEST(SAutoObject, Default) {
+  std::string buf(
+      R"({"bool": true, "double": 11.5})");
+
+  // clang-format off
+  Parser<SObject<
+    Value<bool>,
+    Value<int64_t>,
+    Value<double>,
+    Value<std::string>
+  >> parser({{"bool", "integer", "double", "string"},
+      {false, 10, 10.0, "value"}});
+  // clang-format on
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
+  ASSERT_EQ(11.5, std::get<2>(parser.parser().get()));
+  ASSERT_EQ("value", std::get<3>(parser.parser().get()));
+}
+
+TEST(SAutoObject, FieldsWithCallbacks) {
+  std::string buf(
+      R"({"bool": true, "string": "value"})");
+  bool bool_value = false;
+  std::string str_value;
+
+  auto boolCb = [&](const bool &value) {
+    bool_value = value;
+    return true;
+  };
+
+  auto stringCb = [&](const std::string &value) {
+    str_value = value;
+    return true;
+  };
+
+  Parser<SObject<Value<bool>, Value<std::string>>> parser(
+      {{"bool", boolCb}, {"string", stringCb}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
+  ASSERT_EQ("value", std::get<1>(parser.parser().get()));
+
+  ASSERT_EQ(true, bool_value);
+  ASSERT_EQ("value", str_value);
+}
+
+TEST(SAutoObject, FieldsWithCallbackError) {
+  std::string buf(
+      R"({"bool": true, "string": "value"})");
+
+  auto boolCb = [&](const bool &) { return false; };
+
+  auto stringCb = [&](const std::string &) { return true; };
+
+  Parser<SObject<Value<bool>, Value<std::string>>> parser(
+      {{"bool", boolCb}, {"string", stringCb}});
+
+  ASSERT_FALSE(parser.parse(buf));
+  ASSERT_FALSE(parser.parser().isSet());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                           {"bool": true, "string": "value"}
+                     (right here) ------^
+
+)",
+      parser.getError());
+}
+
+TEST(SAutoObject, SAutoObjectWithCallback) {
+  std::string buf(
+      R"({"bool": true, "string": "value"})");
+
+  using ValueType = std::tuple<bool, std::string>;
+  ValueType value;
+
+  auto objectCb = [&](const ValueType &_value) {
+    value = _value;
+    return true;
+  };
+
+  Parser<SObject<Value<bool>, Value<std::string>>> parser(
+      {{"bool", "string"}, objectCb});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(value));
+  ASSERT_EQ("value", std::get<1>(value));
+}
+
+TEST(SAutoObject, SAutoObjectWithCallbackError) {
+  std::string buf(
+      R"({"bool": true, "string": "value"})");
+
+  auto objectCb = [&](const std::tuple<bool, std::string> &) { return false; };
+
+  Parser<SObject<Value<bool>, Value<std::string>>> parser(
+      {{"bool", "string"}, objectCb});
+
+  ASSERT_FALSE(parser.parse(buf));
+  ASSERT_TRUE(parser.parser().isSet());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+          ool": true, "string": "value"}
+                     (right here) ------^
+
+)",
+      parser.getError());
+}
+
+TEST(SAutoObject, OneField) {
+  std::string buf(R"({"string": "value"})");
+
+  Parser<SObject<Value<std::string>>> parser("string");
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+}
+
+TEST(SAutoObject, OneFieldEmpty) {
+  std::string buf(R"({})");
+
+  Parser<SObject<Value<std::string>>> parser("string");
+
+  ASSERT_FALSE(parser.parse(buf));
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ(
+      "Not all fields are set in an storage object without a default value",
+      parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                      {}
+                     (right here) ------^
+Not all fields are set in an storage object without a default value
+)",
+      parser.getError(true));
+}
+
+TEST(SAutoObject, OneFieldEmptyDefault) {
+  std::string buf(R"({})");
+
+  Parser<SObject<Value<std::string>>> parser({"string", "value"});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+}
+
+TEST(SAutoObject, OneFieldWithFieldCallback) {
+  std::string buf(R"({"string": "value"})");
+  std::string value;
+
+  auto elementCb = [&](const std::string &str) {
+    value = str;
+    return true;
+  };
+
+  Parser<SObject<Value<std::string>>> parser({{"string", elementCb}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ("value", value);
+}
+
+TEST(SAutoObject, OneFieldWithObjectCallback) {
+  std::string buf(R"({"string": "value"})");
+
+  using ValueType = std::tuple<std::string>;
+  ValueType value;
+
+  auto objectCb = [&](const ValueType &_value) {
+    value = _value;
+    return true;
+  };
+
+  // {} around "string" are optional, but they make it a bit more clear
+  Parser<SObject<Value<std::string>>> parser({{"string"}, objectCb});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ("value", std::get<0>(value));
+}
+
+TEST(SAutoObject, OneFieldWithElementAndObjectCallbacks) {
+  std::string buf(R"({"string": "value"})");
+  std::string value;
+
+  using ValueType = std::tuple<std::string>;
+  ValueType object_value;
+
+  auto elementCb = [&](const std::string &str) {
+    value = str;
+    return true;
+  };
+
+  auto objectCb = [&](const ValueType &_value) {
+    object_value = _value;
+    return true;
+  };
+
+  Parser<SObject<Value<std::string>>> parser(
+      {{{"string", elementCb}}, objectCb});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ("value", value);
+  ASSERT_EQ("value", std::get<0>(object_value));
+}
+
+TEST(SAutoObject, SAutoObjectWithArgsStruct) {
+  std::string buf(
+      R"({"string": "value", "integer": 10})");
+
+  using ObjectParser = SObject<Value<std::string>, Value<int64_t>>;
+
+  ObjectParser::Args object_args({"string", "integer"});
+
+  Parser<ObjectParser> parser(object_args);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
+}
+
+TEST(SAutoObject, SAutoObjectWithSAutoObject) {
+  std::string buf(
+      R"(
+{
+  "string": "value",
+  "integer": 10,
+  "object": {
+    "integer": 1,
+    "string": "in_value"
+  },
+  "boolean": true
+})");
+
+  // clang-format off
+  Parser<SObject<
+    Value<std::string>,
+    Value<int64_t>,
+    SObject<
+      Value<int64_t>,
+      Value<std::string>
+    >,
+    Value<bool>
+  >> parser({
+      "string",
+      "integer",
+      {
+        "object", {
+          "integer",
+          "string"
+        }
+      },
+      "boolean"});
+  // clang-format on
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
+  ASSERT_EQ(1, std::get<0>(std::get<2>(parser.parser().get())));
+  ASSERT_EQ("in_value", std::get<1>(std::get<2>(parser.parser().get())));
+  ASSERT_EQ(true, std::get<3>(parser.parser().get()));
+}
+
+TEST(SAutoObject, SAutoObjectWithUnexpectedSAutoObject) {
+  std::string buf(
+      R"(
+{
+  "string": "value",
+  "object": {
+    "error": 1
+  }
+})");
+
+  // clang-format off
+  Parser<SObject<
+    Value<std::string>,
+    SObject<
+      Value<int64_t>
+    >
+  >> parser({
+      "string",
+      {
+        "object", {
+          "integer"
+        }
+      }});
+  // clang-format on
+
+  ASSERT_FALSE(parser.parse(buf));
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected field error", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+          ue",   "object": {     "error": 1   } }
+                     (right here) ------^
+Unexpected field error
+)",
+      parser.getError(true));
+}
+
+TEST(SAutoObject, SAutoObjectWithSAutoObjectWithCallback) {
+  std::string buf(
+      R"(
+{
+  "string": "value",
+  "integer": 10,
+  "object": {
+    "integer": 1,
+    "string": "in_value"
+  },
+  "boolean": true
+})");
+
+  using ValueType = std::tuple<int64_t, std::string>;
+  ValueType value;
+
+  using InnerObjectParser = SObject<Value<int64_t>, Value<std::string>>;
+
+  auto callback = [&](const ValueType &_value) {
+    value = _value;
+    return true;
+  };
+
+  // clang-format off
+  Parser<SObject<
+    Value<std::string>,
+    Value<int64_t>,
+    InnerObjectParser,
+    Value<bool>
+  >> parser({
+      "string",
+      "integer",
+      {
+        "object", {
+          {
+            "integer",
+            "string"
+          }, callback
+        }
+      },
+      "boolean"});
+  // clang-format on
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
+  ASSERT_EQ(1, std::get<0>(std::get<2>(parser.parser().get())));
+  ASSERT_EQ("in_value", std::get<1>(std::get<2>(parser.parser().get())));
+  ASSERT_EQ(true, std::get<3>(parser.parser().get()));
+
+  ASSERT_EQ(1, std::get<0>(value));
+  ASSERT_EQ("in_value", std::get<1>(value));
+}
+
+TEST(SAutoObject, SAutoObjectOfSAutoObjects) {
+  std::string buf(
+      R"(
+{
+  "object1": {
+    "string": "value",
+    "integer": 10
+  },
+  "object2": {
+    "integer": 1,
+    "string": "value2"
+  },
+  "object3": {
+    "boolean": true
+  }
+})");
+
+  // clang-format off
+  Parser<SObject<
+    SObject<
+      Value<std::string>,
+      Value<int64_t>>,
+    SObject<
+      Value<int64_t>,
+      Value<std::string>>,
+    SObject<Value<bool>>
+  >> parser({
+      {
+        "object1", {
+          "string",
+          "integer"
+        }
+      }, {
+        "object2", {
+          "integer",
+          "string"
+        }
+      }, {
+        "object3", {
+          "boolean"
+        }
+      }
+    });
+  // clang-format on
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(std::get<0>(parser.parser().get())));
+  ASSERT_EQ(10, std::get<1>(std::get<0>(parser.parser().get())));
+  ASSERT_EQ(1, std::get<0>(std::get<1>(parser.parser().get())));
+  ASSERT_EQ("value2", std::get<1>(std::get<1>(parser.parser().get())));
+  ASSERT_EQ(true, std::get<0>(std::get<2>(parser.parser().get())));
+}
+
+TEST(SAutoObject, SAutoObjectWithSCustomObject) {
+  std::string buf(
+      R"(
+{
+  "string": "value",
+  "integer": 10,
+  "object": {
+    "integer": 1,
+    "string": "in_value"
+  },
+  "boolean": true
+})");
+
+  struct ObjectStruct {
+    int64_t int_field;
+    std::string str_field;
+  };
+
+  using InnerObjectParser =
+      SObject<ObjectStruct, Value<int64_t>, Value<std::string>>;
+
+  auto innerObjectCb = [&](InnerObjectParser &parser, ObjectStruct &value) {
+    value = {parser.get<0>().pop(), parser.get<1>().pop()};
+    return true;
+  };
+
+  // clang-format off
+  Parser<SObject<
+    Value<std::string>,
+    Value<int64_t>,
+    InnerObjectParser,
+    Value<bool>
+  >> parser({
+      "string",
+      "integer",
+      {
+        "object", {
+          {
+            "integer",
+            "string"
+          }, innerObjectCb
+        }
+      },
+      "boolean"});
+  // clang-format on
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
+  ASSERT_EQ(1, std::get<2>(parser.parser().get()).int_field);
+  ASSERT_EQ("in_value", std::get<2>(parser.parser().get()).str_field);
+  ASSERT_EQ(true, std::get<3>(parser.parser().get()));
+}
+
+TEST(SAutoObject, SAutoObjectWithSArray) {
+  std::string buf(
+      R"(
+{
+  "string": "value",
+  "integer": 10,
+  "array": [
+    "elt1",
+    "elt2",
+    "elt3"
+  ]
+})");
+
+  using ParserType =
+      SObject<Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
+
+  Parser<ParserType> parser({"string", "integer", "array"});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
+
+  auto array = std::get<2>(parser.parser().get());
+  ASSERT_EQ(3, array.size());
+  ASSERT_EQ("elt1", array[0]);
+  ASSERT_EQ("elt2", array[1]);
+  ASSERT_EQ("elt3", array[2]);
+}
+
+TEST(SAutoObject, SAutoObjectWithDefaultSArray) {
+  std::string buf(
+      R"(
+{
+  "string": "value",
+  "integer": 10
+})");
+
+  using ParserType =
+      SObject<Value<std::string>, Value<int64_t>, SArray<Value<std::string>>>;
+
+  Parser<ParserType> parser(
+      {{"string", "integer", "array"}, {"default", 0, {"elt1", "elt2"}}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
+
+  auto array = std::get<2>(parser.parser().get());
+  ASSERT_EQ(2, array.size());
+  ASSERT_EQ("elt1", array[0]);
+  ASSERT_EQ("elt2", array[1]);
+}
+
+TEST(SAutoObject, SAutoObjectMove) {
+  std::string buf(
+      R"({"string": "value", "integer": 10})");
+
+  Parser<SObject<Value<std::string>, Value<int64_t>>> parser(
+      {"string", "integer"});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  auto value = parser.parser().pop();
+  ASSERT_FALSE(parser.parser().isSet());
+
+  ASSERT_EQ("value", std::get<0>(value));
+  ASSERT_EQ(10, std::get<1>(value));
+
+  buf = R"(
+
+{
+  "string": "value2",
+  "integer": 20
+})";
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  value = parser.parser().pop();
+  ASSERT_FALSE(parser.parser().isSet());
+
+  ASSERT_EQ("value2", std::get<0>(value));
+  ASSERT_EQ(20, std::get<1>(value));
+}

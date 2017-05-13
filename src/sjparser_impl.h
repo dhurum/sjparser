@@ -175,6 +175,7 @@ class Dispatcher {
   Dispatcher(TokenParser *parser);
   void pushParser(TokenParser *parser);
   bool popParser();
+  bool noParser();
   void reset();
 
   template <typename T> bool on(const T &value);
@@ -200,10 +201,14 @@ class ParserImpl {
   std::string getError(bool verbose);
 
  private:
+  void collectErrors();
+
   Dispatcher _dispatcher;
   std::unique_ptr<YajlInfo> _yajl_info;
   const unsigned char *_data;
   size_t _len;
+  std::string _internal_error;
+  std::string _yajl_error;
 };
 
 /******************************** Definitions ********************************/
@@ -219,7 +224,9 @@ void TokenParser::checkSet() const {
 }
 
 bool TokenParser::unexpectedToken(const std::string &type) {
-  _dispatcher->setError("Unexpected token " + type);
+  if (_dispatcher) {
+    _dispatcher->setError("Unexpected token " + type);
+  }
   return false;
 }
 

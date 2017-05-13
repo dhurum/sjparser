@@ -160,6 +160,10 @@ void Dispatcher::pushParser(TokenParser *parser) {
 }
 
 bool Dispatcher::popParser() {
+  if (_parsers.empty()) {
+    setError("Can not pop parser, parsers stack is empty");
+    return false;
+  }
   _parsers.pop_back();
 
   if (!_parsers.empty()) {
@@ -168,10 +172,13 @@ bool Dispatcher::popParser() {
   return true;
 }
 
+bool Dispatcher::noParser() {
+  return _parsers.empty();
+}
+
 void Dispatcher::reset() {
   _parsers.clear();
   _parsers.push_back(_root_parser);
-  setError("");
 }
 
 template <typename T> bool Dispatcher::on(const T &value) {
@@ -282,11 +289,26 @@ bool ParserImpl::parse(const char *data, size_t len) {
   _data = reinterpret_cast<const unsigned char *>(data);
   _len = len;
 
-  return yajl_parse(_yajl_info->handle(), _data, _len) == yajl_status_ok;
+  _dispatcher.setError("");
+  bool ret = yajl_parse(_yajl_info->handle(), _data, _len) == yajl_status_ok;
+
+  if (!ret) {
+    collectErrors();
+  }
+
+  return ret;
 }
 
 bool ParserImpl::finish() {
+  _dispatcher.setError("");
   bool ret = yajl_complete_parse(_yajl_info->handle()) == yajl_status_ok;
+
+  if (!ret) {
+    collectErrors();
+  } else if (!_dispatcher.noParser()) {
+    ret = false;
+    _internal_error = "Dispatcher parsers stack is not empty in the end";
+  }
 
   _dispatcher.reset();
   _yajl_info->reset();
@@ -294,20 +316,20 @@ bool ParserImpl::finish() {
   return ret;
 }
 
-std::string ParserImpl::getError(bool verbose) {
-  auto internal_error = _dispatcher.getError();
+void ParserImpl::collectErrors() {
+  _internal_error = _dispatcher.getError();
 
-  if (internal_error.size() && !verbose) {
-    return internal_error;
+  auto err = yajl_get_error(_yajl_info->handle(), 1, _data, _len);
+  _yajl_error = reinterpret_cast<char *>(err);
+  yajl_free_error(_yajl_info->handle(), err);
+}
+
+std::string ParserImpl::getError(bool verbose) {
+  if (_internal_error.size() && !verbose) {
+    return _internal_error;
   }
 
-  auto err = yajl_get_error(_yajl_info->handle(), static_cast<int>(verbose),
-                            _data, _len);
-  std::string yajl_error = reinterpret_cast<char *>(err);
-
-  yajl_free_error(_yajl_info->handle(), err);
-
-  return yajl_error + internal_error + "\n";
+  return _yajl_error + _internal_error + "\n";
 }
 
 FieldName::FieldName(const std::string &str) : _str(str) {}
