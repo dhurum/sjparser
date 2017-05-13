@@ -13,6 +13,9 @@ if(NOT HAS_CXX14)
   message(FATAL_ERROR "Compiler does not support c++14!")
 endif()
 
+set(NEED_TESTS FALSE)
+set(NEED_COVERAGE FALSE)
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(NEED_TESTS TRUE)
 endif()
