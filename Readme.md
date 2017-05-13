@@ -59,7 +59,7 @@ int main() {
 }
 ```
 
-For more examples, please see file [test.cpp](https://github.com/dhurum/sjparser/blob/master/tests/test.cpp).
+For more examples, please see [tests](https://github.com/dhurum/sjparser/blob/master/tests).
 
 ## Concepts
 

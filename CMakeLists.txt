@@ -54,7 +54,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_COVERAGE}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_subdirectory(src)
+add_subdirectory(library)
 
 if (${NEED_TESTS})
   add_subdirectory(tests)
