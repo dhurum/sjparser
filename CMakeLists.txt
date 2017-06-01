@@ -13,7 +13,7 @@ if(NOT HAS_CXX14)
   message(FATAL_ERROR "Compiler does not support c++14!")
 endif()
 
-set(NEED_TESTS FALSE)
+set(NEED_TESTS ${WITH_TESTS})
 set(NEED_COVERAGE FALSE)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -34,14 +34,11 @@ set(CMAKE_CXX_FLAGS
   --std=c++1y
 )
 
-if (${NEED_TESTS} OR ${NEED_COVERAGE})
+if (${NEED_TESTS})
   enable_testing()
-else()
-  set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -O2)
 endif()
 
-set (CMAKE_CXX_FLAGS_DEBUG -g3)
-
+set(CMAKE_CXX_FLAGS_DEBUG -g3)
 set(CMAKE_CXX_FLAGS_COVERAGE
   -g3
   -O0

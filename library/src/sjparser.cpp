@@ -181,14 +181,6 @@ void Dispatcher::reset() {
   _parsers.push_back(_root_parser);
 }
 
-template <typename T> bool Dispatcher::on(const T &value) {
-  if (_parsers.empty()) {
-    setError("Parsers stack is empty");
-    return false;
-  }
-  return _parsers.back()->on(value);
-}
-
 static int yajl_boolean(void *ctx, int value) {
   auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
   return static_cast<int>(dispatcher->on(static_cast<bool>(value)));

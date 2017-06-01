@@ -325,6 +325,14 @@ KeyValueParser<I, Ts...>::Field<n, Args, T, TDs...>::Field(
   fields_map[std::get<n>(args).field] = &_field;
 }
 
+template <typename T> bool Dispatcher::on(const T &value) {
+  if (_parsers.empty()) {
+    setError("Parsers stack is empty");
+    return false;
+  }
+  return _parsers.back()->on(value);
+}
+
 void Dispatcher::setError(const std::string &error) {
   _error = error;
 }
