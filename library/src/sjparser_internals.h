@@ -149,7 +149,6 @@ class KeyValueParser : public TokenParser {
 
 class ArrayParser : public TokenParser {
  public:
-  ArrayParser(std::function<bool()> on_finish) : _on_finish(on_finish) {}
   virtual void reset() noexcept override;
 
   virtual bool on(const bool &value) override;
@@ -160,11 +159,8 @@ class ArrayParser : public TokenParser {
   virtual bool on(const ArrayStartT) override;
   virtual bool on(const ArrayEndT) override;
 
-  virtual bool finish() override;
-
  protected:
   TokenParser *_parser;
-  std::function<bool()> _on_finish;
 
  private:
   bool _started = false;

@@ -404,13 +404,19 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
 template <typename T> class Array : public ArrayParser {
  public:
   using ChildArgs = typename T::Args;
+  using ParserType = T;
+  template <typename U = Array<T>> using GrandChildArgs = typename U::ParserType::ChildArgs;
 
   struct Args {
     Args(const ChildArgs &args,
-         const std::function<bool()> &on_finish = nullptr);
+         const std::function<bool(Array<T> &)> &on_finish = nullptr);
+
+    template <typename U = Array<T>>
+    Args(const GrandChildArgs<U> &args,
+         const std::function<bool(Array<T> &)> &on_finish = nullptr);
 
     ChildArgs args;
-    std::function<bool()> on_finish;
+    std::function<bool(Array<T> &)> on_finish;
   };
 
   /*
@@ -427,6 +433,11 @@ template <typename T> class Array : public ArrayParser {
 
  protected:
   T _parser;
+ 
+ private:
+  std::function<bool(Array<T> &)> _on_finish;
+
+  virtual bool finish() override;
 };
 
 /*
@@ -440,9 +451,16 @@ template <typename T> class SArray : public Array<T> {
   using EltType = typename T::Type;
   using Type = std::vector<EltType>;
   using CallbackType = std::function<bool(const Type &)>;
+  using ParserType = T;
+  template <typename U = Array<T>> using GrandChildArgs = typename U::ParserType::ChildArgs;
 
   struct Args {
     Args(const ChildArgs &args = {}, const CallbackType &on_finish = nullptr);
+
+    template <typename U = Array<T>>
+    Args(const GrandChildArgs<U> &args,
+         const CallbackType &on_finish = nullptr);
+
     Args(const CallbackType &on_finish);
 
     ChildArgs args;
@@ -497,6 +515,7 @@ template <typename T> class Parser {
    */
   Parser(const typename T::Args &args = {});
   template <typename U = T> Parser(const typename U::ChildArgs &args);
+  template <typename U = T> Parser(const typename U::template GrandChildArgs<U> &args);
   template <typename U = T> Parser(const typename U::CallbackType &callback);
 
   // Parse a piece of json. Returns false in case of error.

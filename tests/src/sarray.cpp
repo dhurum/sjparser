@@ -279,7 +279,7 @@ TEST(SArray, SArrayWithUnexpectedSObject) {
   std::string buf(
       R"([{"key2": "value"}])");
 
-  Parser<SArray<SObject<Value<std::string>>>> parser({"key"});
+  Parser<SArray<SObject<Value<std::string>>>> parser("key");
 
   ASSERT_FALSE(parser.parse(buf));
 
@@ -330,7 +330,7 @@ TEST(SArray, SArrayOfSAutoObjects) {
 
   using ObjectParser = SObject<Value<std::string>, Value<int64_t>>;
 
-  Parser<SArray<ObjectParser>> parser({{"key", "key2"}});
+  Parser<SArray<ObjectParser>> parser({"key", "key2"});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());

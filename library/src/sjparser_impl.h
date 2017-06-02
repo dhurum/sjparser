@@ -277,17 +277,36 @@ template <typename I, typename... Ts> bool Union<I, Ts...>::finish() {
 
 template <typename T>
 Array<T>::Args::Args(const ChildArgs &args,
-                     const std::function<bool()> &on_finish)
+                     const std::function<bool(Array<T> &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename T>
+template <typename U>
+Array<T>::Args::Args(const GrandChildArgs<U> &args,
+                     const std::function<bool(Array<T> &)> &on_finish)
     : args(args), on_finish(on_finish) {}
 
 template <typename T>
 Array<T>::Array(const Args &args)
-    : ArrayParser(args.on_finish), _parser(args.args) {
+    : _parser(args.args), _on_finish(args.on_finish) {
   ArrayParser::_parser = &_parser;
+}
+
+template <typename T> bool Array<T>::finish() {
+  if (!_on_finish) {
+    return true;
+  }
+  return _on_finish(*this);
 }
 
 template <typename T>
 SArray<T>::Args::Args(const ChildArgs &args,
+                      const std::function<bool(const Type &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename T>
+template <typename U>
+SArray<T>::Args::Args(const GrandChildArgs<U> &args,
                       const std::function<bool(const Type &)> &on_finish)
     : args(args), on_finish(on_finish) {}
 
@@ -333,6 +352,11 @@ Parser<T>::Parser(const typename T::Args &args)
 template <typename T>
 template <typename U>
 Parser<T>::Parser(const typename U::ChildArgs &args)
+    : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+
+template <typename T>
+template <typename U>
+Parser<T>::Parser(const typename U::template GrandChildArgs<U> &args)
     : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
 
 template <typename T>

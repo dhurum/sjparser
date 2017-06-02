@@ -142,13 +142,6 @@ bool ArrayParser::on(const ArrayEndT /*unused*/) {
   return endParsing();
 }
 
-bool ArrayParser::finish() {
-  if (!_on_finish) {
-    return true;
-  }
-  return _on_finish();
-}
-
 Dispatcher::Dispatcher(TokenParser *parser) {
   _root_parser = parser;
   _parsers.push_back(parser);

@@ -246,12 +246,14 @@ TEST(Array, ArrayWithCallback) {
     return true;
   };
 
-  auto arrayCb = [&]() {
+  using ArrayParser = Array<Value<bool>>;
+
+  auto arrayCb = [&](ArrayParser &) {
     callback_called = true;
     return true;
   };
 
-  Parser<Array<Value<bool>>> parser({elementCb, arrayCb});
+  Parser<ArrayParser> parser({elementCb, arrayCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -270,9 +272,11 @@ TEST(Array, ArrayWithCallbackError) {
 
   auto elementCb = [&](const bool &) { return true; };
 
-  auto arrayCb = [&]() { return false; };
+  using ArrayParser = Array<Value<bool>>;
 
-  Parser<Array<Value<bool>>> parser({elementCb, arrayCb});
+  auto arrayCb = [&](ArrayParser &) { return false; };
+
+  Parser<ArrayParser> parser({elementCb, arrayCb});
 
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_TRUE(parser.parser().isSet());
@@ -341,7 +345,7 @@ TEST(Array, ArrayOfObjects) {
   ASSERT_EQ(20, values[1].field2);
 }
 
-TEST(Array, DISABLED_ArrayOfObjectsWithoutCallbacks) {
+TEST(Array, ArrayOfObjectsWithoutCallbacks) {
   std::string buf(
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
 
@@ -358,9 +362,8 @@ TEST(Array, DISABLED_ArrayOfObjectsWithoutCallbacks) {
     return true;
   };
 
-  // FIXME: extra {} around argument, in order to make it Object::Args!
   Parser<Array<Object<Value<std::string>, Value<int64_t>>>> parser(
-      {{{"key", stringCb}, {"key2", integerCb}}});
+      {{"key", stringCb}, {"key2", integerCb}});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -377,7 +380,7 @@ TEST(Array, ArrayWithUnexpectedObject) {
   std::string buf(
       R"([{"key2": "value"}])");
 
-  Parser<Array<Object<Value<std::string>>>> parser({"key"});
+  Parser<Array<Object<Value<std::string>>>> parser("key");
 
   ASSERT_FALSE(parser.parse(buf));
 
@@ -544,13 +547,15 @@ TEST(Array, ArrayOfArrays) {
     return true;
   };
 
-  auto innerArrayCb = [&]() {
+  using InnerArrayParser = Array<Value<bool>>;
+
+  auto innerArrayCb = [&](InnerArrayParser &) {
     values.push_back(tmp_values);
     tmp_values.clear();
     return true;
   };
 
-  Parser<Array<Array<Value<bool>>>> parser({elementCb, innerArrayCb});
+  Parser<Array<InnerArrayParser>> parser({elementCb, innerArrayCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
