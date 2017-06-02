@@ -21,7 +21,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "sjparser_impl.h"
+#include "sjparser_internals.h"
 
 #include <yajl/yajl_parse.h>
 

@@ -23,330 +23,340 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include <deque>
-#include <functional>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-
 namespace SJParser {
 
-struct MapStartT {};
-struct MapKeyT {
-  const std::string &key;
-};
-struct MapEndT {};
-struct ArrayStartT {};
-struct ArrayEndT {};
+template <typename T>
+Value<T>::Value(const Args &on_finish) : _on_finish(on_finish) {}
 
-class Dispatcher;
+template <typename T> bool Value<T>::on(const T &value) {
+  _value = value;
 
-class TokenParser {
- public:
-  virtual void setDispatcher(Dispatcher *dispatcher) noexcept;
-  inline bool isSet() const noexcept;
-  virtual void reset() noexcept;
-  bool endParsing();
-  virtual bool finish() = 0;
-
-  virtual bool on(const bool & /*value*/);
-  virtual bool on(const int64_t & /*value*/);
-  virtual bool on(const double & /*value*/);
-  virtual bool on(const std::string & /*value*/);
-  virtual bool on(const MapStartT);
-  virtual bool on(const MapKeyT & /*key*/);
-  virtual bool on(const MapEndT);
-  virtual bool on(const ArrayStartT);
-  virtual bool on(const ArrayEndT);
-
-  virtual bool childParsed();
-
-  virtual ~TokenParser() = default;
-
- protected:
-  Dispatcher *_dispatcher = nullptr;
-  bool _set = false;
-
-  inline void checkSet() const;
-
-  inline bool unexpectedToken(const std::string &type);
-};
-
-// std::string can be constructed from {"x", "y"}, so this wrapper is used
-// instead
-class FieldName {
- public:
-  FieldName(const std::string &str);
-  FieldName(const char *str);
-  operator const std::string &() const;
-  bool operator==(const FieldName &other) const;
-  const std::string &str() const;
-
- private:
-  std::string _str;
-};
-
-template <typename I, typename... Ts>
-class KeyValueParser : public TokenParser {
- public:
-  template <typename T> struct FieldArgs {
-    using Args = typename T::Args;
-
-    FieldArgs(const I &field, const Args &value);
-    template <typename U = T>
-    FieldArgs(const I &field, const typename U::ChildArgs &value);
-    FieldArgs(const I &field);
-    template <typename U = I>
-    FieldArgs(
-        const char *field,
-        typename std::enable_if<std::is_same<U, FieldName>::value>::type * = 0);
-    template <typename U = I>
-    FieldArgs(
-        const std::string &field,
-        typename std::enable_if<std::is_same<U, FieldName>::value>::type * = 0);
-
-    I field;
-    Args value;
-  };
-
-  virtual void setDispatcher(Dispatcher *dispatcher) noexcept override;
-  virtual void reset() noexcept override;
-
-  virtual bool on(const MapStartT) noexcept override;
-  virtual bool on(const MapEndT) override;
-
-  bool onField(const I &field);
-
-  template <size_t n, typename T, typename... TDs> struct NthType {
-    using type = typename NthType<n - 1, TDs...>::type;
-  };
-
-  template <typename T, typename... TDs> struct NthType<0, T, TDs...> {
-    using type = T;
-  };
-
-  template <size_t n> inline typename NthType<n, Ts...>::type &get();
-
- protected:
-  template <size_t, typename Args, typename...> struct Field {
-    Field(std::array<TokenParser *, sizeof...(Ts)> & /*fields_array*/,
-          std::unordered_map<I, TokenParser *> & /*fields_map*/,
-          const Args & /*args*/) {}
-  };
-
-  template <size_t n, typename Args, typename T, typename... TDs>
-  struct Field<n, Args, T, TDs...> : private Field<n + 1, Args, TDs...> {
-    Field(std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-          std::unordered_map<I, TokenParser *> &fields_map, const Args &args);
-
-    T _field;
-  };
-
-  std::array<TokenParser *, sizeof...(Ts)> _fields_array;
-  std::unordered_map<I, TokenParser *> _fields_map;
-};
-
-class ArrayParser : public TokenParser {
- public:
-  ArrayParser(std::function<bool()> on_finish) : _on_finish(on_finish) {}
-  virtual void reset() noexcept override;
-
-  virtual bool on(const bool &value) override;
-  virtual bool on(const int64_t &value) override;
-  virtual bool on(const double &value) override;
-  virtual bool on(const std::string &value) override;
-  virtual bool on(const MapStartT) override;
-  virtual bool on(const ArrayStartT) override;
-  virtual bool on(const ArrayEndT) override;
-
-  virtual bool finish() override;
-
- protected:
-  TokenParser *_parser;
-  std::function<bool()> _on_finish;
-
- private:
-  bool _started = false;
-};
-
-class Dispatcher {
- public:
-  Dispatcher(TokenParser *parser);
-  void pushParser(TokenParser *parser);
-  bool popParser();
-  bool noParser();
-  void reset();
-
-  template <typename T> bool on(const T &value);
-
-  inline void setError(const std::string &error);
-  inline std::string &getError() noexcept;
-
- protected:
-  std::deque<TokenParser *> _parsers;
-  TokenParser *_root_parser = nullptr;
-  std::function<void()> _on_completion;
-  std::string _error;
-};
-
-class YajlInfo;
-
-class ParserImpl {
- public:
-  ParserImpl(TokenParser *parser);
-  ~ParserImpl();
-  bool parse(const char *data, size_t len);
-  bool finish();
-  std::string getError(bool verbose);
-
- private:
-  void collectErrors();
-
-  Dispatcher _dispatcher;
-  std::unique_ptr<YajlInfo> _yajl_info;
-  const unsigned char *_data;
-  size_t _len;
-  std::string _internal_error;
-  std::string _yajl_error;
-};
-
-/******************************** Definitions ********************************/
-
-bool TokenParser::isSet() const noexcept {
-  return _set;
+  return endParsing();
 }
 
-void TokenParser::checkSet() const {
-  if (!isSet()) {
-    throw std::runtime_error("Can't get value, parser is unset");
+template <typename T> bool Value<T>::finish() {
+  if (!_on_finish) {
+    return true;
+  }
+  return _on_finish(_value);
+}
+
+template <typename T> const T &Value<T>::get() const {
+  checkSet();
+  return _value;
+}
+
+template <typename T>
+template <typename U>
+typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&
+Value<T>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_value);
+}
+
+template <typename T>
+template <typename U>
+const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &
+Value<T>::pop() {
+  checkSet();
+  _set = false;
+  return _value;
+}
+
+template <typename... Ts>
+Object<Ts...>::Args::Args(const ChildArgs &args,
+                          const std::function<bool(Object<Ts...> &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename... Ts>
+Object<Ts...>::Object(const Args &args)
+    : _fields(KVParser::_fields_array, KVParser::_fields_map, args.args),
+      _on_finish(args.on_finish) {}
+
+template <typename... Ts>
+Object<Ts...>::Object(const ChildArgs &args) : Object({args, nullptr}) {}
+
+template <typename... Ts> bool Object<Ts...>::on(const MapKeyT &key) {
+  return KVParser::onField(key.key);
+}
+
+template <typename... Ts> bool Object<Ts...>::finish() {
+  if (!_on_finish) {
+    return true;
+  }
+  return _on_finish(*this);
+}
+
+template <typename T, typename... Ts>
+SCustomObject<T, Ts...>::Args::Args(
+    const ChildArgs &args,
+    const std::function<bool(SCustomObject<T, Ts...> &, T &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename T, typename... Ts>
+SCustomObject<T, Ts...>::SCustomObject(const Args &args)
+    : Object<Ts...>(args.args), _on_finish(args.on_finish) {}
+
+template <typename T, typename... Ts>
+const typename SCustomObject<T, Ts...>::Type &SCustomObject<T, Ts...>::get()
+    const {
+  checkSet();
+  return _value;
+}
+
+template <typename T, typename... Ts>
+typename SCustomObject<T, Ts...>::Type &&SCustomObject<T, Ts...>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_value);
+}
+
+template <typename T, typename... Ts> bool SCustomObject<T, Ts...>::finish() {
+  return _on_finish(*this, _value);
+}
+
+template <typename T, typename... Ts>
+void SCustomObject<T, Ts...>::reset() noexcept {
+  Object<Ts...>::KVParser::reset();
+  _value = Type();
+}
+
+template <typename... Ts>
+SAutoObject<Ts...>::Args::Args(
+    const ChildArgs &args, const Type &default_value,
+    const std::function<bool(const Type &)> &on_finish)
+    : args(args), default_value(default_value), on_finish(on_finish) {}
+
+template <typename... Ts>
+SAutoObject<Ts...>::Args::Args(
+    const ChildArgs &args, const std::function<bool(const Type &)> &on_finish)
+    : args(args), allow_default_value(false), on_finish(on_finish) {}
+
+template <typename... Ts>
+SAutoObject<Ts...>::SAutoObject(const Args &args)
+    : Object<Ts...>(args.args),
+      _default_value(args.default_value),
+      _allow_default_value(args.allow_default_value),
+      _on_finish(args.on_finish) {}
+
+template <typename... Ts>
+SAutoObject<Ts...>::SAutoObject(const ChildArgs &args)
+    : SAutoObject<Ts...>({args, (std::function<bool(const Type &)>)nullptr}) {}
+
+template <typename... Ts>
+const typename SAutoObject<Ts...>::Type &SAutoObject<Ts...>::get() const {
+  checkSet();
+  return _value;
+}
+
+template <typename... Ts>
+typename SAutoObject<Ts...>::Type &&SAutoObject<Ts...>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_value);
+}
+
+template <typename... Ts> bool SAutoObject<Ts...>::finish() {
+  try {
+    ValueSetter<0, Ts...>(_value, *this);
+  } catch (std::runtime_error &e) {
+    Object<Ts...>::KVParser::_dispatcher->setError(e.what());
+    _set = false;
+    return false;
+  }
+  if (_on_finish) {
+    return _on_finish(_value);
+  }
+  return true;
+}
+
+template <typename... Ts> void SAutoObject<Ts...>::reset() noexcept {
+  Object<Ts...>::KVParser::reset();
+  _value = _default_value;
+}
+
+template <typename... Ts>
+template <size_t n, typename T, typename... TDs>
+SAutoObject<Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
+    Type &value, SAutoObject<Ts...> &parser)
+    : ValueSetter<n + 1, TDs...>(value, parser) {
+  auto &field_parser = parser.template get<n>();
+  if (field_parser.isSet()) {
+    std::get<n>(value) = field_parser.pop();
+  } else if (!parser._allow_default_value) {
+    throw std::runtime_error(
+        "Not all fields are set in an storage object without a default value");
   }
 }
 
-bool TokenParser::unexpectedToken(const std::string &type) {
-  if (_dispatcher) {
-    _dispatcher->setError("Unexpected token " + type);
+template <typename I, typename... Ts>
+Union<I, Ts...>::Args::Args(
+    const ChildArgs &args,
+    const std::function<bool(Union<I, Ts...> &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename I, typename... Ts>
+Union<I, Ts...>::Args::Args(
+    const FieldName &type_field, const ChildArgs &args,
+    const std::function<bool(Union<I, Ts...> &)> &on_finish)
+    : type_field(type_field), args(args), on_finish(on_finish) {}
+
+template <typename I, typename... Ts>
+Union<I, Ts...>::Union(const Args &args)
+    : _fields(KVParser::_fields_array, KVParser::_fields_map, args.args),
+      _type_field(args.type_field),
+      _on_finish(args.on_finish) {
+  for (size_t i = 0; i < KVParser::_fields_array.size(); ++i) {
+    _fields_ids_map[KVParser::_fields_array[i]] = i;
+  }
+}
+
+template <typename I, typename... Ts>
+Union<I, Ts...>::Union(const ChildArgs &args) : Union({args, nullptr}) {}
+
+template <typename I, typename... Ts>
+size_t Union<I, Ts...>::currentMemberId() {
+  checkSet();
+  return _current_member_id;
+}
+
+template <typename I, typename... Ts> bool Union<I, Ts...>::on(const I &value) {
+  KVParser::reset();
+  if (KVParser::onField(value)) {
+    _current_member_id = _fields_ids_map[KVParser::_fields_map[value]];
+    return true;
   }
   return false;
 }
 
 template <typename I, typename... Ts>
-template <typename T>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(const I &field,
-                                                  const Args &value)
-    : field(field), value(value) {}
-
-template <typename I, typename... Ts>
-template <typename T>
-template <typename U>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
-    const I &field, const typename U::ChildArgs &value)
-    : field(field), value(value) {}
-
-template <typename I, typename... Ts>
-template <typename T>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(const I &field)
-    : field(field) {}
-
-template <typename I, typename... Ts>
-template <typename T>
-template <typename U>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
-    const char *field,
-    typename std::enable_if<std::is_same<U, FieldName>::value>::type *)
-    : field(field) {}
-
-template <typename I, typename... Ts>
-template <typename T>
-template <typename U>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
-    const std::string &field,
-    typename std::enable_if<std::is_same<U, FieldName>::value>::type *)
-    : field(field) {}
-
-template <typename I, typename... Ts>
-void KeyValueParser<I, Ts...>::setDispatcher(Dispatcher *dispatcher) noexcept {
-  TokenParser::setDispatcher(dispatcher);
-  for (auto &field : _fields_map) {
-    field.second->setDispatcher(dispatcher);
-  }
-}
-
-template <typename I, typename... Ts>
-void KeyValueParser<I, Ts...>::reset() noexcept {
-  TokenParser::reset();
-
-  for (auto &field : _fields_map) {
-    field.second->reset();
-  }
-}
-
-template <typename I, typename... Ts>
-bool KeyValueParser<I, Ts...>::on(const MapStartT /*unused*/) noexcept {
-  reset();
-  return true;
-}
-
-template <typename I, typename... Ts>
-bool KeyValueParser<I, Ts...>::on(const MapEndT /*unused*/) {
-  return endParsing();
-}
-
-template <typename I, typename... Ts>
-bool KeyValueParser<I, Ts...>::onField(const I &field) {
-  try {
-    auto &parser = _fields_map.at(field);
-    _dispatcher->pushParser(parser);
-  } catch (...) {
-    std::stringstream error;
-    error << "Unexpected field " << field;
-    _dispatcher->setError(error.str());
+bool Union<I, Ts...>::on(const MapStartT) noexcept {
+  if (_type_field.empty()) {
+    // Should never happen
+    KVParser::_dispatcher->setError(
+        "Union with an empty type field can't parse this");
     return false;
   }
   return true;
 }
 
 template <typename I, typename... Ts>
-template <size_t n>
-typename KeyValueParser<I, Ts...>::template NthType<n, Ts...>::type &
-KeyValueParser<I, Ts...>::get() {
-  return *reinterpret_cast<typename NthType<n, Ts...>::type *>(
-      _fields_array[n]);
-}
-
-template <typename I, typename... Ts>
-template <size_t n, typename Args, typename T, typename... TDs>
-KeyValueParser<I, Ts...>::Field<n, Args, T, TDs...>::Field(
-    std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-    std::unordered_map<I, TokenParser *> &fields_map, const Args &args)
-    : Field<n + 1, Args, TDs...>(fields_array, fields_map, args),
-      _field(std::get<n>(args).value) {
-  fields_array[n] = &_field;
-  fields_map[std::get<n>(args).field] = &_field;
-}
-
-template <typename T> bool Dispatcher::on(const T &value) {
-  if (_parsers.empty()) {
-    setError("Parsers stack is empty");
+bool Union<I, Ts...>::on(const MapKeyT &key) {
+  if (_type_field.empty()) {
+    // Should never happen
+    KVParser::_dispatcher->setError(
+        "Union with an empty type field can't parse this");
     return false;
   }
-  return _parsers.back()->on(value);
+  if (key.key != _type_field) {
+    KVParser::_dispatcher->setError("Unexpected field " + key.key);
+    return false;
+  }
+  return true;
 }
 
-void Dispatcher::setError(const std::string &error) {
-  _error = error;
+template <typename I, typename... Ts> bool Union<I, Ts...>::childParsed() {
+  if (!KVParser::endParsing()) {
+    return false;
+  }
+  if (_type_field.empty()) {
+    // The union embedded into an object must propagate the end event to the
+    // parent.
+    return KVParser::_dispatcher->on(MapEndT());
+  }
+  return true;
 }
 
-std::string &Dispatcher::getError() noexcept {
-  return _error;
-}
+template <typename I, typename... Ts> bool Union<I, Ts...>::finish() {
+  if (!_on_finish) {
+    return true;
+  }
+  return _on_finish(*this);
 }
 
-namespace std {
-template <> struct hash<SJParser::FieldName> {
-  std::size_t operator()(const SJParser::FieldName &key) const;
-};
+template <typename T>
+Array<T>::Args::Args(const ChildArgs &args,
+                     const std::function<bool()> &on_finish)
+    : args(args), on_finish(on_finish) {}
 
-std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
-                                     const SJParser::FieldName &str);
+template <typename T>
+Array<T>::Array(const Args &args)
+    : ArrayParser(args.on_finish), _parser(args.args) {
+  ArrayParser::_parser = &_parser;
+}
+
+template <typename T>
+SArray<T>::Args::Args(const ChildArgs &args,
+                      const std::function<bool(const Type &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename T>
+SArray<T>::Args::Args(const std::function<bool(const Type &)> &on_finish)
+    : on_finish(on_finish) {}
+
+template <typename T>
+SArray<T>::SArray(const Args &args)
+    : Array<T>(args.args), _on_finish(args.on_finish) {}
+
+template <typename T> const typename SArray<T>::Type &SArray<T>::get() const {
+  checkSet();
+  return _values;
+}
+
+template <typename T> typename SArray<T>::Type &&SArray<T>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_values);
+}
+
+template <typename T> bool SArray<T>::childParsed() {
+  _values.push_back(Array<T>::_parser.pop());
+  return true;
+}
+
+template <typename T> bool SArray<T>::finish() {
+  if (!_on_finish) {
+    return true;
+  }
+  return _on_finish(_values);
+}
+
+template <typename T> void SArray<T>::reset() noexcept {
+  _values = Type();
+}
+
+template <typename T>
+Parser<T>::Parser(const typename T::Args &args)
+    : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+
+template <typename T>
+template <typename U>
+Parser<T>::Parser(const typename U::ChildArgs &args)
+    : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+
+template <typename T>
+template <typename U>
+Parser<T>::Parser(const typename U::CallbackType &callback)
+    : _parser(callback), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+
+template <typename T> bool Parser<T>::parse(const std::string &data) {
+  return _impl->parse(data.data(), data.size());
+}
+
+template <typename T> bool Parser<T>::parse(const char *data, size_t len) {
+  return _impl->parse(data, len);
+}
+
+template <typename T> bool Parser<T>::finish() {
+  return _impl->finish();
+}
+
+template <typename T> std::string Parser<T>::getError(bool verbose) {
+  return _impl->getError(verbose);
+}
+
+template <typename T> T &Parser<T>::parser() {
+  return _parser;
+}
 }

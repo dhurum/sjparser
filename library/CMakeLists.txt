@@ -11,7 +11,7 @@ set(SJPARSER_LIB
 
 include_directories(${SJPARSER_INCLUDES})
 
-set(SRCS src/sjparser.cpp)
+set(SRCS src/sjparser_internals.cpp)
 
 add_library(${TARGET} STATIC
   ${SRCS}
@@ -30,6 +30,8 @@ install(
   FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/sjparser.h
   ${CMAKE_CURRENT_SOURCE_DIR}/src/sjparser_impl.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/sjparser_internals.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/sjparser_internals_impl.h
   DESTINATION
   include/sjparser
 )
