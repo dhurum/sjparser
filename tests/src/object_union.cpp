@@ -630,3 +630,32 @@ TEST(ObjectUnion, UnionWithObjectUnion) {
 
   ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<0>().get());
 }
+
+TEST(ObjectUnion, UnionWithUnexpectedMapStart) {
+  std::string buf(
+      R"(
+{
+  "type": 1,
+  "bool": true
+})");
+
+  // clang-format off
+  Parser<Union<
+    int64_t,
+    Object<Value<bool>>,
+    Object<Value<int64_t>>
+  >> parser({{1, "bool"}, {2, "int"}});
+  // clang-format on
+
+  ASSERT_FALSE(parser.parse(buf));
+  ASSERT_FALSE(parser.parser().get<0>().isSet());
+
+  ASSERT_EQ("Union with an empty type field can't parse this", parser.getError());
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                       {   "type": 1,   "bool": true }
+                     (right here) ------^
+Union with an empty type field can't parse this
+)",
+      parser.getError(true));
+}
