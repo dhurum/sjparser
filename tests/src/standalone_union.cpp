@@ -377,8 +377,7 @@ TEST(StandaloneUnion, UnionWithCallback) {
     return true;
   };
 
-  Parser<UnionParser> parser(
-      {"type", {{1, "bool"}, {2, "int"}}, unionCb});
+  Parser<UnionParser> parser({"type", {{1, "bool"}, {2, "int"}}, unionCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
@@ -413,12 +412,9 @@ TEST(StandaloneUnion, UnionWithCallbackError) {
                         Object<Value<int64_t>>>;
   // clang-format on
 
-  auto unionCb = [&](UnionParser &) {
-    return false;
-  };
+  auto unionCb = [&](UnionParser &) { return false; };
 
-  Parser<UnionParser> parser(
-      {"type", {{1, "bool"}, {2, "int"}}, unionCb});
+  Parser<UnionParser> parser({"type", {{1, "bool"}, {2, "int"}}, unionCb});
 
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_TRUE(parser.parser().isSet());

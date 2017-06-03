@@ -392,9 +392,7 @@ TEST(ObjectUnion, UnionWithCallbackError) {
                         Object<Value<int64_t>>>;
   // clang-format on
 
-  auto unionCb = [&](UnionParser &) {
-    return false;
-  };
+  auto unionCb = [&](UnionParser &) { return false; };
 
   Parser<Object<UnionParser>> parser(
       {{"type", {{{1, "bool"}, {2, "int"}}, unionCb}}});
@@ -650,7 +648,8 @@ TEST(ObjectUnion, UnionWithUnexpectedMapStart) {
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_FALSE(parser.parser().get<0>().isSet());
 
-  ASSERT_EQ("Union with an empty type field can't parse this", parser.getError());
+  ASSERT_EQ("Union with an empty type field can't parse this",
+            parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
                                        {   "type": 1,   "bool": true }

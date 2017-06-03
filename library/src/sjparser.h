@@ -402,7 +402,8 @@ template <typename T> class Array : public ArrayParser {
  public:
   using ChildArgs = typename T::Args;
   using ParserType = T;
-  template <typename U = Array<T>> using GrandChildArgs = typename U::ParserType::ChildArgs;
+  template <typename U = Array<T>>
+  using GrandChildArgs = typename U::ParserType::ChildArgs;
 
   struct Args {
     Args(const ChildArgs &args,
@@ -430,7 +431,7 @@ template <typename T> class Array : public ArrayParser {
 
  protected:
   T _parser;
- 
+
  private:
   std::function<bool(Array<T> &)> _on_finish;
 
@@ -449,7 +450,8 @@ template <typename T> class SArray : public Array<T> {
   using Type = std::vector<EltType>;
   using CallbackType = std::function<bool(const Type &)>;
   using ParserType = T;
-  template <typename U = Array<T>> using GrandChildArgs = typename U::ParserType::ChildArgs;
+  template <typename U = Array<T>>
+  using GrandChildArgs = typename U::ParserType::ChildArgs;
 
   struct Args {
     Args(const ChildArgs &args = {}, const CallbackType &on_finish = nullptr);
@@ -512,7 +514,8 @@ template <typename T> class Parser {
    */
   Parser(const typename T::Args &args = {});
   template <typename U = T> Parser(const typename U::ChildArgs &args);
-  template <typename U = T> Parser(const typename U::template GrandChildArgs<U> &args);
+  template <typename U = T>
+  Parser(const typename U::template GrandChildArgs<U> &args);
   template <typename U = T> Parser(const typename U::CallbackType &callback);
 
   // Parse a piece of json. Returns false in case of error.

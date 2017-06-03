@@ -182,9 +182,7 @@ Unexpected token string
 TEST(SArray, SArrayWithElementCallbackError) {
   std::string buf(R"([true, false])");
 
-  auto elementCb = [&](const bool &) {
-    return false;
-  };
+  auto elementCb = [&](const bool &) { return false; };
 
   Parser<SArray<Value<bool>>> parser(elementCb);
 
@@ -228,9 +226,7 @@ TEST(SArray, SArrayWithCallback) {
 TEST(SArray, SArrayWithCallbackError) {
   std::string buf(R"([true, false])");
 
-  auto arrayCb = [&](const std::vector<bool> &) {
-    return false;
-  };
+  auto arrayCb = [&](const std::vector<bool> &) { return false; };
 
   Parser<SArray<Value<bool>>> parser(arrayCb);
 

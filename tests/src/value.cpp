@@ -223,7 +223,7 @@ TEST(Value, UnsetValue) {
     FAIL() << "No exception thrown";
   } catch (std::runtime_error &e) {
     ASSERT_STREQ("Can't get value, parser is unset", e.what());
-  } catch(...) {
+  } catch (...) {
     FAIL() << "Invalid exception thrown";
   }
 }
@@ -250,9 +250,7 @@ TEST(Value, ValueWithCallback) {
 TEST(Value, ValueWithCallbackError) {
   std::string buf(R"("value")");
 
-  auto elementCb = [&](const std::string &) {
-    return false;
-  };
+  auto elementCb = [&](const std::string &) { return false; };
 
   Parser<Value<std::string>> parser(elementCb);
 
