@@ -74,9 +74,6 @@ Object<Ts...>::Object(const Args &args)
     : _fields(KVParser::_fields_array, KVParser::_fields_map, args.args),
       _on_finish(args.on_finish) {}
 
-template <typename... Ts>
-Object<Ts...>::Object(const ChildArgs &args) : Object({args, nullptr}) {}
-
 template <typename... Ts> bool Object<Ts...>::on(const MapKeyT &key) {
   return KVParser::onField(key.key);
 }
@@ -139,10 +136,6 @@ SAutoObject<Ts...>::SAutoObject(const Args &args)
       _default_value(args.default_value),
       _allow_default_value(args.allow_default_value),
       _on_finish(args.on_finish) {}
-
-template <typename... Ts>
-SAutoObject<Ts...>::SAutoObject(const ChildArgs &args)
-    : SAutoObject<Ts...>({args, (std::function<bool(const Type &)>)nullptr}) {}
 
 template <typename... Ts>
 const typename SAutoObject<Ts...>::Type &SAutoObject<Ts...>::get() const {
@@ -211,9 +204,6 @@ Union<I, Ts...>::Union(const Args &args)
     _fields_ids_map[KVParser::_fields_array[i]] = i;
   }
 }
-
-template <typename I, typename... Ts>
-Union<I, Ts...>::Union(const ChildArgs &args) : Union({args, nullptr}) {}
 
 template <typename I, typename... Ts>
 size_t Union<I, Ts...>::currentMemberId() {

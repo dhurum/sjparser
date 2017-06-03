@@ -117,7 +117,6 @@ class Object : public KeyValueParser<FieldName, Ts...> {
    * Callback is called with a reference to this parser as an argument.
    */
   Object(const Args &args);
-  Object(const ChildArgs &args);
   Object(const Object &) = delete;
 
   // Returns reference to a parser of n-th field.
@@ -248,7 +247,6 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    * Callback is called with a reference to the internal value as an argument.
    */
   SAutoObject(const Args &args);
-  SAutoObject(const ChildArgs &args);
   SAutoObject(const SAutoObject &) = delete;
 
   // Returns true if parser has some value stored and false otherwise
@@ -363,7 +361,6 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
    * Callback is called with a reference to this parser as an argument.
    */
   Union(const Args &args);
-  Union(const ChildArgs &args);
   Union(const Union &) = delete;
 
   // Returns id of parsed member. If no members were parsed, throws std::runtime
