@@ -36,11 +36,8 @@ void TokenParser::checkSet() const {
   }
 }
 
-bool TokenParser::unexpectedToken(const std::string &type) {
-  if (_dispatcher) {
-    _dispatcher->setError("Unexpected token " + type);
-  }
-  return false;
+void TokenParser::unexpectedToken(const std::string &type) {
+  throw std::runtime_error("Unexpected token " + type);
 }
 
 template <typename I, typename... Ts>
@@ -95,28 +92,25 @@ void KeyValueParser<I, Ts...>::reset() noexcept {
 }
 
 template <typename I, typename... Ts>
-bool KeyValueParser<I, Ts...>::on(const MapStartT /*unused*/) noexcept {
+void KeyValueParser<I, Ts...>::on(const MapStartT /*unused*/) {
   reset();
-  return true;
 }
 
 template <typename I, typename... Ts>
-bool KeyValueParser<I, Ts...>::on(const MapEndT /*unused*/) {
-  return endParsing();
+void KeyValueParser<I, Ts...>::on(const MapEndT /*unused*/) {
+  endParsing();
 }
 
 template <typename I, typename... Ts>
-bool KeyValueParser<I, Ts...>::onField(const I &field) {
+void KeyValueParser<I, Ts...>::onField(const I &field) {
   try {
     auto &parser = _fields_map.at(field);
     _dispatcher->pushParser(parser);
   } catch (...) {
     std::stringstream error;
     error << "Unexpected field " << field;
-    _dispatcher->setError(error.str());
-    return false;
+    throw std::runtime_error(error.str());
   }
-  return true;
 }
 
 template <typename I, typename... Ts>
@@ -138,20 +132,24 @@ KeyValueParser<I, Ts...>::Field<n, Args, T, TDs...>::Field(
   fields_map[std::get<n>(args).field] = &_field;
 }
 
-template <typename T> bool Dispatcher::on(const T &value) {
+template <typename T> void Dispatcher::on(const T &value) {
   if (_parsers.empty()) {
-    setError("Parsers stack is empty");
-    return false;
+    throw std::runtime_error("Parsers stack is empty");
   }
-  return _parsers.back()->on(value);
+  _parsers.back()->on(value);
 }
 
-void Dispatcher::setError(const std::string &error) {
-  _error = error;
-}
-
-std::string &Dispatcher::getError() noexcept {
-  return _error;
+template <typename T> int ParserImpl::on(const T &token) noexcept {
+  try {
+    _dispatcher.on(token);
+  } catch (std::exception &e) {
+    _sjparser_error = e.what();
+    return 0;
+  } catch (...) {
+    _sjparser_error = "Unexpected exception";
+    return 0;
+  }
+  return 1;
 }
 }
 

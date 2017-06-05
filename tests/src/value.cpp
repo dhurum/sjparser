@@ -256,11 +256,12 @@ TEST(Value, ValueWithCallbackError) {
 
   ASSERT_FALSE(parser.parse(buf));
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
                                  "value"
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 }

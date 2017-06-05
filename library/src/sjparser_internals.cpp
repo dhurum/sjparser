@@ -35,55 +35,52 @@ void TokenParser::reset() noexcept {
   _set = false;
 }
 
-bool TokenParser::endParsing() {
+void TokenParser::endParsing() {
   _set = true;
-  bool ret = finish();
+  finish();
 
   if (_dispatcher) {
-    ret = ret && _dispatcher->popParser();
+    _dispatcher->popParser();
   }
-  return ret;
 }
 
-bool TokenParser::on(const bool & /*value*/) {
-  return unexpectedToken("boolean");
+void TokenParser::on(const bool & /*value*/) {
+  unexpectedToken("boolean");
 }
 
-bool TokenParser::on(const int64_t & /*value*/) {
-  return unexpectedToken("integer");
+void TokenParser::on(const int64_t & /*value*/) {
+  unexpectedToken("integer");
 }
 
-bool TokenParser::on(const double & /*value*/) {
-  return unexpectedToken("double");
+void TokenParser::on(const double & /*value*/) {
+  unexpectedToken("double");
 }
 
-bool TokenParser::on(const std::string & /*value*/) {
-  return unexpectedToken("string");
+void TokenParser::on(const std::string & /*value*/) {
+  unexpectedToken("string");
 }
 
-bool TokenParser::on(const MapStartT) {
-  return unexpectedToken("map start");
+void TokenParser::on(const MapStartT) {
+  unexpectedToken("map start");
 }
 
-bool TokenParser::on(const MapKeyT & /*key*/) {
-  return unexpectedToken("map key");
+void TokenParser::on(const MapKeyT & /*key*/) {
+  unexpectedToken("map key");
 }
 
-bool TokenParser::on(const MapEndT) {
-  return unexpectedToken("map end");
+void TokenParser::on(const MapEndT) {
+  unexpectedToken("map end");
 }
 
-bool TokenParser::on(const ArrayStartT) {
-  return unexpectedToken("array start");
+void TokenParser::on(const ArrayStartT) {
+  unexpectedToken("array start");
 }
 
-bool TokenParser::on(const ArrayEndT) {
-  return unexpectedToken("array end");
+void TokenParser::on(const ArrayEndT) {
+  unexpectedToken("array end");
 }
 
-bool TokenParser::childParsed() {
-  return true;
-}
+void TokenParser::childParsed() {}
 
 void ArrayParser::reset() noexcept {
   TokenParser::reset();
@@ -91,55 +88,47 @@ void ArrayParser::reset() noexcept {
   _parser->reset();
 }
 
-bool ArrayParser::on(const bool &value) {
-  if (!_parser->on(value)) {
-    return false;
-  }
-  return childParsed();
+void ArrayParser::on(const bool &value) {
+  _parser->on(value);
+  childParsed();
 }
 
-bool ArrayParser::on(const int64_t &value) {
-  if (!_parser->on(value)) {
-    return false;
-  }
-  return childParsed();
+void ArrayParser::on(const int64_t &value) {
+  _parser->on(value);
+  childParsed();
 }
 
-bool ArrayParser::on(const double &value) {
-  if (!_parser->on(value)) {
-    return false;
-  }
-  return childParsed();
+void ArrayParser::on(const double &value) {
+  _parser->on(value);
+  childParsed();
 }
 
-bool ArrayParser::on(const std::string &value) {
-  if (!_parser->on(value)) {
-    return false;
-  }
-  return childParsed();
+void ArrayParser::on(const std::string &value) {
+  _parser->on(value);
+  childParsed();
 }
 
-bool ArrayParser::on(const MapStartT /*unused*/) {
+void ArrayParser::on(const MapStartT /*unused*/) {
   _parser->setDispatcher(_dispatcher);
   _dispatcher->pushParser(_parser);
-  return _parser->on(MapStartT{});
+  _parser->on(MapStartT{});
 }
 
-bool ArrayParser::on(const ArrayStartT /*unused*/) {
+void ArrayParser::on(const ArrayStartT /*unused*/) {
   if (!_started) {
     reset();
     _started = true;
-    return true;
+    return;
   }
 
   _parser->setDispatcher(_dispatcher);
   _dispatcher->pushParser(_parser);
-  return _parser->on(ArrayStartT{});
+  _parser->on(ArrayStartT{});
 }
 
-bool ArrayParser::on(const ArrayEndT /*unused*/) {
+void ArrayParser::on(const ArrayEndT /*unused*/) {
   _started = false;
-  return endParsing();
+  endParsing();
 }
 
 Dispatcher::Dispatcher(TokenParser *parser) {
@@ -152,20 +141,18 @@ void Dispatcher::pushParser(TokenParser *parser) {
   _parsers.push_back(parser);
 }
 
-bool Dispatcher::popParser() {
+void Dispatcher::popParser() {
   if (_parsers.empty()) {
-    setError("Can not pop parser, parsers stack is empty");
-    return false;
+    throw std::runtime_error("Can not pop parser, parsers stack is empty");
   }
   _parsers.pop_back();
 
   if (!_parsers.empty()) {
-    return _parsers.back()->childParsed();
+    _parsers.back()->childParsed();
   }
-  return true;
 }
 
-bool Dispatcher::noParser() {
+bool Dispatcher::emptyParsersStack() {
   return _parsers.empty();
 }
 
@@ -175,50 +162,50 @@ void Dispatcher::reset() {
 }
 
 static int yajl_boolean(void *ctx, int value) {
-  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return static_cast<int>(dispatcher->on(static_cast<bool>(value)));
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
+  return parser->on(static_cast<bool>(value));
 }
 
 static int yajl_integer(void *ctx, long long value) {
-  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return static_cast<int>(dispatcher->on(static_cast<int64_t>(value)));
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
+  return parser->on(static_cast<int64_t>(value));
 }
 
 static int yajl_double(void *ctx, double value) {
-  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return static_cast<int>(dispatcher->on(value));
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
+  return parser->on(value);
 }
 
 static int yajl_string(void *ctx, const unsigned char *value, size_t len) {
-  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
   return static_cast<int>(
-      dispatcher->on(std::string(reinterpret_cast<const char *>(value), len)));
+      parser->on(std::string(reinterpret_cast<const char *>(value), len)));
 }
 
 static int yajl_start_map(void *ctx) {
-  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return static_cast<int>(dispatcher->on(MapStartT{}));
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
+  return parser->on(MapStartT{});
 }
 
 static int yajl_map_key(void *ctx, const unsigned char *value, size_t len) {
-  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return static_cast<int>(dispatcher->on(
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
+  return static_cast<int>(parser->on(
       MapKeyT{std::string(reinterpret_cast<const char *>(value), len)}));
 }
 
 static int yajl_end_map(void *ctx) {
-  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return static_cast<int>(dispatcher->on(MapEndT{}));
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
+  return parser->on(MapEndT{});
 }
 
 static int yajl_start_array(void *ctx) {
-  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return static_cast<int>(dispatcher->on(ArrayStartT{}));
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
+  return parser->on(ArrayStartT{});
 }
 
 static int yajl_end_array(void *ctx) {
-  auto dispatcher = reinterpret_cast<Dispatcher *>(ctx);
-  return static_cast<int>(dispatcher->on(ArrayEndT{}));
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
+  return parser->on(ArrayEndT{});
 }
 
 static const yajl_callbacks parser_yajl_callbacks{
@@ -228,7 +215,7 @@ static const yajl_callbacks parser_yajl_callbacks{
 
 class SJParser::YajlInfo {
  public:
-  YajlInfo(Dispatcher *dispatcher);
+  YajlInfo(ParserImpl *parser);
   ~YajlInfo();
   void reset();
   yajl_handle handle();
@@ -237,10 +224,10 @@ class SJParser::YajlInfo {
   void unset();
 
   yajl_handle _handle = nullptr;
-  Dispatcher *_dispatcher;
+  ParserImpl *_parser;
 };
 
-YajlInfo::YajlInfo(Dispatcher *dispatcher) : _dispatcher(dispatcher) {
+YajlInfo::YajlInfo(ParserImpl *parser) : _parser(parser) {
   reset();
 }
 
@@ -250,7 +237,7 @@ YajlInfo::~YajlInfo() {
 
 void YajlInfo::reset() {
   unset();
-  _handle = yajl_alloc(&parser_yajl_callbacks, nullptr, _dispatcher);
+  _handle = yajl_alloc(&parser_yajl_callbacks, nullptr, _parser);
 }
 
 yajl_handle YajlInfo::handle() {
@@ -265,8 +252,7 @@ void YajlInfo::unset() {
 }
 
 ParserImpl::ParserImpl(TokenParser *parser)
-    : _dispatcher(parser),
-      _yajl_info(std::make_unique<YajlInfo>(&_dispatcher)) {}
+    : _dispatcher(parser), _yajl_info(std::make_unique<YajlInfo>(this)) {}
 
 ParserImpl::~ParserImpl() = default;
 
@@ -274,25 +260,23 @@ bool ParserImpl::parse(const char *data, size_t len) {
   _data = reinterpret_cast<const unsigned char *>(data);
   _len = len;
 
-  _dispatcher.setError("");
   bool ret = yajl_parse(_yajl_info->handle(), _data, _len) == yajl_status_ok;
 
   if (!ret) {
-    collectErrors();
+    getYajlError();
   }
 
   return ret;
 }
 
 bool ParserImpl::finish() {
-  _dispatcher.setError("");
   bool ret = yajl_complete_parse(_yajl_info->handle()) == yajl_status_ok;
 
   if (!ret) {
-    collectErrors();
-  } else if (!_dispatcher.noParser()) {
+    getYajlError();
+  } else if (!_dispatcher.emptyParsersStack()) {
     ret = false;
-    _internal_error = "Dispatcher parsers stack is not empty in the end";
+    _sjparser_error = "Dispatcher parsers stack is not empty in the end";
   }
 
   _dispatcher.reset();
@@ -301,20 +285,18 @@ bool ParserImpl::finish() {
   return ret;
 }
 
-void ParserImpl::collectErrors() {
-  _internal_error = _dispatcher.getError();
-
+void ParserImpl::getYajlError() {
   auto err = yajl_get_error(_yajl_info->handle(), 1, _data, _len);
   _yajl_error = reinterpret_cast<char *>(err);
   yajl_free_error(_yajl_info->handle(), err);
 }
 
 std::string ParserImpl::getError(bool verbose) {
-  if (_internal_error.size() && !verbose) {
-    return _internal_error;
+  if (_sjparser_error.size() && !verbose) {
+    return _sjparser_error;
   }
 
-  return _yajl_error + _internal_error + "\n";
+  return _yajl_error + _sjparser_error + "\n";
 }
 
 FieldName::FieldName(const std::string &str) : _str(str) {}

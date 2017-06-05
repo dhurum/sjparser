@@ -162,13 +162,14 @@ TEST(SCustomObject, FieldsWithCallbackError) {
 
   ASSERT_FALSE(parser.parse(buf));
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
                            {"bool": true, "string": "value"}
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 }
 
 TEST(SCustomObject, SCustomObjectWithCallbackError) {
@@ -193,13 +194,14 @@ TEST(SCustomObject, SCustomObjectWithCallbackError) {
 
   ASSERT_FALSE(parser.parse(buf));
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
           ool": true, "string": "value"}
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 }
 
 TEST(SCustomObject, OneField) {

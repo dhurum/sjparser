@@ -76,8 +76,8 @@ template <typename T> class Value : public TokenParser {
   Type _value;
   Args _on_finish;
 
-  virtual bool on(const Type &value) override;
-  virtual bool finish() override;
+  virtual void on(const Type &value) override;
+  virtual void finish() override;
 };
 
 /*
@@ -125,9 +125,9 @@ class Object : public KeyValueParser<FieldName, Ts...> {
 
  private:
   using KVParser::on;
-  virtual bool on(const MapKeyT &key) override;
+  virtual void on(const MapKeyT &key) override;
 
-  virtual bool finish() override;
+  virtual void finish() override;
 
   typename KVParser::template Field<0, ChildArgs, Ts...> _fields;
   std::function<bool(Object<Ts...> &)> _on_finish;
@@ -197,7 +197,7 @@ class SCustomObject : public Object<Ts...> {
   using TokenParser::_set;
   using TokenParser::checkSet;
 
-  virtual bool finish() override;
+  virtual void finish() override;
   virtual void reset() noexcept override;
 
   std::function<bool(SCustomObject<T, Ts...> &, T &)> _on_finish;
@@ -269,7 +269,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
   using TokenParser::_set;
   using TokenParser::checkSet;
 
-  virtual bool finish() override;
+  virtual void finish() override;
   virtual void reset() noexcept override;
 
   template <size_t, typename...> struct ValueSetter {
@@ -379,12 +379,12 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
   using TokenParser::checkSet;
   using KVParser::on;
 
-  virtual bool on(const I &value) override;
-  virtual bool on(const MapStartT) noexcept override;
-  virtual bool on(const MapKeyT &key) override;
+  virtual void on(const I &value) override;
+  virtual void on(const MapStartT) override;
+  virtual void on(const MapKeyT &key) override;
 
-  virtual bool childParsed() override;
-  virtual bool finish() override;
+  virtual void childParsed() override;
+  virtual void finish() override;
 
   typename KVParser::template Field<0, ChildArgs, Ts...> _fields;
   std::string _type_field;
@@ -435,7 +435,7 @@ template <typename T> class Array : public ArrayParser {
  private:
   std::function<bool(Array<T> &)> _on_finish;
 
-  virtual bool finish() override;
+  virtual void finish() override;
 };
 
 /*
@@ -497,8 +497,8 @@ template <typename T> class SArray : public Array<T> {
   using TokenParser::_set;
   using TokenParser::checkSet;
 
-  virtual bool childParsed() override;
-  virtual bool finish() override;
+  virtual void childParsed() override;
+  virtual void finish() override;
   virtual void reset() noexcept override;
 };
 

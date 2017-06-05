@@ -47,20 +47,20 @@ class TokenParser {
   virtual void setDispatcher(Dispatcher *dispatcher) noexcept;
   inline bool isSet() const noexcept;
   virtual void reset() noexcept;
-  bool endParsing();
-  virtual bool finish() = 0;
+  void endParsing();
+  virtual void finish() = 0;
 
-  virtual bool on(const bool & /*value*/);
-  virtual bool on(const int64_t & /*value*/);
-  virtual bool on(const double & /*value*/);
-  virtual bool on(const std::string & /*value*/);
-  virtual bool on(const MapStartT);
-  virtual bool on(const MapKeyT & /*key*/);
-  virtual bool on(const MapEndT);
-  virtual bool on(const ArrayStartT);
-  virtual bool on(const ArrayEndT);
+  virtual void on(const bool & /*value*/);
+  virtual void on(const int64_t & /*value*/);
+  virtual void on(const double & /*value*/);
+  virtual void on(const std::string & /*value*/);
+  virtual void on(const MapStartT);
+  virtual void on(const MapKeyT & /*key*/);
+  virtual void on(const MapEndT);
+  virtual void on(const ArrayStartT);
+  virtual void on(const ArrayEndT);
 
-  virtual bool childParsed();
+  virtual void childParsed();
 
   virtual ~TokenParser() = default;
 
@@ -70,7 +70,7 @@ class TokenParser {
 
   inline void checkSet() const;
 
-  inline bool unexpectedToken(const std::string &type);
+  inline void unexpectedToken(const std::string &type);
 };
 
 // std::string can be constructed from {"x", "y"}, so this wrapper is used
@@ -113,10 +113,10 @@ class KeyValueParser : public TokenParser {
   virtual void setDispatcher(Dispatcher *dispatcher) noexcept override;
   virtual void reset() noexcept override;
 
-  virtual bool on(const MapStartT) noexcept override;
-  virtual bool on(const MapEndT) override;
+  virtual void on(const MapStartT) override;
+  virtual void on(const MapEndT) override;
 
-  bool onField(const I &field);
+  void onField(const I &field);
 
   template <size_t n, typename T, typename... TDs> struct NthType {
     using type = typename NthType<n - 1, TDs...>::type;
@@ -151,13 +151,13 @@ class ArrayParser : public TokenParser {
  public:
   virtual void reset() noexcept override;
 
-  virtual bool on(const bool &value) override;
-  virtual bool on(const int64_t &value) override;
-  virtual bool on(const double &value) override;
-  virtual bool on(const std::string &value) override;
-  virtual bool on(const MapStartT) override;
-  virtual bool on(const ArrayStartT) override;
-  virtual bool on(const ArrayEndT) override;
+  virtual void on(const bool &value) override;
+  virtual void on(const int64_t &value) override;
+  virtual void on(const double &value) override;
+  virtual void on(const std::string &value) override;
+  virtual void on(const MapStartT) override;
+  virtual void on(const ArrayStartT) override;
+  virtual void on(const ArrayEndT) override;
 
  protected:
   TokenParser *_parser;
@@ -170,14 +170,11 @@ class Dispatcher {
  public:
   Dispatcher(TokenParser *parser);
   void pushParser(TokenParser *parser);
-  bool popParser();
-  bool noParser();
+  void popParser();
+  bool emptyParsersStack();
   void reset();
 
-  template <typename T> bool on(const T &value);
-
-  inline void setError(const std::string &error);
-  inline std::string &getError() noexcept;
+  template <typename T> void on(const T &value);
 
  protected:
   std::deque<TokenParser *> _parsers;
@@ -196,14 +193,16 @@ class ParserImpl {
   bool finish();
   std::string getError(bool verbose);
 
+  template <typename T> int on(const T &value) noexcept;
+
  private:
-  void collectErrors();
+  void getYajlError();
 
   Dispatcher _dispatcher;
   std::unique_ptr<YajlInfo> _yajl_info;
   const unsigned char *_data;
   size_t _len;
-  std::string _internal_error;
+  std::string _sjparser_error;
   std::string _yajl_error;
 };
 }

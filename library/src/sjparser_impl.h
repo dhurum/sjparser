@@ -28,17 +28,15 @@ namespace SJParser {
 template <typename T>
 Value<T>::Value(const Args &on_finish) : _on_finish(on_finish) {}
 
-template <typename T> bool Value<T>::on(const T &value) {
+template <typename T> void Value<T>::on(const T &value) {
   _value = value;
-
-  return endParsing();
+  endParsing();
 }
 
-template <typename T> bool Value<T>::finish() {
-  if (!_on_finish) {
-    return true;
+template <typename T> void Value<T>::finish() {
+  if (_on_finish && !_on_finish(_value)) {
+    throw std::runtime_error("Callback returned false");
   }
-  return _on_finish(_value);
 }
 
 template <typename T> const T &Value<T>::get() const {
@@ -74,15 +72,14 @@ Object<Ts...>::Object(const Args &args)
     : _fields(KVParser::_fields_array, KVParser::_fields_map, args.args),
       _on_finish(args.on_finish) {}
 
-template <typename... Ts> bool Object<Ts...>::on(const MapKeyT &key) {
-  return KVParser::onField(key.key);
+template <typename... Ts> void Object<Ts...>::on(const MapKeyT &key) {
+  KVParser::onField(key.key);
 }
 
-template <typename... Ts> bool Object<Ts...>::finish() {
-  if (!_on_finish) {
-    return true;
+template <typename... Ts> void Object<Ts...>::finish() {
+  if (_on_finish && !_on_finish(*this)) {
+    throw std::runtime_error("Callback returned false");
   }
-  return _on_finish(*this);
 }
 
 template <typename T, typename... Ts>
@@ -109,8 +106,10 @@ typename SCustomObject<T, Ts...>::Type &&SCustomObject<T, Ts...>::pop() {
   return std::move(_value);
 }
 
-template <typename T, typename... Ts> bool SCustomObject<T, Ts...>::finish() {
-  return _on_finish(*this, _value);
+template <typename T, typename... Ts> void SCustomObject<T, Ts...>::finish() {
+  if (!_on_finish(*this, _value)) {
+    throw std::runtime_error("Callback returned false");
+  }
 }
 
 template <typename T, typename... Ts>
@@ -150,18 +149,20 @@ typename SAutoObject<Ts...>::Type &&SAutoObject<Ts...>::pop() {
   return std::move(_value);
 }
 
-template <typename... Ts> bool SAutoObject<Ts...>::finish() {
+template <typename... Ts> void SAutoObject<Ts...>::finish() {
   try {
     ValueSetter<0, Ts...>(_value, *this);
-  } catch (std::runtime_error &e) {
-    Object<Ts...>::KVParser::_dispatcher->setError(e.what());
+  } catch (std::exception &e) {
     _set = false;
-    return false;
+    throw std::runtime_error(std::string("Can not set value: ") + e.what());
+  } catch (...) {
+    _set = false;
+    throw std::runtime_error("Can not set value: unknown exception");
   }
-  if (_on_finish) {
-    return _on_finish(_value);
+
+  if (_on_finish && !_on_finish(_value)) {
+    throw std::runtime_error("Callback returned false");
   }
-  return true;
 }
 
 template <typename... Ts> void SAutoObject<Ts...>::reset() noexcept {
@@ -211,58 +212,44 @@ size_t Union<I, Ts...>::currentMemberId() {
   return _current_member_id;
 }
 
-template <typename I, typename... Ts> bool Union<I, Ts...>::on(const I &value) {
+template <typename I, typename... Ts> void Union<I, Ts...>::on(const I &value) {
   KVParser::reset();
-  if (KVParser::onField(value)) {
-    _current_member_id = _fields_ids_map[KVParser::_fields_map[value]];
-    return true;
-  }
-  return false;
+  KVParser::onField(value);
+  _current_member_id = _fields_ids_map[KVParser::_fields_map[value]];
 }
 
 template <typename I, typename... Ts>
-bool Union<I, Ts...>::on(const MapStartT) noexcept {
+void Union<I, Ts...>::on(const MapStartT) {
   if (_type_field.empty()) {
     // Should never happen
-    KVParser::_dispatcher->setError(
-        "Union with an empty type field can't parse this");
-    return false;
+    throw std::runtime_error("Union with an empty type field can't parse this");
   }
-  return true;
 }
 
 template <typename I, typename... Ts>
-bool Union<I, Ts...>::on(const MapKeyT &key) {
+void Union<I, Ts...>::on(const MapKeyT &key) {
   if (_type_field.empty()) {
     // Should never happen
-    KVParser::_dispatcher->setError(
-        "Union with an empty type field can't parse this");
-    return false;
+    throw std::runtime_error("Union with an empty type field can't parse this");
   }
   if (key.key != _type_field) {
-    KVParser::_dispatcher->setError("Unexpected field " + key.key);
-    return false;
+    throw std::runtime_error("Unexpected field " + key.key);
   }
-  return true;
 }
 
-template <typename I, typename... Ts> bool Union<I, Ts...>::childParsed() {
-  if (!KVParser::endParsing()) {
-    return false;
-  }
+template <typename I, typename... Ts> void Union<I, Ts...>::childParsed() {
+  KVParser::endParsing();
   if (_type_field.empty()) {
     // The union embedded into an object must propagate the end event to the
     // parent.
-    return KVParser::_dispatcher->on(MapEndT());
+    KVParser::_dispatcher->on(MapEndT());
   }
-  return true;
 }
 
-template <typename I, typename... Ts> bool Union<I, Ts...>::finish() {
-  if (!_on_finish) {
-    return true;
+template <typename I, typename... Ts> void Union<I, Ts...>::finish() {
+  if (_on_finish && !_on_finish(*this)) {
+    throw std::runtime_error("Callback returned false");
   }
-  return _on_finish(*this);
 }
 
 template <typename T>
@@ -282,11 +269,10 @@ Array<T>::Array(const Args &args)
   ArrayParser::_parser = &_parser;
 }
 
-template <typename T> bool Array<T>::finish() {
-  if (!_on_finish) {
-    return true;
+template <typename T> void Array<T>::finish() {
+  if (_on_finish && !_on_finish(*this)) {
+    throw std::runtime_error("Callback returned false");
   }
-  return _on_finish(*this);
 }
 
 template <typename T>
@@ -319,16 +305,14 @@ template <typename T> typename SArray<T>::Type &&SArray<T>::pop() {
   return std::move(_values);
 }
 
-template <typename T> bool SArray<T>::childParsed() {
+template <typename T> void SArray<T>::childParsed() {
   _values.push_back(Array<T>::_parser.pop());
-  return true;
 }
 
-template <typename T> bool SArray<T>::finish() {
-  if (!_on_finish) {
-    return true;
+template <typename T> void SArray<T>::finish() {
+  if (_on_finish && !_on_finish(_values)) {
+    throw std::runtime_error("Callback returned false");
   }
-  return _on_finish(_values);
 }
 
 template <typename T> void SArray<T>::reset() noexcept {

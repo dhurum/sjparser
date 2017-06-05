@@ -36,14 +36,15 @@ TEST(SAutoObject, Empty) {
 
   ASSERT_FALSE(parser.parser().isSet());
   ASSERT_EQ(
-      "Not all fields are set in an storage object without a default value",
+      "Can not set value: Not all fields are set in an storage object without "
+      "a default value",
       parser.getError());
 
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
                                       {}
                      (right here) ------^
-Not all fields are set in an storage object without a default value
+Can not set value: Not all fields are set in an storage object without a default value
 )",
       parser.getError(true));
 }
@@ -151,13 +152,14 @@ TEST(SAutoObject, FieldsWithCallbackError) {
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_FALSE(parser.parser().isSet());
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
                            {"bool": true, "string": "value"}
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 }
 
 TEST(SAutoObject, SAutoObjectWithCallback) {
@@ -194,13 +196,14 @@ TEST(SAutoObject, SAutoObjectWithCallbackError) {
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_TRUE(parser.parser().isSet());
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
           ool": true, "string": "value"}
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 }
 
 TEST(SAutoObject, OneField) {
@@ -223,14 +226,15 @@ TEST(SAutoObject, OneFieldEmpty) {
 
   ASSERT_FALSE(parser.parser().isSet());
   ASSERT_EQ(
-      "Not all fields are set in an storage object without a default value",
+      "Can not set value: Not all fields are set in an storage object without "
+      "a default value",
       parser.getError());
 
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
                                       {}
                      (right here) ------^
-Not all fields are set in an storage object without a default value
+Can not set value: Not all fields are set in an storage object without a default value
 )",
       parser.getError(true));
 }

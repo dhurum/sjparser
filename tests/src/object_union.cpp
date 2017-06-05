@@ -303,13 +303,14 @@ TEST(ObjectUnion, FieldsWithCallbackError) {
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_FALSE(parser.parser().get<0>().isSet());
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
              "type": 1,   "bool": true }
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 
   buf = R"(
 {
@@ -320,13 +321,14 @@ TEST(ObjectUnion, FieldsWithCallbackError) {
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_FALSE(parser.parser().get<0>().isSet());
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
                                          {   "type": 2,   "int": 100 }
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 }
 
 TEST(ObjectUnion, UnionWithCallback) {
@@ -400,13 +402,14 @@ TEST(ObjectUnion, UnionWithCallbackError) {
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_TRUE(parser.parser().get<0>().isSet());
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
              "type": 1,   "bool": true }
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 }
 
 TEST(ObjectUnion, UnionWithArgsStruct) {

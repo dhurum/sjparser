@@ -129,8 +129,7 @@ TEST(Array, ArrayOfStrings) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
-// FIXME
-TEST(Array, DISABLED_ArrayWithUnexpectedBoolean) {
+TEST(Array, ArrayWithUnexpectedBoolean) {
   std::string buf(R"([true])");
 
   auto elementCb = [&](const std::string &) { return true; };
@@ -151,8 +150,7 @@ Unexpected token boolean
       parser.getError(true));
 }
 
-// FIXME
-TEST(Array, DISABLED_ArrayWithUnexpectedInteger) {
+TEST(Array, ArrayWithUnexpectedInteger) {
   std::string buf(R"([10])");
 
   auto elementCb = [&](const bool &) { return true; };
@@ -166,15 +164,14 @@ TEST(Array, DISABLED_ArrayWithUnexpectedInteger) {
 
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
-                                    [10]
+                                     [10]
                      (right here) ------^
 Unexpected token integer
 )",
       parser.getError(true));
 }
 
-// FIXME
-TEST(Array, DISABLED_ArrayWithUnexpectedDouble) {
+TEST(Array, ArrayWithUnexpectedDouble) {
   std::string buf(R"([10.5])");
 
   auto elementCb = [&](const bool &) { return true; };
@@ -188,15 +185,14 @@ TEST(Array, DISABLED_ArrayWithUnexpectedDouble) {
 
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
-                                  [10.5]
+                                   [10.5]
                      (right here) ------^
 Unexpected token double
 )",
       parser.getError(true));
 }
 
-// FIXME
-TEST(Array, DISABLED_ArrayWithUnexpectedString) {
+TEST(Array, ArrayWithUnexpectedString) {
   std::string buf(R"(["value"])");
 
   auto elementCb = [&](const bool &) { return true; };
@@ -210,7 +206,7 @@ TEST(Array, DISABLED_ArrayWithUnexpectedString) {
 
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
-                               ["value"]
+                                ["value"]
                      (right here) ------^
 Unexpected token string
 )",
@@ -227,13 +223,14 @@ TEST(Array, ArrayWithElementCallbackError) {
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_FALSE(parser.parser().isSet());
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
                                    [true, false]
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 }
 
 TEST(Array, ArrayWithCallback) {
@@ -281,13 +278,14 @@ TEST(Array, ArrayWithCallbackError) {
   ASSERT_FALSE(parser.parse(buf));
   ASSERT_TRUE(parser.parser().isSet());
 
+  ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
       R"(parse error: client cancelled parse via callback return value
                            [true, false]
                      (right here) ------^
-
+Callback returned false
 )",
-      parser.getError());
+      parser.getError(true));
 }
 
 TEST(Array, ArrayWithArgsStruct) {
