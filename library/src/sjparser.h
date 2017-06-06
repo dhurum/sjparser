@@ -252,10 +252,6 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
   // bool isSet();
   using TokenParser::isSet;
 
-  // Returns reference to a parser of n-th field.
-  // template <size_t n> X &get<n>();
-  using Object<Ts...>::get;
-
   // Returns reference to parsed value. If value is unset, throws
   // std::runtime_error.
   inline const Type &get() const;
@@ -270,6 +266,10 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
 
   virtual void finish() override;
   virtual void reset() noexcept override;
+
+  // This is placed in the private section because the ValueSetter uses pop on
+  // all fields, so they are always unset after parsing.
+  using Object<Ts...>::get;
 
   template <size_t, typename...> struct ValueSetter {
     ValueSetter(Type & /*value*/, SAutoObject<Ts...> & /*parser*/) {}
