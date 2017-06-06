@@ -109,6 +109,9 @@ class KeyValueParser : public TokenParser {
     I field;
     Args value;
   };
+  using ChildArgs = std::tuple<FieldArgs<Ts>...>;
+
+  KeyValueParser(const ChildArgs &args);
 
   virtual void setDispatcher(Dispatcher *dispatcher) noexcept override;
   virtual void reset() noexcept override;
@@ -145,6 +148,7 @@ class KeyValueParser : public TokenParser {
 
   std::array<TokenParser *, sizeof...(Ts)> _fields_array;
   std::unordered_map<I, TokenParser *> _fields_map;
+  Field<0, ChildArgs, Ts...> _fields;
 };
 
 class ArrayParser : public TokenParser {

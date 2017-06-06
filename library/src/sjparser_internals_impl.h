@@ -75,6 +75,9 @@ KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
     : field(field) {}
 
 template <typename I, typename... Ts>
+KeyValueParser<I, Ts...>::KeyValueParser(const ChildArgs &args) : _fields(_fields_array, _fields_map, args) {}
+
+template <typename I, typename... Ts>
 void KeyValueParser<I, Ts...>::setDispatcher(Dispatcher *dispatcher) noexcept {
   TokenParser::setDispatcher(dispatcher);
   for (auto &field : _fields_map) {

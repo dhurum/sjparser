@@ -69,7 +69,7 @@ Object<Ts...>::Args::Args(const ChildArgs &args,
 
 template <typename... Ts>
 Object<Ts...>::Object(const Args &args)
-    : _fields(KVParser::_fields_array, KVParser::_fields_map, args.args),
+    : KVParser(args.args),
       _on_finish(args.on_finish) {}
 
 template <typename... Ts> void Object<Ts...>::on(const MapKeyT &key) {
@@ -198,7 +198,7 @@ Union<I, Ts...>::Args::Args(
 
 template <typename I, typename... Ts>
 Union<I, Ts...>::Union(const Args &args)
-    : _fields(KVParser::_fields_array, KVParser::_fields_map, args.args),
+    : KVParser(args.args),
       _type_field(args.type_field),
       _on_finish(args.on_finish) {
   for (size_t i = 0; i < KVParser::_fields_array.size(); ++i) {

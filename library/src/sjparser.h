@@ -91,7 +91,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
   using KVParser = KeyValueParser<FieldName, Ts...>;
 
  public:
-  using ChildArgs = std::tuple<typename KVParser::template FieldArgs<Ts>...>;
+  using ChildArgs = typename KVParser::ChildArgs;
   struct Args {
     Args(const ChildArgs &args,
          const std::function<bool(Object<Ts...> &)> &on_finish = nullptr);
@@ -129,7 +129,6 @@ class Object : public KeyValueParser<FieldName, Ts...> {
 
   virtual void finish() override;
 
-  typename KVParser::template Field<0, ChildArgs, Ts...> _fields;
   std::function<bool(Object<Ts...> &)> _on_finish;
 };
 
@@ -326,7 +325,7 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
   using KVParser = KeyValueParser<typename UnionFieldType<I>::type, Ts...>;
 
  public:
-  using ChildArgs = std::tuple<typename KVParser::template FieldArgs<Ts>...>;
+  using ChildArgs = typename KVParser::ChildArgs;
   struct Args {
     Args(const ChildArgs &args,
          const std::function<bool(Union<I, Ts...> &)> &on_finish = nullptr);
@@ -386,7 +385,6 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
   virtual void childParsed() override;
   virtual void finish() override;
 
-  typename KVParser::template Field<0, ChildArgs, Ts...> _fields;
   std::string _type_field;
   std::function<bool(Union<I, Ts...> &)> _on_finish;
   std::unordered_map<TokenParser *, size_t> _fields_ids_map;
