@@ -34,7 +34,8 @@ namespace SJParser {
 
 struct MapStartT {};
 struct MapKeyT {
-  const std::string &key;
+  // This ref is used only to forward the key into the 'on' method.
+  const std::string &key;  // NOLINT
 };
 struct MapEndT {};
 struct ArrayStartT {};
@@ -54,11 +55,11 @@ class TokenParser {
   virtual void on(const int64_t & /*value*/);
   virtual void on(const double & /*value*/);
   virtual void on(const std::string & /*value*/);
-  virtual void on(const MapStartT);
+  virtual void on(MapStartT /*unused*/);
   virtual void on(const MapKeyT & /*key*/);
-  virtual void on(const MapEndT);
-  virtual void on(const ArrayStartT);
-  virtual void on(const ArrayEndT);
+  virtual void on(MapEndT /*unused*/);
+  virtual void on(ArrayStartT /*unused*/);
+  virtual void on(ArrayEndT /*unused*/);
 
   virtual void childParsed();
 
@@ -77,7 +78,7 @@ class TokenParser {
 // instead
 class FieldName {
  public:
-  FieldName(const std::string &str);
+  FieldName(std::string str);
   FieldName(const char *str);
   operator const std::string &() const;
   bool operator==(const FieldName &other) const;
@@ -98,13 +99,15 @@ class KeyValueParser : public TokenParser {
     FieldArgs(const I &field, const typename U::ChildArgs &value);
     FieldArgs(const I &field);
     template <typename U = I>
-    FieldArgs(
-        const char *field,
-        typename std::enable_if<std::is_same<U, FieldName>::value>::type * = 0);
+    FieldArgs(const char *field,
+              typename std::enable_if<std::is_same<U, FieldName>::value>::type
+                  * /*unused*/
+              = 0);
     template <typename U = I>
-    FieldArgs(
-        const std::string &field,
-        typename std::enable_if<std::is_same<U, FieldName>::value>::type * = 0);
+    FieldArgs(const std::string &field,
+              typename std::enable_if<std::is_same<U, FieldName>::value>::type
+                  * /*unused*/
+              = 0);
 
     I field;
     Args value;
@@ -113,11 +116,11 @@ class KeyValueParser : public TokenParser {
 
   KeyValueParser(const ChildArgs &args);
 
-  virtual void setDispatcher(Dispatcher *dispatcher) noexcept override;
-  virtual void reset() noexcept override;
+  void setDispatcher(Dispatcher *dispatcher) noexcept override;
+  void reset() noexcept override;
 
-  virtual void on(const MapStartT) override;
-  virtual void on(const MapEndT) override;
+  void on(MapStartT /*unused*/) override;
+  void on(MapEndT /*unused*/) override;
 
   void onField(const I &field);
 
@@ -153,15 +156,15 @@ class KeyValueParser : public TokenParser {
 
 class ArrayParser : public TokenParser {
  public:
-  virtual void reset() noexcept override;
+  void reset() noexcept override;
 
-  virtual void on(const bool &value) override;
-  virtual void on(const int64_t &value) override;
-  virtual void on(const double &value) override;
-  virtual void on(const std::string &value) override;
-  virtual void on(const MapStartT) override;
-  virtual void on(const ArrayStartT) override;
-  virtual void on(const ArrayEndT) override;
+  void on(const bool &value) override;
+  void on(const int64_t &value) override;
+  void on(const double &value) override;
+  void on(const std::string &value) override;
+  void on(MapStartT /*unused*/) override;
+  void on(ArrayStartT /*unused*/) override;
+  void on(ArrayEndT /*unused*/) override;
 
  protected:
   TokenParser *_parser;
@@ -197,18 +200,18 @@ class ParserImpl {
   bool finish();
   std::string getError(bool verbose);
 
-  template <typename T> int on(const T &value) noexcept;
+  template <typename T> int on(const T &token) noexcept;
 
  private:
   void getYajlError();
 
   Dispatcher _dispatcher;
   std::unique_ptr<YajlInfo> _yajl_info;
-  const unsigned char *_data;
-  size_t _len;
+  const unsigned char *_data = nullptr;
+  size_t _len = 0;
   std::string _sjparser_error;
   std::string _yajl_error;
 };
-}
+}  // namespace SJParser
 
 #include "sjparser_internals_impl.h"

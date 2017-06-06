@@ -25,7 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <yajl/yajl_parse.h>
 
-using namespace SJParser;
+namespace SJParser {
 
 void TokenParser::setDispatcher(Dispatcher *dispatcher) noexcept {
   _dispatcher = dispatcher;
@@ -60,7 +60,7 @@ void TokenParser::on(const std::string & /*value*/) {
   unexpectedToken("string");
 }
 
-void TokenParser::on(const MapStartT) {
+void TokenParser::on(MapStartT /*unused*/) {
   unexpectedToken("map start");
 }
 
@@ -68,15 +68,15 @@ void TokenParser::on(const MapKeyT & /*key*/) {
   unexpectedToken("map key");
 }
 
-void TokenParser::on(const MapEndT) {
+void TokenParser::on(MapEndT /*unused*/) {
   unexpectedToken("map end");
 }
 
-void TokenParser::on(const ArrayStartT) {
+void TokenParser::on(ArrayStartT /*unused*/) {
   unexpectedToken("array start");
 }
 
-void TokenParser::on(const ArrayEndT) {
+void TokenParser::on(ArrayEndT /*unused*/) {
   unexpectedToken("array end");
 }
 
@@ -213,7 +213,7 @@ static const yajl_callbacks parser_yajl_callbacks{
     nullptr,      yajl_string,      yajl_start_map, yajl_map_key,
     yajl_end_map, yajl_start_array, yajl_end_array};
 
-class SJParser::YajlInfo {
+class YajlInfo {
  public:
   YajlInfo(ParserImpl *parser);
   ~YajlInfo();
@@ -292,14 +292,14 @@ void ParserImpl::getYajlError() {
 }
 
 std::string ParserImpl::getError(bool verbose) {
-  if (_sjparser_error.size() && !verbose) {
+  if (!_sjparser_error.empty() && !verbose) {
     return _sjparser_error;
   }
 
   return _yajl_error + _sjparser_error + "\n";
 }
 
-FieldName::FieldName(const std::string &str) : _str(str) {}
+FieldName::FieldName(std::string str) : _str(std::move(str)) {}
 
 FieldName::FieldName(const char *str) : _str(str) {}
 
@@ -314,8 +314,10 @@ bool FieldName::operator==(const FieldName &other) const {
 const std::string &FieldName::str() const {
   return _str;
 }
+}  // namespace SJParser
 
 namespace std {
+
 size_t hash<SJParser::FieldName>::operator()(
     const SJParser::FieldName &key) const {
   return hash<std::string>()(key.str());
@@ -324,4 +326,4 @@ basic_ostream<char> &operator<<(basic_ostream<char> &stream,
                                 const SJParser::FieldName &name) {
   return stream << name.str();
 }
-}
+}  // namespace std

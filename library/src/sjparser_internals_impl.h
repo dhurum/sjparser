@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 
 Copyright (c) 2016-2017 Denis Tikhomirov <dvtikhomirov@gmail.com>
@@ -63,7 +62,8 @@ template <typename T>
 template <typename U>
 KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
     const char *field,
-    typename std::enable_if<std::is_same<U, FieldName>::value>::type *)
+    typename std::enable_if<std::is_same<U, FieldName>::value>::type
+        * /*unused*/)
     : field(field) {}
 
 template <typename I, typename... Ts>
@@ -71,11 +71,13 @@ template <typename T>
 template <typename U>
 KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
     const std::string &field,
-    typename std::enable_if<std::is_same<U, FieldName>::value>::type *)
+    typename std::enable_if<std::is_same<U, FieldName>::value>::type
+        * /*unused*/)
     : field(field) {}
 
 template <typename I, typename... Ts>
-KeyValueParser<I, Ts...>::KeyValueParser(const ChildArgs &args) : _fields(_fields_array, _fields_map, args) {}
+KeyValueParser<I, Ts...>::KeyValueParser(const ChildArgs &args)
+    : _fields(_fields_array, _fields_map, args) {}
 
 template <typename I, typename... Ts>
 void KeyValueParser<I, Ts...>::setDispatcher(Dispatcher *dispatcher) noexcept {
@@ -95,12 +97,12 @@ void KeyValueParser<I, Ts...>::reset() noexcept {
 }
 
 template <typename I, typename... Ts>
-void KeyValueParser<I, Ts...>::on(const MapStartT /*unused*/) {
+void KeyValueParser<I, Ts...>::on(MapStartT /*unused*/) {
   reset();
 }
 
 template <typename I, typename... Ts>
-void KeyValueParser<I, Ts...>::on(const MapEndT /*unused*/) {
+void KeyValueParser<I, Ts...>::on(MapEndT /*unused*/) {
   endParsing();
 }
 
@@ -154,7 +156,7 @@ template <typename T> int ParserImpl::on(const T &token) noexcept {
   }
   return 1;
 }
-}
+}  // namespace SJParser
 
 namespace std {
 template <> struct hash<SJParser::FieldName> {
@@ -162,5 +164,5 @@ template <> struct hash<SJParser::FieldName> {
 };
 
 std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
-                                     const SJParser::FieldName &str);
-}
+                                     const SJParser::FieldName &name);
+}  // namespace std

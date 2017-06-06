@@ -69,8 +69,7 @@ Object<Ts...>::Args::Args(const ChildArgs &args,
 
 template <typename... Ts>
 Object<Ts...>::Object(const Args &args)
-    : KVParser(args.args),
-      _on_finish(args.on_finish) {}
+    : KVParser(args.args), _on_finish(args.on_finish) {}
 
 template <typename... Ts> void Object<Ts...>::on(const MapKeyT &key) {
   KVParser::onField(key.key);
@@ -218,8 +217,7 @@ template <typename I, typename... Ts> void Union<I, Ts...>::on(const I &value) {
   _current_member_id = _fields_ids_map[KVParser::_fields_map[value]];
 }
 
-template <typename I, typename... Ts>
-void Union<I, Ts...>::on(const MapStartT) {
+template <typename I, typename... Ts> void Union<I, Ts...>::on(MapStartT) {
   if (_type_field.empty()) {
     // Should never happen
     throw std::runtime_error("Union with an empty type field can't parse this");
