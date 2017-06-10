@@ -31,25 +31,9 @@ add_library(${TARGET}_shared SHARED
 target_link_libraries(${TARGET}_shared ${YAJL_LIB})
 set_target_properties(${TARGET}_shared PROPERTIES OUTPUT_NAME ${TARGET})
 
-
 install(TARGETS ${TARGET} ${TARGET}_shared DESTINATION lib/sjparser)
 install(FILES ${HDRS} DESTINATION include/sjparser)
 
-set(CHECKS
-  *
-  -cppcoreguidelines-pro-type-reinterpret-cast
-  -readability-implicit-bool-cast
-  -google-runtime-int
-  -google-explicit-constructor
-  -cppcoreguidelines-special-member-functions
-  # For some reason, it does not play well with comments before pragma once
-  -llvm-header-guard
-)
+set(SOURCES_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-string(REPLACE ";" "," CHECKS "${CHECKS}")
-
-add_custom_target(check
-  COMMAND clang-tidy -p ${CMAKE_BINARY_DIR}
-  -checks=${CHECKS} --header-filter=src/ ${SRCS} ${HDRS}
-  WORKING_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+add_subdirectory(check)

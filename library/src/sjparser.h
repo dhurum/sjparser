@@ -379,7 +379,7 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
   using KVParser::on;
 
   void on(const I &value) override;
-  void on(MapStartT) override;
+  void on(MapStartT /*unused*/) override;
   void on(const MapKeyT &key) override;
 
   void childParsed() override;
@@ -535,6 +535,6 @@ template <typename T> class Parser {
   T _parser;
   std::unique_ptr<ParserImpl> _impl;
 };
-}
+}  // namespace SJParser
 
 #include "sjparser_impl.h"

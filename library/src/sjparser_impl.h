@@ -199,7 +199,8 @@ template <typename I, typename... Ts>
 Union<I, Ts...>::Union(const Args &args)
     : KVParser(args.args),
       _type_field(args.type_field),
-      _on_finish(args.on_finish) {
+      _on_finish(args.on_finish),
+      _current_member_id(0) {
   for (size_t i = 0; i < KVParser::_fields_array.size(); ++i) {
     _fields_ids_map[KVParser::_fields_array[i]] = i;
   }
@@ -217,7 +218,8 @@ template <typename I, typename... Ts> void Union<I, Ts...>::on(const I &value) {
   _current_member_id = _fields_ids_map[KVParser::_fields_map[value]];
 }
 
-template <typename I, typename... Ts> void Union<I, Ts...>::on(MapStartT) {
+template <typename I, typename... Ts>
+void Union<I, Ts...>::on(MapStartT /*unused*/) {
   if (_type_field.empty()) {
     // Should never happen
     throw std::runtime_error("Union with an empty type field can't parse this");
@@ -355,4 +357,4 @@ template <typename T> std::string Parser<T>::getError(bool verbose) {
 template <typename T> T &Parser<T>::parser() {
   return _parser;
 }
-}
+}  // namespace SJParser
