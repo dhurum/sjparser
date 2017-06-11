@@ -1,3 +1,10 @@
+FIND_PROGRAM(CLANG_TIDY_BIN clang-tidy)
+
+if(NOT CLANG_TIDY_BIN)
+  message(STATUS "Can't find clang-tidy, no check target created")
+  return()
+endif()
+
 set(DUMMY ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp)
 
 add_custom_command(OUTPUT ${DUMMY}
@@ -21,13 +28,13 @@ set(CHECKS
 string(REPLACE ";" "," CHECKS "${CHECKS}")
 
 add_custom_target(check_srcs
-  COMMAND clang-tidy -p ${CMAKE_BINARY_DIR}
+  COMMAND ${CLANG_TIDY_BIN} -p ${CMAKE_BINARY_DIR}
   -checks=${CHECKS} ${SRCS}
   WORKING_DIRECTORY  ${SOURCES_DIR}
 )
 
 add_custom_target(check_hdrs
-  COMMAND clang-tidy -p ${CMAKE_BINARY_DIR}
+  COMMAND ${CLANG_TIDY_BIN} -p ${CMAKE_BINARY_DIR}
   -checks=${CHECKS} --header-filter=.* ${DUMMY}
   DEPENDS ${DUMMY}
 )
