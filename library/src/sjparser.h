@@ -36,37 +36,71 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-/*
- * Simple value parser.
- * T can be:
- *   - std::string
- *   - int64_t
- *   - bool
- *   - double
+/** @brief Plain value parser.
+ *
+ * @tparam T JSON value type, can be std::string, int64_t, bool or double
  */
 template <typename T> class Value : public TokenParser {
  public:
+  /** Underlying type, that can be obtained from this parser with #get or #pop.
+   */
   using Type = T;
+
+  /** Constructor argument type. */
   using Args = std::function<bool(const Type &)>;
 
-  // After value is parsed, on_finish callback is called.
-  Value(const Args &on_finish);
+  /** @brief Constructor.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after a
+   * value is parsed.
+   *
+   * The callback will be called with a const reference to a parsed value as an
+   * argument.
+   *
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  Value(const Args &on_finish = nullptr);
 
-  // Returns true if parser has some value stored and false otherwise
-  // bool isSet();
-  using TokenParser::isSet;
+#ifdef DOXYGEN_ONLY
+  /** @brief Check if the parser has a value.
+   *
+   * @return True if the parser has some value stored or false otherwise.
+   */
+  bool isSet();
+#endif
 
-  // Returns a reference to parsed value.  If value is unset, throws
-  // std::runtime_error.
+  /** @brief Parsed value getter.
+   *
+   * @note If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Const reference to a parsed value.
+   */
   inline const Type &get() const;
 
-  // Returns an rvalue reference to value for std::string and reference for
-  // other
-  // types. After call of this method value is unset.
+  /** @brief Get the parsed value and unset the parser.
+   *
+   * For std::string values moves the parsed value out of the parser.
+   *
+   * @note If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Rvalue reference to the parsed value.
+   */
   template <typename U = Type>
   inline
       typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&
       pop();
+
+  /** @brief Get the parsed value, and unset the parser.
+   *
+   * For non std::string values.
+   *
+   * @note If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Const lvalue reference to the parsed value.
+   */
   template <typename U = Type>
   inline const typename std::enable_if<!std::is_same<U, std::string>::value,
                                        U>::type &
@@ -80,48 +114,75 @@ template <typename T> class Value : public TokenParser {
   void finish() override;
 };
 
-/*
- * Object parser.
- * Ts is a list of any entity parsers.
+/** @brief %Object parser.
+ *
+ * @tparam Ts A list of field parsers types.
  */
 
 template <typename... Ts>
 class Object : public KeyValueParser<FieldName, Ts...> {
  protected:
+  /** @cond Internal typedef */
   using KVParser = KeyValueParser<FieldName, Ts...>;
+  /** @endcond */
 
  public:
+  /** A std::tuple with arguments for field parsers. */
   using ChildArgs = typename KVParser::ChildArgs;
+
+  /** @brief Struct with arguments for the Object @ref Object() "constructor".
+   */
   struct Args {
+    /** @param [in] args Sets #args.
+     *
+     * @param [in] on_finish (optional) Sets #on_finish.
+     */
     Args(const ChildArgs &args,
          const std::function<bool(Object<Ts...> &)> &on_finish = nullptr);
 
+    /** A std::tuple with field arguments.
+     *
+     * A field argument is a structure where the first element is a string
+     * with field's name and the second element is arguments to that field's
+     * parser. If you do not want to provide any arguments to the field's
+     * parser, you can pass only the field's name:
+     * @code {.cpp} {"field1", {"field2", ...}, "field3"} @endcode
+     * In this example field1 and field3 parsers do not receive any agruments
+     * while field2 does receive something.
+     */
     ChildArgs args;
+    /** Callback, that will be called after an object is parsed.
+     *
+     * The callback will be called with a reference to the parser as an
+     * argument.
+     *
+     * If the callback returns false, parsing will be stopped with an error.
+     */
     std::function<bool(Object<Ts...> &)> on_finish;
   };
 
-  /*
-   * Constructor receives a structure.
-   * It's first element is a tuple of object fields arguments structs,
-   * and second element is a callback that will be called after the object is
-   * parsed.
-   * If you do not specify the callback - you can provide only a tuple of object
-   * fields arguments to constructor.
-   * Field argument is a structure where a first element is a string with field
-   * name, and a second field is an argument for respective parser.
-   * If you do not want to provide an argument to a field parser - you can
-   * provide only name.
-   * For example: {"field1", {"field2", ...}, "field3"}
-   * If you have only one field without arguments, you need to pass it without
-   * brackets.
-   * Callback is called with a reference to this parser as an argument.
+  /** @brief Object constructor.
+   *
+   * @param [in] args Args stucture.
+   * If you do not specify @ref Args::on_finish "on_finish" callback,
+   * you can pass a @ref Args::args "tuple of field arguments" directly
+   * into the constructor.
+   * @note If you are passing a single field name (without arguments), you must
+   * pass it directly to the constructor, without surrounding {}:
+   * @code {.cpp} Object<...> object("field"); @endcode
    */
   Object(const Args &args);
   Object(const Object &) = delete;
 
-  // Returns reference to a parser of n-th field.
-  // template <size_t n> X &get<n>();
-  using KVParser::get;
+#ifdef DOXYGEN_ONLY
+  /** @brief Field parser getter.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return Reference to n-th field parser.
+   */
+  template <size_t n> inline typename NthType<n, Ts...>::type &get();
+#endif
 
  private:
   using KVParser::on;
@@ -132,63 +193,109 @@ class Object : public KeyValueParser<FieldName, Ts...> {
   std::function<bool(Object<Ts...> &)> _on_finish;
 };
 
-/*
- * Object parser, that stores the result in a predefined type.
- * T is a type of result value (structure or object). It must have a default
- * constructor. If you want to store it in SArray it should have a move
- * constructor, to avoid unnecessary copy operations.
- * Ts is a list of any parsers.
+/** @brief %Object parser, that stores parsed value of type
+ * @ref SCustomObject_T "T"
+ *
+ * Stored value is set from a @ref Args::on_finish "callback".
  *
  * Instead of using this type directly you should use an SObject, it will
  * automatically dispatch SCustomObject and SAutoObject based on the template
  * parameters.
+ *
+ * @tparam T Stored value type. It must have a default constructor. If you want
+ * to include this parser into SArray, a move constructor of this type will be
+ * used if possible.
+ * @anchor SCustomObject_T
+ *
+ * @tparam Ts A list of field parsers types.
  */
 
 template <typename T, typename... Ts>
 class SCustomObject : public Object<Ts...> {
  public:
+  /** A std::tuple with arguments for field parsers. */
   using ChildArgs = typename Object<Ts...>::ChildArgs;
+  /** Stored value type */
   using Type = T;
 
+  /** @brief Struct with arguments for the SCustomObject
+   * @ref SCustomObject() "constructor".
+   */
   struct Args {
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] on_finish Sets #on_finish.
+     */
     Args(const ChildArgs &args,
          const std::function<bool(SCustomObject<Type, Ts...> &, Type &)>
              &on_finish);
 
+    /** A std::tuple with field arguments.
+     *
+     * A field argument is a structure where the first element is a string
+     * with field's name and the second element is arguments to that field's
+     * parser. If you do not want to provide any arguments to the field's
+     * parser, you can pass only the field's name:
+     * @code {.cpp} {"field1", {"field2", ...}, "field3"} @endcode
+     * In this example field1 and field3 parsers do not receive any agruments
+     * while field2 does receive something.
+     */
     ChildArgs args;
+    /** Callback, that will be called after an object is parsed.
+     *
+     * The callback will be called with a reference to the parser as a first
+     * argument and a reference to the stored value as a second argument. You
+     * must set the stored value in this callback.
+     *
+     * If the callback returns false, parsing will be stopped with an error.
+     */
     std::function<bool(SCustomObject<Type, Ts...> &, Type &)> on_finish;
   };
 
-  /*
-   * Constructor receives a structure.
-   * It's first element is a tuple of object fields arguments structs,
-   * and second element is a callback that will be called after the object is
-   * parsed.
-   * Field argument is a structure where a first element is a string with field
-   * name, and a second field is an argument for respective parser.
-   * If you do not want to provide an argument to a field parser - you can
-   * provide only name.
-   * For example: {"field1", {"field2", ...}, "field3"}
-   * Callback is called with a reference to this parser as an argument and a
-   * reference to internal value. You must set it in this callback.
+  /** @brief SCustomObject constructor.
+   *
+   * @param [in] args Args stucture.
    */
   SCustomObject(const Args &args);
   SCustomObject(const SCustomObject &) = delete;
 
-  // Returns true if parser has some value stored and false otherwise
-  // bool isSet();
-  using TokenParser::isSet;
+#ifdef DOXYGEN_ONLY
+  /** @brief Check if the parser has a value.
+   *
+   * @return True if the parser has some value stored or false otherwise.
+   */
+  bool isSet();
+#endif
 
-  // Returns reference to a parser of n-th field.
-  // template <size_t n> X &get<n>();
+#ifdef DOXYGEN_ONLY
+  /** @brief Field parser getter.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return Reference to n-th field parser.
+   */
+  template <size_t n> inline typename NthType<n, Ts...>::type &get();
+#endif
   using Object<Ts...>::get;
 
-  // Returns reference to parsed value. If value is unset, throws
-  // std::runtime_error.
+  /** @brief Parsed value getter.
+   *
+   * @note If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Const reference to a parsed value.
+   */
   inline const Type &get() const;
 
-  // Returns an rvalue reference to value. After call of this method value is
-  // unset.
+  /** @brief Get the parsed value and unset the parser.
+   *
+   * Moves the parsed value out of the parser.
+   *
+   * @note If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Rvalue reference to the parsed value.
+   */
   inline Type &&pop();
 
  private:
@@ -202,62 +309,106 @@ class SCustomObject : public Object<Ts...> {
   std::function<bool(SCustomObject<T, Ts...> &, T &)> _on_finish;
 };
 
-/*
- * Object parser, that stores the result in a tuple of field parsers types.
- * Ts is a list of any parsers.
+/** @brief %Object parser, that stores the result in a tuple of field parsers
+ * types.
  *
  * Instead of using this type directly you should use an SObject, it will
  * automatically dispatch SCustomObject and SAutoObject based on the template
  * parameters.
+ *
+ * @tparam Ts A list of field parsers types.
  */
 
 template <typename... Ts> class SAutoObject : public Object<Ts...> {
  public:
+  /** A std::tuple with arguments for field parsers. */
   using ChildArgs = typename Object<Ts...>::ChildArgs;
+  /** Stored value type */
   using Type = std::tuple<typename Ts::Type...>;
 
+  /** @brief Struct with arguments for the SAutoObject
+   * @ref SAutoObject() "constructor".
+   */
   struct Args {
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] default_value Default for the parser value.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
     Args(const ChildArgs &args, const Type &default_value,
          const std::function<bool(const Type &)> &on_finish = nullptr);
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
     Args(const ChildArgs &args,
          const std::function<bool(const Type &)> &on_finish = nullptr);
 
+    /** A std::tuple with field arguments.
+     *
+     * A field argument is a structure where the first element is a string
+     * with field's name and the second element is arguments to that field's
+     * parser. If you do not want to provide any arguments to the field's
+     * parser, you can pass only the field's name:
+     * @code {.cpp} {"field1", {"field2", ...}, "field3"} @endcode
+     * In this example field1 and field3 parsers do not receive any agruments
+     * while field2 does receive something.
+     */
     ChildArgs args;
+    /** Default for the parser value. */
     Type default_value;
+    /** @internal Internal flag, shows if default value was set. */
     bool allow_default_value = true;
+    /** Callback, that will be called after an object is parsed.
+     *
+     * The callback will be called with a reference to the stored value as an
+     * argument.
+     *
+     * If the callback returns false, parsing will be stopped with an error.
+     */
     std::function<bool(const Type &)> on_finish;
   };
 
-  /*
-   * Constructor receives a structure.
-   * It's first element is a tuple of object fields arguments structs,
-   * second element is a default value of the stored tuple, and the third
-   * element is a callback that will be called after the object is
-   * parsed.
-   * Second and third srtucture elements are optional.
-   * If you do not specify default value for a tuple, all object fields are
-   * considered mandatory. Otherwise if some expected field is not present, the
-   * default value will be used for it.
-   * Field argument is a structure where a first element is a string with field
-   * name, and a second field is an argument for respective parser.
-   * If you do not want to provide an argument to a field parser - you can
-   * provide only name.
-   * For example: {"field1", {"field2", ...}, "field3"}
-   * Callback is called with a reference to the internal value as an argument.
+  /** @brief SAutoObject constructor.
+   *
+   * @param [in] args Args stucture.
+   * If you do not specify @ref Args::default_value "defult_value" default value
+   * and @ref Args::on_finish "on_finish" callback, you can pass a
+   * @ref Args::args "tuple of field arguments" directly into the constructor.
+   * @note If you are passing a single field name (without arguments), you must
+   * pass it directly to the constructor, without surrounding {}:
+   * @code {.cpp} SObject<...> object("field"); @endcode
    */
   SAutoObject(const Args &args);
   SAutoObject(const SAutoObject &) = delete;
 
-  // Returns true if parser has some value stored and false otherwise
-  // bool isSet();
-  using TokenParser::isSet;
+#ifdef DOXYGEN_ONLY
+  /** @brief Check if the parser has a value.
+   *
+   * @return True if the parser has some value stored or false otherwise.
+   */
+  bool isSet();
+#endif
 
-  // Returns reference to parsed value. If value is unset, throws
-  // std::runtime_error.
+  /** @brief Parsed value getter.
+   *
+   * @note If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Const reference to a parsed value.
+   */
   inline const Type &get() const;
 
-  // Returns an rvalue reference to value. After call of this method value is
-  // unset.
+  /** @brief Get the parsed value and unset the parser.
+   *
+   * Moves the parsed value out of the parser.
+   *
+   * @note If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Rvalue reference to the parsed value.
+   */
   inline Type &&pop();
 
  private:
@@ -286,6 +437,8 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
   std::function<bool(const Type &)> _on_finish;
 };
 
+/** @cond Internal class, needed for SObject */
+
 template <bool auto_type, typename... Ts> struct SObjectDispatcher {};
 
 template <typename... Ts> struct SObjectDispatcher<false, Ts...> {
@@ -296,83 +449,142 @@ template <typename... Ts> struct SObjectDispatcher<true, Ts...> {
   using Type = SAutoObject<Ts...>;
 };
 
-/* Dispatcher type alias, will point to SCustomObject or SAutoObject based on
- * the template parameters. You should use it instead of using those types
- * directly.
+/** @endcond */
+
+#ifdef DOXYGEN_ONLY
+/** @brief SCustomObject and SAutoObject dispatcher
+ *
+ * Will point to SCustomObject or SAutoObject based on the template parameters.
+ * You should use it instead of using those types directly.
  */
+
+template <typename... Ts> class SObject;
+#endif
 
 template <typename T, typename... Ts>
 using SObject =
     typename SObjectDispatcher<std::is_base_of<TokenParser, T>::value, T,
                                Ts...>::Type;
 
+/** @cond Internal class, needed for Union */
+
 template <typename T> struct UnionFieldType { using type = T; };
 
 template <> struct UnionFieldType<std::string> { using type = FieldName; };
 
-/*
- * Union of objects parser. It can be used to parse an object from a list,
- * based on key field value.
- * I is key field type, can be int64_t, bool, std::string.
- * Ts is a list of object parsers.
- * You can use it stand-alone (in this case first field of object must be a key
- * field) or embedded in an object (in this case object fields after key field
- * will be parsed by one of union's object parsers).
+/** @endcond */
+
+/** @brief %Union of @ref Object "Objects" parser.
+ *
+ * Parses an object from @ref Union_Ts "Ts" list based on a value of the type
+ * field value.
+ *
+ * You can use it stand-alone (in this case the first field of an object must
+ * be a type field) or embedded in an object (in this case object fields after
+ * the type field will be parsed by one of union's object parsers).
+ *
+ * Union type is defined by the Args, passed to the constructor.
+ *
+ * @tparam I A type of the type field. Can be int64_t, bool, double and
+ * std::string.
+ *
+ * @tparam Ts A list of object parsers.
+ * @anchor Union_Ts
  */
 template <typename I, typename... Ts>
 class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
  protected:
+  /** @cond Internal typedef */
   using KVParser = KeyValueParser<typename UnionFieldType<I>::type, Ts...>;
+  /** @endcond */
 
  public:
+  /** A std::tuple with arguments for field parsers. */
   using ChildArgs = typename KVParser::ChildArgs;
+
+  /** @brief Struct with arguments for the Union @ref Union() "constructor".
+   */
   struct Args {
+    /** @brief Embedded Union constructor arguments.
+     *
+     * In this mode the parser must be used as an Object field. That field value
+     * would be used as a type field value by the Union.
+     *
+     * @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
     Args(const ChildArgs &args,
          const std::function<bool(Union<I, Ts...> &)> &on_finish = nullptr);
+    /** @brief Standalone Union constructor arguments.
+     *
+     * @param [in] type_field Type field name.
+     *
+     * @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
     Args(const FieldName &type_field, const ChildArgs &args,
          const std::function<bool(Union<I, Ts...> &)> &on_finish = nullptr);
 
+    /** Type field name */
     std::string type_field;
+    /** A std::tuple with field arguments.
+     *
+     * A field argument is a structure where the first element is a string
+     * with field's name and the second element is arguments to that field's
+     * parser. If you do not want to provide any arguments to the field's
+     * parser, you can pass only the field's name:
+     * @code {.cpp} {"field1", {"field2", ...}, "field3"} @endcode
+     * In this example field1 and field3 parsers do not receive any agruments
+     * while field2 does receive something.
+     */
     ChildArgs args;
+    /** Callback, that will be called after a union object is parsed.
+     *
+     * The callback will be called with a reference to the parser as an
+     * argument.
+     *
+     * If the callback returns false, parsing will be stopped with an error.
+     */
     std::function<bool(Union<I, Ts...> &)> on_finish;
   };
 
-  /*
-   * Constructor can receive two structures.
+  /** @brief Union constructor.
    *
-   * In stand-alone mode it's first element is key field name,
-   * second element is a tuple of union members arguments structs,
-   * and third element is a callback that will be called after the union is
-   * parsed.
-   * If you do not specify the callback - you can provide only key field name
-   * and tuple of union members arguments to constructor.
-   *
-   * In embedded mode first element is a tuple of union members arguments,
-   * and second element is a callback that will be called after the union is
-   * parsed.
-   * If you do not specify the callback - you can provide only tuple of union
-   * members arguments to constructor.
-   *
-   * Member argument is a structure where a first element is a string with key
-   * field value, and a second field is an argument for respective parser.
-   *
-   * For example: {"key", {{"1", ...}, {"2", ...}}}
-   * Callback is called with a reference to this parser as an argument.
+   * @param [in] args Args stucture.
+   * If you do not specify @ref Args::type_field "type_field" type field
+   * and @ref Args::on_finish "on_finish" callback, you can pass a
+   * @ref Args::args "tuple of field arguments" directly into the constructor.
    */
   Union(const Args &args);
   Union(const Union &) = delete;
 
-  // Returns id of parsed member. If no members were parsed, throws std::runtime
-  // exception.
+  /** @brief Parsed object index getter.
+   *
+   * @note If no members were parsed, throws std::runtime_error.
+   *
+   * @return Index of a parsed object.
+   */
   size_t currentMemberId();
 
-  // Returns true if parser has parsed something and false otherwise
-  // bool isSet();
-  using TokenParser::isSet;
+#ifdef DOXYGEN_ONLY
+  /** @brief Check if the parser has a value.
+   *
+   * @return True if the parser has some value stored or false otherwise.
+   */
+  bool isSet();
+#endif
 
-  // Returns reference to a parser of n-th member.
-  // template <size_t n> X &get<n>();
-  using KVParser::get;
+#ifdef DOXYGEN_ONLY
+  /** @brief Object parser getter.
+   *
+   * @tparam n Index of the object.
+   *
+   * @return Reference to n-th object parser.
+   */
+  template <size_t n> inline typename NthType<n, Ts...>::type &get();
+#endif
 
  private:
   using TokenParser::checkSet;
@@ -391,44 +603,67 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
   size_t _current_member_id;
 };
 
-/*
- * Array parser.
- * T is any parser.
+/** @brief %Array parser.
+ *
+ * @tparam T Underlying parser type.
  */
 
 template <typename T> class Array : public ArrayParser {
  public:
+  /** Arguments for the underlying parser */
   using ChildArgs = typename T::Args;
+  /** @cond Underlying parser type */
   using ParserType = T;
+  /** @endcond */
+  /** Child arguments for the underlying type */
   template <typename U = Array<T>>
   using GrandChildArgs = typename U::ParserType::ChildArgs;
 
+  /** @brief Struct with arguments for the Array @ref Array() "constructor". */
   struct Args {
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
     Args(const ChildArgs &args,
          const std::function<bool(Array<T> &)> &on_finish = nullptr);
 
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
     template <typename U = Array<T>>
     Args(const GrandChildArgs<U> &args,
          const std::function<bool(Array<T> &)> &on_finish = nullptr);
 
+    /** Arguments for the underlying parser */
     ChildArgs args;
+    /** Callback, that will be called after an object is parsed.
+     *
+     * The callback will be called with a reference to the parser as an
+     * argument.
+     * This reference is mostly useless, it's main purpose it to help the
+     * compiler.
+     *
+     * If the callback returns false, parsing will be stopped with an error.
+     */
     std::function<bool(Array<T> &)> on_finish;
   };
 
-  /*
-   * Constructor receives a structure.
-   * It's first element is an argument of T's constructor,
-   * and second element is a callback that will be called after the array is
-   * parsed.
-   * If you do not specify the callback - you can provide only T's argument to
+  /** @brief Array constructor.
+   *
+   * @param [in] args Args stucture.
+   * If you do not specify @ref Args::on_finish "on_finish" callback, you can
+   * pass a @ref Args::args "underlying parser arguments" directly into the
    * constructor.
-   * Callback is called without arguments.
    */
   Array(const Args &args);
   Array(const Array &) = delete;
 
  protected:
+  /** @cond Internal */
   T _parser;
+  /** @endcond */
 
  private:
   std::function<bool(Array<T> &)> _on_finish;
@@ -436,57 +671,103 @@ template <typename T> class Array : public ArrayParser {
   void finish() override;
 };
 
-/*
- * Array parser, that stores a vector of T's values.
- * T is any parser.
+/** @brief %Array parser, that stores the result in an std::vector of
+ * @ref SArray_T "T" values.
+ *
+ * @tparam T Underlying parser type.
+ * @anchor SArray_T
  */
 
 template <typename T> class SArray : public Array<T> {
  public:
+  /** Arguments for the underlying parser */
   using ChildArgs = typename T::Args;
+  /** Underlying parser value type */
   using EltType = typename T::Type;
+  /** Stored value type */
   using Type = std::vector<EltType>;
+  /** Finish callback type */
   using CallbackType = std::function<bool(const Type &)>;
+  /** @cond Underlying parser type */
   using ParserType = T;
+  /** @endcond */
+  /** Child arguments for the underlying type */
   template <typename U = Array<T>>
   using GrandChildArgs = typename U::ParserType::ChildArgs;
 
+  /** @brief Struct with arguments for the SArray @ref SArray() "constructor".
+   */
   struct Args {
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
     Args(const ChildArgs &args = {}, const CallbackType &on_finish = nullptr);
 
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
     template <typename U = Array<T>>
     Args(const GrandChildArgs<U> &args,
          const CallbackType &on_finish = nullptr);
 
+    /**@param[in] on_finish (optional) Sets #on_finish. */
     Args(const CallbackType &on_finish);
 
+    /** Arguments for the underlying parser */
     ChildArgs args;
+    /** Callback, that will be called after an object is parsed.
+     *
+     * The callback will be called with a reference to the parser as an
+     * argument.
+     * This reference is mostly useless, it's main purpose it to help the
+     * compiler.
+     *
+     * If the callback returns false, parsing will be stopped with an error.
+     */
     std::function<bool(const Type &)> on_finish;
   };
 
-  /*
-   * Constructor receives a structure.
-   * It's first element is an argument of T's constructor,
-   * and second element is a callback that will be called after the array is
-   * parsed.
-   * If you do not specify the callback - you can provide only T's argument to
+  /** @brief Array constructor.
+   *
+   * @param [in] args Args stucture.
+   * If you do not specify @ref Args::on_finish "on_finish" callback, you can
+   * pass a @ref Args::args "underlying parser arguments" directly into the
    * constructor.
-   * If you do not specify T's arguments - you can specify callback only.
-   * Callback is called with a reference to this parser as argument.
+   * If you do not specify @ref Args::args "underlying parser arguments", you can
+   * pass a @ref Args::on_finish "on_finish" callback directly into the
+   * constructor.
    */
   SArray(const Args &args);
   SArray(const SArray &) = delete;
 
-  // Returns true if parser has some value stored and false otherwise
-  // bool isSet();
-  using TokenParser::isSet;
+#ifdef DOXYGEN_ONLY
+  /** @brief Check if the parser has a value.
+   *
+   * @return True if the parser has some value stored or false otherwise.
+   */
+  bool isSet();
+#endif
 
-  // Returns reference to vecor of values. If vector is unset, throws
-  // std::runtime_error.
+  /** @brief Parsed value getter.
+   *
+   * @note If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Const reference to a parsed value.
+   */
   inline const Type &get() const;
 
-  // Returns an rvalue reference to vector of values. After call of this method
-  // value is unset.
+  /** @brief Get the parsed value and unset the parser.
+   *
+   * Moves the parsed value out of the parser.
+   *
+   * @note If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Rvalue reference to the parsed value.
+   */
   inline Type &&pop();
 
  private:
@@ -500,35 +781,68 @@ template <typename T> class SArray : public Array<T> {
   void reset() noexcept override;
 };
 
-/*
- * Main parser.
- * T is one of the entities parsers (value, object, array).
+/** @brief Main parser.
+ *
+ * @tparam T Root parser (Value, Object, SObject, Union, Array, SArray)
+ * @anchor Parser_T
  */
-
 template <typename T> class Parser {
  public:
-  /*
-   * Constructor receives same arguments as T's constructor.
+  /** @brief Parser constructor.
+   *
+   * @param [in] args Takes same arguments as the @ref Parser_T "T" does.
    */
   Parser(const typename T::Args &args = {});
+  /** @brief Parser constructor.
+   *
+   * @param [in] args Takes same arguments as the @ref Parser_T "T" does.
+   */
   template <typename U = T> Parser(const typename U::ChildArgs &args);
   template <typename U = T>
+  /** @brief Parser constructor.
+   *
+   * @param [in] callback Takes same arguments as the @ref Parser_T "T" does.
+   */
   Parser(const typename U::template GrandChildArgs<U> &args);
   template <typename U = T> Parser(const typename U::CallbackType &callback);
 
-  // Parse a piece of json. Returns false in case of error.
+  /** @brief Parses a piece of JSON from an std::string.
+   *
+   * @param [in] data String to parse.
+   *
+   * @return True if parsing was successful and false otherwise.
+   */
   inline bool parse(const std::string &data);
 
-  // Parse a piece of json. Returns false in case of error.
+  /** @brief Parses a piece of JSON from a C-style string.
+   *
+   * @param [in] data Pointer to a C string to parse.
+   *
+   * @param [in] len String length.
+   *
+   * @return True if parsing was successful and false otherwise.
+   */
   inline bool parse(const char *data, size_t len);
 
-  // Finish parsing. Returns false in case of error.
+  /** @brief Finishes parsing.
+   *
+   * @return True if parsing was successful and false otherwise.
+   */
   inline bool finish();
 
-  // Returns parser error.
+  /** @brief Parse error message getter.
+   *
+   * @param [in] verbose (optional) Get the yajl error as well.
+   *
+   * @return An std::string with the error message.
+   */
   inline std::string getError(bool verbose = false);
 
-  // Returns reference to root entity parser.
+
+  /** @brief Root parser getter.
+   *
+   * @return A reference to the root parser (@ref Parser_T "T").
+   */
   inline T &parser();
 
  private:

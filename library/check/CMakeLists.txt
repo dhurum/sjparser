@@ -8,7 +8,7 @@ endif()
 set(DUMMY ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp)
 
 add_custom_command(OUTPUT ${DUMMY}
-  COMMAND ./generate_dummy.sh ${SOURCES_DIR} ${DUMMY} ${HDRS}
+  COMMAND ./generate_dummy.sh ${SJPARSER_SOURCE_DIR} ${DUMMY} ${HDRS}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -30,7 +30,7 @@ string(REPLACE ";" "," CHECKS "${CHECKS}")
 add_custom_target(check_srcs
   COMMAND ${CLANG_TIDY_BIN} -p ${CMAKE_BINARY_DIR}
   -checks=${CHECKS} ${SRCS}
-  WORKING_DIRECTORY  ${SOURCES_DIR}
+  WORKING_DIRECTORY  ${SJPARSER_SOURCE_DIR}
 )
 
 add_custom_target(check_hdrs

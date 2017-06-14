@@ -34,6 +34,7 @@ set_target_properties(${TARGET}_shared PROPERTIES OUTPUT_NAME ${TARGET})
 install(TARGETS ${TARGET} ${TARGET}_shared DESTINATION lib/sjparser)
 install(FILES ${HDRS} DESTINATION include/sjparser)
 
-set(SOURCES_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(SJPARSER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(check)
+add_subdirectory(documentation)
