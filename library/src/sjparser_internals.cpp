@@ -105,26 +105,41 @@ void ArrayParser::on(NullT /*unused*/) {
 }
 
 void ArrayParser::on(const bool &value) {
+  if (!_started) {
+    unexpectedToken("boolean");
+  }
   _parser->on(value);
   childParsed();
 }
 
 void ArrayParser::on(const int64_t &value) {
+  if (!_started) {
+    unexpectedToken("integer");
+  }
   _parser->on(value);
   childParsed();
 }
 
 void ArrayParser::on(const double &value) {
+  if (!_started) {
+    unexpectedToken("double");
+  }
   _parser->on(value);
   childParsed();
 }
 
 void ArrayParser::on(const std::string &value) {
+  if (!_started) {
+    unexpectedToken("string");
+  }
   _parser->on(value);
   childParsed();
 }
 
 void ArrayParser::on(const MapStartT /*unused*/) {
+  if (!_started) {
+    unexpectedToken("map start");
+  }
   _parser->setDispatcher(_dispatcher);
   _dispatcher->pushParser(_parser);
   _parser->on(MapStartT{});

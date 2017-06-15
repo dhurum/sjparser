@@ -138,6 +138,84 @@ TEST(SArray, SArrayWithNullAndValuse) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
+TEST(SArray, UnexpectedBoolean) {
+  std::string buf(R"(true)");
+
+  Parser<SArray<Value<bool>>> parser;
+
+  ASSERT_FALSE(parser.parse(buf));
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token boolean", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                    true
+                     (right here) ------^
+Unexpected token boolean
+)",
+      parser.getError(true));
+}
+
+TEST(SArray, UnexpectedInteger) {
+  std::string buf(R"(10)");
+
+  Parser<SArray<Value<int64_t>>> parser;
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_FALSE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token integer", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                        10
+                     (right here) ------^
+Unexpected token integer
+)",
+      parser.getError(true));
+}
+
+TEST(SArray, UnexpectedDouble) {
+  std::string buf(R"(10.5)");
+
+  Parser<SArray<Value<double>>> parser;
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_FALSE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token double", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                        10.5
+                     (right here) ------^
+Unexpected token double
+)",
+      parser.getError(true));
+}
+
+TEST(SArray, UnexpectedString) {
+  std::string buf(R"("value")");
+
+  Parser<SArray<Value<std::string>>> parser;
+
+  ASSERT_FALSE(parser.parse(buf));
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token string", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                 "value"
+                     (right here) ------^
+Unexpected token string
+)",
+      parser.getError(true));
+}
+
 TEST(SArray, SArrayWithUnexpectedBoolean) {
   std::string buf(R"([true])");
 
@@ -306,6 +384,26 @@ TEST(SArray, SArrayWithArgsStruct) {
   ASSERT_EQ(false, values[1]);
 
   ASSERT_TRUE(parser.parser().isSet());
+}
+
+TEST(SArray, UnexpectedSObject) {
+  std::string buf(
+      R"({"key": "value"})");
+
+  Parser<SArray<SObject<Value<std::string>>>> parser("key");
+
+  ASSERT_FALSE(parser.parse(buf));
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token map start", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                       {"key": "value"}
+                     (right here) ------^
+Unexpected token map start
+)",
+      parser.getError(true));
 }
 
 TEST(SArray, SArrayWithUnexpectedSObject) {

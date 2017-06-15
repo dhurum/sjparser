@@ -188,6 +188,92 @@ TEST(Array, ArrayWithNullAndValues) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
+TEST(Array, UnexpectedBoolean) {
+  std::string buf(R"(true)");
+
+  auto elementCb = [&](const bool &) { return true; };
+
+  Parser<Array<Value<bool>>> parser(elementCb);
+
+  ASSERT_FALSE(parser.parse(buf));
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token boolean", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                    true
+                     (right here) ------^
+Unexpected token boolean
+)",
+      parser.getError(true));
+}
+
+TEST(Array, UnexpectedInteger) {
+  std::string buf(R"(10)");
+
+  auto elementCb = [&](const int64_t &) { return true; };
+
+  Parser<Array<Value<int64_t>>> parser(elementCb);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_FALSE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token integer", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                        10
+                     (right here) ------^
+Unexpected token integer
+)",
+      parser.getError(true));
+}
+
+TEST(Array, UnexpectedDouble) {
+  std::string buf(R"(10.5)");
+
+  auto elementCb = [&](const double &) { return true; };
+
+  Parser<Array<Value<double>>> parser(elementCb);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_FALSE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token double", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                        10.5
+                     (right here) ------^
+Unexpected token double
+)",
+      parser.getError(true));
+}
+
+TEST(Array, UnexpectedString) {
+  std::string buf(R"("value")");
+
+  auto elementCb = [&](const std::string &) { return true; };
+
+  Parser<Array<Value<std::string>>> parser(elementCb);
+
+  ASSERT_FALSE(parser.parse(buf));
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token string", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                 "value"
+                     (right here) ------^
+Unexpected token string
+)",
+      parser.getError(true));
+}
+
 TEST(Array, ArrayWithUnexpectedBoolean) {
   std::string buf(R"([true])");
 
@@ -431,6 +517,26 @@ TEST(Array, ArrayOfObjectsWithoutCallbacks) {
   ASSERT_EQ(2, int_values.size());
   ASSERT_EQ(10, int_values[0]);
   ASSERT_EQ(20, int_values[1]);
+}
+
+TEST(Array, UnexpectedObject) {
+  std::string buf(
+      R"({"key": "value"})");
+
+  Parser<Array<Object<Value<std::string>>>> parser("key");
+
+  ASSERT_FALSE(parser.parse(buf));
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_EQ("Unexpected token map start", parser.getError());
+
+  ASSERT_EQ(
+      R"(parse error: client cancelled parse via callback return value
+                                       {"key": "value"}
+                     (right here) ------^
+Unexpected token map start
+)",
+      parser.getError(true));
 }
 
 TEST(Array, ArrayWithUnexpectedObject) {
