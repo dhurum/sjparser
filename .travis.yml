@@ -1,0 +1,14 @@
+install:
+  - make
+  - cmake
+  - yajl
+  - gcc
+  - g++
+  - libgtest-dev
+
+script:
+  - mkdir build
+  - cd build
+  - cmake ../ -DWITH_TESTS
+  - make
+  - make test
