@@ -31,7 +31,7 @@ void TokenParser::setDispatcher(Dispatcher *dispatcher) noexcept {
   _dispatcher = dispatcher;
 }
 
-void TokenParser::reset() noexcept {
+void TokenParser::reset() {
   _set = false;
 }
 
@@ -90,7 +90,7 @@ void TokenParser::on(ArrayEndT /*unused*/) {
 
 void TokenParser::childParsed() {}
 
-void ArrayParser::reset() noexcept {
+void ArrayParser::reset() {
   TokenParser::reset();
 
   _parser->reset();

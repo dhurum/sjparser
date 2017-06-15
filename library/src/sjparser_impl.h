@@ -112,7 +112,7 @@ template <typename T, typename... Ts> void SCustomObject<T, Ts...>::finish() {
 }
 
 template <typename T, typename... Ts>
-void SCustomObject<T, Ts...>::reset() noexcept {
+void SCustomObject<T, Ts...>::reset() {
   Object<Ts...>::KVParser::reset();
   _value = Type();
 }
@@ -164,7 +164,7 @@ template <typename... Ts> void SAutoObject<Ts...>::finish() {
   }
 }
 
-template <typename... Ts> void SAutoObject<Ts...>::reset() noexcept {
+template <typename... Ts> void SAutoObject<Ts...>::reset() {
   Object<Ts...>::KVParser::reset();
   _value = _default_value;
 }
@@ -315,7 +315,7 @@ template <typename T> void SArray<T>::finish() {
   }
 }
 
-template <typename T> void SArray<T>::reset() noexcept {
+template <typename T> void SArray<T>::reset() {
   _values = Type();
 }
 

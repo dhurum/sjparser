@@ -48,7 +48,7 @@ class TokenParser {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher) noexcept;
   inline bool isSet() const noexcept;
-  virtual void reset() noexcept;
+  virtual void reset();
   void endParsing();
   virtual void finish() = 0;
 
@@ -119,7 +119,7 @@ class KeyValueParser : public TokenParser {
   KeyValueParser(const ChildArgs &args);
 
   void setDispatcher(Dispatcher *dispatcher) noexcept override;
-  void reset() noexcept override;
+  void reset() override;
 
   void on(MapStartT /*unused*/) override;
   void on(MapEndT /*unused*/) override;
@@ -158,7 +158,7 @@ class KeyValueParser : public TokenParser {
 
 class ArrayParser : public TokenParser {
  public:
-  void reset() noexcept override;
+  void reset() override;
 
   void on(NullT /*unused*/) override;
   void on(const bool &value) override;

@@ -304,7 +304,7 @@ class SCustomObject : public Object<Ts...> {
   using TokenParser::checkSet;
 
   void finish() override;
-  void reset() noexcept override;
+  void reset() override;
 
   std::function<bool(SCustomObject<T, Ts...> &, T &)> _on_finish;
 };
@@ -416,7 +416,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
   using TokenParser::checkSet;
 
   void finish() override;
-  void reset() noexcept override;
+  void reset() override;
 
   // This is placed in the private section because the ValueSetter uses pop on
   // all fields, so they are always unset after parsing.
@@ -778,7 +778,7 @@ template <typename T> class SArray : public Array<T> {
 
   void childParsed() override;
   void finish() override;
-  void reset() noexcept override;
+  void reset() override;
 };
 
 /** @brief Main parser.
