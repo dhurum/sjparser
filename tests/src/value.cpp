@@ -98,6 +98,17 @@ TEST(Value, String) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
+TEST(Value, Null) {
+  std::string buf(R"(null)");
+
+  Parser<Value<bool>> parser;
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(Value, UnexpectedBoolean) {
   std::string buf(R"(true)");
 

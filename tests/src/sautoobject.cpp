@@ -64,6 +64,37 @@ TEST(SAutoObject, EmptyDefault) {
   ASSERT_EQ(1, std::get<1>(parser.parser().get()));
 }
 
+TEST(SAutoObject, EmptyWithCallback) {
+  std::string buf(R"({})");
+  bool callback_called = false;
+
+  auto objectCb = [&](const std::tuple<bool, std::string> &) {
+    callback_called = true;
+    return true;
+  };
+
+  Parser<SObject<Value<bool>, Value<std::string>>> parser(
+      {{"bool", "string"}, {true, "test"}, objectCb});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+
+  ASSERT_TRUE(callback_called);
+}
+
+TEST(SAutoObject, Null) {
+  std::string buf(R"(null)");
+
+  Parser<SObject<Value<bool>, Value<std::string>>> parser({"bool", "string"});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(SAutoObject, AllValuesFields) {
   std::string buf(
       R"({"bool": true, "integer": 10, "double": 11.5, "string": "value"})");

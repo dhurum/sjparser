@@ -36,12 +36,30 @@ TEST(SCustomObject, Empty) {
 
   auto objectCb = [&](ObjectParser &, ObjectStruct &) { return true; };
 
-  Parser<ObjectParser> parser({{"key", "key2"}, objectCb});
+  Parser<ObjectParser> parser({{"string", "integer"}, objectCb});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
+}
+
+TEST(SCustomObject, Null) {
+  std::string buf(R"(null)");
+
+  struct ObjectStruct {};
+
+  using ObjectParser =
+      SObject<ObjectStruct, Value<std::string>, Value<int64_t>>;
+
+  auto objectCb = [&](ObjectParser &, ObjectStruct &) { return true; };
+
+  Parser<ObjectParser> parser({{"string", "integer"}, objectCb});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
 }
 
 TEST(SCustomObject, AllValuesFields) {

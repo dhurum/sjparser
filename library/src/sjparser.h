@@ -735,8 +735,8 @@ template <typename T> class SArray : public Array<T> {
    * If you do not specify @ref Args::on_finish "on_finish" callback, you can
    * pass a @ref Args::args "underlying parser arguments" directly into the
    * constructor.
-   * If you do not specify @ref Args::args "underlying parser arguments", you can
-   * pass a @ref Args::on_finish "on_finish" callback directly into the
+   * If you do not specify @ref Args::args "underlying parser arguments", you
+   * can pass a @ref Args::on_finish "on_finish" callback directly into the
    * constructor.
    */
   SArray(const Args &args);
@@ -837,7 +837,6 @@ template <typename T> class Parser {
    * @return An std::string with the error message.
    */
   inline std::string getError(bool verbose = false);
-
 
   /** @brief Root parser getter.
    *

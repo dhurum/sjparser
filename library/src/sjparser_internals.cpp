@@ -44,6 +44,14 @@ void TokenParser::endParsing() {
   }
 }
 
+void TokenParser::on(NullT /*unused*/) {
+  reset();
+
+  if (_dispatcher) {
+    _dispatcher->popParser();
+  }
+}
+
 void TokenParser::on(const bool & /*value*/) {
   unexpectedToken("boolean");
 }
@@ -86,6 +94,14 @@ void ArrayParser::reset() noexcept {
   TokenParser::reset();
 
   _parser->reset();
+}
+
+void ArrayParser::on(NullT /*unused*/) {
+  if (!_started) {
+    TokenParser::on(NullT{});
+    return;
+  }
+  _parser->on(NullT{});
 }
 
 void ArrayParser::on(const bool &value) {
@@ -161,6 +177,11 @@ void Dispatcher::reset() {
   _parsers.push_back(_root_parser);
 }
 
+static int yajl_null(void *ctx) {
+  auto parser = reinterpret_cast<ParserImpl *>(ctx);
+  return parser->on(NullT{});
+}
+
 static int yajl_boolean(void *ctx, int value) {
   auto parser = reinterpret_cast<ParserImpl *>(ctx);
   return parser->on(static_cast<bool>(value));
@@ -209,7 +230,7 @@ static int yajl_end_array(void *ctx) {
 }
 
 static const yajl_callbacks parser_yajl_callbacks{
-    nullptr,      yajl_boolean,     yajl_integer,   yajl_double,
+    yajl_null,    yajl_boolean,     yajl_integer,   yajl_double,
     nullptr,      yajl_string,      yajl_start_map, yajl_map_key,
     yajl_end_map, yajl_start_array, yajl_end_array};
 

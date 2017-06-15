@@ -29,12 +29,48 @@ using namespace SJParser;
 TEST(Object, Empty) {
   std::string buf(R"({})");
 
-  Parser<Object<Value<std::string>, Value<int64_t>>> parser({"key", "key2"});
+  Parser<Object<Value<bool>, Value<std::string>>> parser({"bool", "string"});
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().isSet());
+}
+
+TEST(Object, EmptyWithCallback) {
+  std::string buf(R"({})");
+  bool callback_called = false;
+
+  using ObjectParser = Object<Value<bool>, Value<std::string>>;
+
+  auto objectCb = [&](ObjectParser &) {
+    callback_called = true;
+    return true;
+  };
+
+  Parser<ObjectParser> parser({{"bool", "string"}, objectCb});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().isSet());
+
+  ASSERT_TRUE(callback_called);
+}
+
+TEST(Object, Null) {
+  std::string buf(R"(null)");
+
+  Parser<Object<Value<bool>, Value<std::string>>> parser({"bool", "string"});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
 }
 
 TEST(Object, AllValuesFields) {

@@ -45,6 +45,25 @@ TEST(Array, Empty) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
+TEST(Array, Null) {
+  std::string buf(R"(null)");
+  std::vector<bool> values;
+
+  auto elementCb = [&](const bool &value) {
+    values.push_back(value);
+    return true;
+  };
+
+  Parser<Array<Value<bool>>> parser(elementCb);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(0, values.size());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(Array, ArrayOfBooleans) {
   std::string buf(R"([true, false])");
   std::vector<bool> values;
@@ -125,6 +144,46 @@ TEST(Array, ArrayOfStrings) {
   ASSERT_EQ(2, values.size());
   ASSERT_EQ("value1", values[0]);
   ASSERT_EQ("value2", values[1]);
+
+  ASSERT_TRUE(parser.parser().isSet());
+}
+
+TEST(Array, ArrayWithNull) {
+  std::string buf(R"([null])");
+  std::vector<bool> values;
+
+  auto elementCb = [&](const bool &value) {
+    values.push_back(value);
+    return true;
+  };
+
+  Parser<Array<Value<bool>>> parser(elementCb);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(0, values.size());
+
+  ASSERT_TRUE(parser.parser().isSet());
+}
+
+TEST(Array, ArrayWithNullAndValues) {
+  std::string buf(R"([null, true, null, false])");
+  std::vector<bool> values;
+
+  auto elementCb = [&](const bool &value) {
+    values.push_back(value);
+    return true;
+  };
+
+  Parser<Array<Value<bool>>> parser(elementCb);
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(2, values.size());
+  ASSERT_EQ(true, values[0]);
+  ASSERT_EQ(false, values[1]);
 
   ASSERT_TRUE(parser.parser().isSet());
 }

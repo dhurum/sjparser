@@ -32,6 +32,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
+struct NullT {};
 struct MapStartT {};
 struct MapKeyT {
   // This ref is used only to forward the key into the 'on' method.
@@ -51,6 +52,7 @@ class TokenParser {
   void endParsing();
   virtual void finish() = 0;
 
+  virtual void on(NullT /*unused*/);
   virtual void on(const bool & /*value*/);
   virtual void on(const int64_t & /*value*/);
   virtual void on(const double & /*value*/);
@@ -158,6 +160,7 @@ class ArrayParser : public TokenParser {
  public:
   void reset() noexcept override;
 
+  void on(NullT /*unused*/) override;
   void on(const bool &value) override;
   void on(const int64_t &value) override;
   void on(const double &value) override;

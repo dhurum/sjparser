@@ -43,6 +43,23 @@ TEST(StandaloneUnion, Empty) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
+TEST(StandaloneUnion, Null) {
+  std::string buf(R"(null)");
+
+  // clang-format off
+  Parser<Union<
+    int64_t,
+    Object<Value<bool>>,
+    Object<Value<int64_t>>
+  >> parser({"type", {{1, "bool"}, {2, "int"}}});
+  // clang-format on
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(StandaloneUnion, AllValuesFields) {
   std::string buf(
       R"({"type": 1, "bool": true, "integer": 10})");

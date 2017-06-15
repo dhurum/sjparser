@@ -39,6 +39,17 @@ TEST(SArray, Empty) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
+TEST(SArray, Null) {
+  std::string buf(R"(null)");
+
+  Parser<SArray<Value<bool>>> parser;
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(SArray, SArrayOfBooleans) {
   std::string buf(R"([true, false])");
 
@@ -95,6 +106,34 @@ TEST(SArray, SArrayOfStrings) {
   ASSERT_EQ(2, parser.parser().get().size());
   ASSERT_EQ("value1", parser.parser().get()[0]);
   ASSERT_EQ("value2", parser.parser().get()[1]);
+
+  ASSERT_TRUE(parser.parser().isSet());
+}
+
+TEST(SArray, SArrayWithNull) {
+  std::string buf(R"([null])");
+
+  Parser<SArray<Value<bool>>> parser;
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(0, parser.parser().get().size());
+
+  ASSERT_TRUE(parser.parser().isSet());
+}
+
+TEST(SArray, SArrayWithNullAndValuse) {
+  std::string buf(R"([null, true, null, false])");
+
+  Parser<SArray<Value<bool>>> parser;
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ(true, parser.parser().get()[0]);
+  ASSERT_EQ(false, parser.parser().get()[1]);
 
   ASSERT_TRUE(parser.parser().isSet());
 }
