@@ -35,7 +35,7 @@ add_custom_target(check_srcs
 
 add_custom_target(check_hdrs
   COMMAND ${CLANG_TIDY_BIN} -p ${CMAKE_BINARY_DIR}
-  -checks=${CHECKS} --header-filter=.* ${DUMMY}
+  -checks=${CHECKS} -warnings-as-errors=* --header-filter=.* ${DUMMY}
   DEPENDS ${DUMMY}
 )
 
