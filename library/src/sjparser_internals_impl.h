@@ -87,8 +87,7 @@ void KeyValueParser<I, Ts...>::setDispatcher(Dispatcher *dispatcher) noexcept {
   }
 }
 
-template <typename I, typename... Ts>
-void KeyValueParser<I, Ts...>::reset() {
+template <typename I, typename... Ts> void KeyValueParser<I, Ts...>::reset() {
   TokenParser::reset();
 
   for (auto &field : _fields_map) {

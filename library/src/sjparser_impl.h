@@ -111,8 +111,7 @@ template <typename T, typename... Ts> void SCustomObject<T, Ts...>::finish() {
   }
 }
 
-template <typename T, typename... Ts>
-void SCustomObject<T, Ts...>::reset() {
+template <typename T, typename... Ts> void SCustomObject<T, Ts...>::reset() {
   Object<Ts...>::KVParser::reset();
   _value = Type();
 }
