@@ -1,8 +1,8 @@
 set(TARGET sjparser)
 
-FIND_PROGRAM(GCOV_BIN gcov)
-FIND_PROGRAM(LCOV_BIN lcov)
-FIND_PROGRAM(GENHTML_BIN genhtml)
+find_program(GCOV_BIN gcov)
+find_program(LCOV_BIN lcov)
+find_program(GENHTML_BIN genhtml)
 
 if(NOT GCOV_BIN)
   message(FATAL_ERROR "Can't find gcov")

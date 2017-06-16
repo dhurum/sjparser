@@ -1,4 +1,4 @@
-FIND_PROGRAM(CLANG_TIDY_BIN clang-tidy)
+find_program(CLANG_TIDY_BIN clang-tidy)
 
 if(NOT CLANG_TIDY_BIN)
   message(STATUS "Can't find clang-tidy, no check target created")

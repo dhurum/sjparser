@@ -20,14 +20,12 @@ set(HDRS
   src/sjparser_internals_impl.h
 )
 
-add_library(${TARGET} STATIC
-  ${SRCS}
-)
+add_library(${TARGET} STATIC ${SRCS})
+
 target_link_libraries(${TARGET} ${YAJL_LIB})
 
-add_library(${TARGET}_shared SHARED
-  ${SRCS}
-)
+add_library(${TARGET}_shared SHARED ${SRCS})
+
 target_link_libraries(${TARGET}_shared ${YAJL_LIB})
 set_target_properties(${TARGET}_shared PROPERTIES OUTPUT_NAME ${TARGET})
 
@@ -38,3 +36,10 @@ set(SJPARSER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(check)
 add_subdirectory(documentation)
+
+if(CLANG_FORMAT_BIN)
+  add_custom_target(format_library
+    COMMAND ${CLANG_FORMAT_BIN} -i ${SRCS} ${HDRS}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+endif()

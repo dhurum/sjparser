@@ -16,11 +16,11 @@ endif()
 set(NEED_TESTS ${WITH_TESTS})
 set(NEED_COVERAGE FALSE)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(NEED_TESTS TRUE)
 endif()
 
-if (CMAKE_BUILD_TYPE STREQUAL "Coverage")
+if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
   set(NEED_TESTS TRUE)
   set(NEED_COVERAGE TRUE)
 endif()
@@ -34,7 +34,7 @@ set(CMAKE_CXX_FLAGS
   --std=c++1y
 )
 
-if (${NEED_TESTS})
+if(NEED_TESTS)
   enable_testing()
 endif()
 
@@ -51,12 +51,24 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_COVERAGE}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+find_program(CLANG_FORMAT_BIN clang-format)
+
 add_subdirectory(library)
 
-if (${NEED_TESTS})
-  add_subdirectory(tests)
+if(CLANG_FORMAT_BIN)
+  add_custom_target(format DEPENDS format_library)
+else()
+  message(STATUS "Can't find clang-format, no format target created")
 endif()
 
-if (${NEED_COVERAGE})
+if(NEED_TESTS)
+  add_subdirectory(tests)
+
+  if(CLANG_FORMAT_BIN)
+    add_dependencies(format format_tests)
+  endif()
+endif()
+
+if(NEED_COVERAGE)
   add_subdirectory(coverage)
 endif()

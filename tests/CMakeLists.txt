@@ -4,7 +4,7 @@ find_package(GTest REQUIRED)
 
 include_directories(${SJPARSER_INCLUDES} ${GTEST_INCLUDE_DIRS})
 
-add_executable(${TARGET}
+set(SRCS
   src/value.cpp
   src/array.cpp
   src/sarray.cpp
@@ -15,6 +15,15 @@ add_executable(${TARGET}
   src/object_union.cpp
 )
 
+add_executable(${TARGET} ${SRCS})
+
 target_link_libraries(${TARGET} ${SJPARSER_LIB} ${GTEST_BOTH_LIBRARIES})
 
 add_test(sjparser ${TARGET})
+
+if(CLANG_FORMAT_BIN)
+  add_custom_target(format_tests
+    COMMAND ${CLANG_FORMAT_BIN} -i ${SRCS}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+endif()
