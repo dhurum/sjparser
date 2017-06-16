@@ -1,16 +1,32 @@
 language: cpp
+dist: trusty
+os: linux
+sudo: required
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - libyajl-dev
+      - libgtest-dev
+      - g++-6
+      - libpthread-stubs0-dev
+env:
+  - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+
+branches:
+  only:
+  - master
+
+before_install:
+    - eval "${MATRIX_EVAL}"
 
 install:
-  - make
-  - cmake
-  - yajl
-  - gcc
-  - g++
-  - libgtest-dev
+  - pushd /usr/src/gtest
+  - sudo cmake CMakeLists.txt && sudo make && sudo cp *.a /usr/lib
+  - popd
 
 script:
   - mkdir build
   - cd build
-  - cmake ../ -DWITH_TESTS
-  - make
-  - make test
+  - cmake ../ -DWITH_TESTS=True && make && make test
