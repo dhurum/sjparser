@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/dhurum/sjparser.svg?branch=master)](https://travis-ci.org/dhurum/sjparser)
+[![License](https://img.shields.io/:license-mit-blue.svg)](https://badges.mit-license.org)
+
 # SJParser
 
 Streaming json parser, written on top of yajl.  
