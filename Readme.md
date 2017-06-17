@@ -1,6 +1,8 @@
+[//]: # (start nodoc)
 [![Build Status](https://travis-ci.org/dhurum/sjparser.svg?branch=master)](https://travis-ci.org/dhurum/sjparser)
 [![License](https://img.shields.io/:license-mit-blue.svg)](https://badges.mit-license.org)
 
+[//]: # (end nodoc)
 # SJParser
 
 Streaming json parser, written on top of yajl.  
@@ -9,12 +11,14 @@ The main use case for this parser is very long json documents with known structu
 
 Basically it is a SAX parser on steroids - you specify the expected json structure and your callbacks, and they will be called after a whole object or array is parsed, not just on a `MapKey` or `ArrayEnd` events.
 
+[//]: # (start nodoc)
 ## Documentation
 
 You can find class reference [here](https://dhurum.github.io/sjparser/documentation/html/).  
 
 Also you can check the [Concepts](#concepts).
 
+[//]: # (end nodoc)
 ## Example
 
 ~~~cpp
