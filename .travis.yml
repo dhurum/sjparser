@@ -14,11 +14,15 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-4.0
     packages:
       - libyajl-dev
       - libgtest-dev
       - g++-6
       - libpthread-stubs0-dev
+        # Without clang clang-tidy gives weird errors
+      - clang-4.0
+      - clang-tidy-4.0
 env:
   - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
 
@@ -29,8 +33,9 @@ install:
   - pushd /usr/src/gtest
   - sudo cmake CMakeLists.txt && sudo make && sudo cp *.a /usr/lib
   - popd
+  - sudo ln -s `which clang-tidy-4.0` /usr/bin/clang-tidy
 
 script:
   - mkdir build
   - cd build
-  - cmake ../ -DWITH_TESTS=True && make && make test
+  - cmake ../ -DWITH_TESTS=True && make && make test && make check

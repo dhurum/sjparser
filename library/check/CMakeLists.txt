@@ -23,6 +23,8 @@ set(CHECKS
   -cppcoreguidelines-special-member-functions
   # For some reason, it does not play well with comments before pragma once
   -llvm-header-guard
+  # 4.0.1 complains about std::runtime_error
+  -cert-err60-cpp
 )
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")
