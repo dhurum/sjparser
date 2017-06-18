@@ -473,6 +473,24 @@ TEST(SArray, SArrayOfSAutoObjects) {
   ASSERT_EQ(20, std::get<1>(parser.parser().get()[1]));
 }
 
+TEST(SArray, SArrayOfSAutoObjectsWithDefaultValues) {
+  std::string buf(
+      R"([{"key": "value"}, {"key2": 20}])");
+
+  using ObjectParser = SObject<Value<std::string>, Value<int64_t>>;
+
+  Parser<SArray<ObjectParser>> parser({{"key", "key2"}, {"test", 10}});
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ("value", std::get<0>(parser.parser().get()[0]));
+  ASSERT_EQ(10, std::get<1>(parser.parser().get()[0]));
+  ASSERT_EQ("test", std::get<0>(parser.parser().get()[1]));
+  ASSERT_EQ(20, std::get<1>(parser.parser().get()[1]));
+}
+
 TEST(SArray, SArrayOfSArrays) {
   std::string buf(R"([[true, true], [false, false]])");
 
