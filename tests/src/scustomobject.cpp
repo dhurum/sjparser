@@ -83,10 +83,10 @@ TEST(SCustomObject, AllValuesFields) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.bool_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
-    value.double_value = parser.get<2>().get();
-    value.str_value = parser.get<3>().get();
+    value.bool_value = parser.get<0>();
+    value.int_value = parser.get<1>();
+    value.double_value = parser.get<2>();
+    value.str_value = parser.get<3>();
     return true;
   };
 
@@ -131,8 +131,8 @@ TEST(SCustomObject, FieldsWithCallbacks) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.bool_value = parser.get<0>().get();
-    value.str_value = parser.get<1>().get();
+    value.bool_value = parser.get<0>();
+    value.str_value = parser.get<1>();
     return true;
   };
 
@@ -170,8 +170,8 @@ TEST(SCustomObject, FieldsWithCallbackError) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.bool_value = parser.get<0>().get();
-    value.str_value = parser.get<1>().get();
+    value.bool_value = parser.get<0>();
+    value.str_value = parser.get<1>();
     return true;
   };
 
@@ -236,7 +236,7 @@ TEST(SCustomObject, OneField) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
+    value.str_value = parser.get<0>();
     return true;
   };
 
@@ -268,7 +268,7 @@ TEST(SCustomObject, OneFieldWithFieldCallback) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
+    value.str_value = parser.get<0>();
     return true;
   };
 
@@ -298,8 +298,8 @@ TEST(SCustomObject, ObjectWithArgsStruct) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
     return true;
   };
 
@@ -331,8 +331,8 @@ TEST(SCustomObject, StdStringiFieldNames) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
     return true;
   };
 
@@ -365,8 +365,8 @@ TEST(SCustomObject, PopValue) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
     return true;
   };
 
@@ -417,11 +417,11 @@ TEST(SCustomObject, SCustomObjectWithObject) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
-    value.inner_int_value = parser.get<2>().get<0>().get();
-    value.inner_str_value = parser.get<2>().get<1>().get();
-    value.bool_value = parser.get<3>().get();
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
+    value.inner_int_value = parser.get<2>().get<0>();
+    value.inner_str_value = parser.get<2>().get<1>();
+    value.bool_value = parser.get<3>();
     return true;
   };
 
@@ -514,8 +514,8 @@ TEST(SCustomObject, SCustomObjectWithObjectWithCallback) {
   using InnerObjectParser = Object<Value<int64_t>, Value<std::string>>;
 
   auto innerCb = [&](InnerObjectParser &parser) {
-    int_value = parser.get<0>().get();
-    str_value = parser.get<1>().get();
+    int_value = parser.get<0>();
+    str_value = parser.get<1>();
     return true;
   };
 
@@ -535,9 +535,9 @@ TEST(SCustomObject, SCustomObjectWithObjectWithCallback) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
-    value.bool_value = parser.get<3>().get();
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
+    value.bool_value = parser.get<3>();
     return true;
   };
 
@@ -605,11 +605,11 @@ TEST(SCustomObject, SCustomObjectOfObjects) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.first_str_value = parser.get<0>().get<0>().get();
-    value.first_int_value = parser.get<0>().get<1>().get();
-    value.second_int_value = parser.get<1>().get<0>().get();
-    value.second_str_value = parser.get<1>().get<1>().get();
-    value.bool_value = parser.get<2>().get<0>().get();
+    value.first_str_value = parser.get<0>().get<0>();
+    value.first_int_value = parser.get<0>().get<1>();
+    value.second_int_value = parser.get<1>().get<0>();
+    value.second_str_value = parser.get<1>().get<1>();
+    value.bool_value = parser.get<2>().get<0>();
     return true;
   };
 
@@ -665,8 +665,8 @@ TEST(SCustomObject, SCustomObjectWithSCustomObject) {
       SObject<InnerObjectStruct, Value<int64_t>, Value<std::string>>;
 
   auto innerCb = [&](InnerObjectParser &parser, InnerObjectStruct &value) {
-    value.int_value = parser.get<0>().get();
-    value.str_value = parser.get<1>().get();
+    value.int_value = parser.get<0>();
+    value.str_value = parser.get<1>();
     return true;
   };
 
@@ -687,10 +687,10 @@ TEST(SCustomObject, SCustomObjectWithSCustomObject) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
-    value.inner_value = parser.get<2>().get();
-    value.bool_value = parser.get<3>().get();
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
+    value.inner_value = parser.get<2>();
+    value.bool_value = parser.get<3>();
     return true;
   };
 
@@ -752,10 +752,10 @@ TEST(SCustomObject, SCustomObjectWithSAutoObject) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
-    value.inner_value = parser.get<2>().get();
-    value.bool_value = parser.get<3>().get();
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
+    value.inner_value = parser.get<2>();
+    value.bool_value = parser.get<3>();
     return true;
   };
 
@@ -814,12 +814,12 @@ TEST(SCustomObject, SCustomObjectWithStandaloneUnion) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.int_value = parser.get<0>().get();
+    value.int_value = parser.get<0>();
     value.inner_bool = (parser.get<1>().currentMemberId() == 0) ? true : false;
     if (value.inner_bool) {
-      value.inner_value.bool_value = parser.get<1>().get<0>().get<0>().get();
+      value.inner_value.bool_value = parser.get<1>().get<0>().get<0>();
     } else {
-      value.inner_value.int_value = parser.get<1>().get<1>().get<0>().get();
+      value.inner_value.int_value = parser.get<1>().get<1>().get<0>();
     }
     return true;
   };
@@ -884,12 +884,12 @@ TEST(SCustomObject, SCustomObjectWithObjectUnion) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.int_value = parser.get<0>().get();
+    value.int_value = parser.get<0>();
     value.inner_bool = (parser.get<1>().currentMemberId() == 0) ? true : false;
     if (value.inner_bool) {
-      value.inner_value.bool_value = parser.get<1>().get<0>().get<0>().get();
+      value.inner_value.bool_value = parser.get<1>().get<0>().get<0>();
     } else {
-      value.inner_value.int_value = parser.get<1>().get<1>().get<0>().get();
+      value.inner_value.int_value = parser.get<1>().get<1>().get<0>();
     }
     return true;
   };
@@ -957,8 +957,8 @@ TEST(SCustomObject, SCustomObjectWithArray) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
     value.array_value = tmp_array;
     return true;
   };
@@ -1005,9 +1005,9 @@ TEST(SCustomObject, SCustomObjectWithSArray) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>().get();
-    value.int_value = parser.get<1>().get();
-    value.array_value = parser.get<2>().get();
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
+    value.array_value = parser.get<2>();
     return true;
   };
 

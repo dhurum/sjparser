@@ -175,13 +175,34 @@ class Object : public KeyValueParser<FieldName, Ts...> {
   Object(const Object &) = delete;
 
 #ifdef DOXYGEN_ONLY
+  /** @brief Universal field getter.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return If the n-th field parser stores value (is a Value, SObject or
+   * SArray), then the method returns a const reference to the n-th field parser
+   * value. Otherwise, returns a reference to the n-th field parser.
+   */
+  template <size_t n>
+  inline const typename NthTypes<n, Ts...>::template ValueType<> &get();
+
+  /** @brief Universal field getter.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return If the n-th field parser stores value (is a Value, SObject or
+   * SArray), then the method returns a const reference to the n-th field parser
+   * value. Otherwise, returns a reference to the n-th field parser.
+   */
+  template <size_t n> inline typename NthTypes<n, Ts...>::ParserType &get();
+
   /** @brief Field parser getter.
    *
    * @tparam n Index of the parser's field.
    *
    * @return Reference to n-th field parser.
    */
-  template <size_t n> inline typename NthType<n, Ts...>::type &get();
+  template <size_t n> inline typename NthTypes<n, Ts...>::ParserType &parser();
 #endif
 
  private:

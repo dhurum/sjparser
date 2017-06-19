@@ -126,15 +126,39 @@ class KeyValueParser : public TokenParser {
 
   void onField(const I &field);
 
-  template <size_t n, typename T, typename... TDs> struct NthType {
-    using type = typename NthType<n - 1, TDs...>::type;
+  template <size_t n, typename T, typename... TDs> struct NthTypes {
+    using ParserType = typename NthTypes<n - 1, TDs...>::ParserType;
+
+    template <typename U = NthTypes<n - 1, TDs...>>
+    using ValueType = typename U::template ValueType<>;
+
+    enum { no_value_type = NthTypes<n - 1, TDs...>::no_value_type };
   };
 
-  template <typename T, typename... TDs> struct NthType<0, T, TDs...> {
-    using type = T;
+  template <typename T, typename... TDs> struct NthTypes<0, T, TDs...> {
+    using ParserType = T;
+
+    template <typename U = T> using ValueType = typename U::Type;
+
+   private:
+    using HasType = uint8_t;
+    using NoType = uint32_t;
+    template <typename U> static HasType test(typename U::Type * /*unused*/);
+    template <typename U> static NoType test(...);
+
+   public:
+    enum { no_value_type = sizeof(test<T>(nullptr)) == sizeof(NoType) };
   };
 
-  template <size_t n> inline typename NthType<n, Ts...>::type &get();
+  template <size_t n>
+  inline const typename NthTypes<n, Ts...>::template ValueType<> &get();
+  template <size_t n>
+  inline typename NthTypes<n, Ts...>::ParserType &get(
+      typename std::enable_if<NthTypes<n, Ts...>::no_value_type>::type
+          * /*unused*/
+      = nullptr);
+
+  template <size_t n> inline typename NthTypes<n, Ts...>::ParserType &parser();
 
  protected:
   template <size_t, typename Args, typename...> struct Field {

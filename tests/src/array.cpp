@@ -472,7 +472,7 @@ TEST(Array, ArrayOfObjects) {
   using ObjectParser = Object<Value<std::string>, Value<int64_t>>;
 
   auto objectCb = [&](ObjectParser &parser) {
-    values.push_back({parser.get<0>().pop(), parser.get<1>().pop()});
+    values.push_back({parser.parser<0>().pop(), parser.parser<1>().pop()});
     return true;
   };
 
@@ -574,7 +574,7 @@ TEST(Array, ArrayOfSCustomObjects) {
       SObject<ObjectStruct, Value<std::string>, Value<int64_t>>;
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value = {parser.get<0>().pop(), parser.get<1>().pop()};
+    value = {parser.parser<0>().pop(), parser.parser<1>().pop()};
     values.push_back(value);
     return true;
   };
@@ -629,10 +629,10 @@ TEST(Array, ArrayOfStandaloneUnions) {
   auto unionCb = [&](UnionParser &parser) {
     switch (parser.currentMemberId()) {
       case 0:
-        value_str = parser.get<0>().get<0>().get();
+        value_str = parser.get<0>().get<0>();
         break;
       case 1:
-        value_int = parser.get<1>().get<0>().get();
+        value_int = parser.get<1>().get<0>();
         break;
       default:
         return false;
@@ -672,14 +672,14 @@ TEST(Array, ArrayOfObjectUnions) {
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser) {
-    ids.push_back(parser.get<0>().get());
+    ids.push_back(parser.get<0>());
 
     switch (parser.get<1>().currentMemberId()) {
       case 0:
-        value_str = parser.get<1>().get<0>().get<0>().get();
+        value_str = parser.get<1>().get<0>().get<0>();
         break;
       case 1:
-        value_int = parser.get<1>().get<1>().get<0>().get();
+        value_int = parser.get<1>().get<1>().get<0>();
         break;
       default:
         return false;

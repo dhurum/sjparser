@@ -40,11 +40,11 @@ int main() {
     // Some external API call
     DB.writeObject(
       // Rvalue reference to the first object field (std::string)
-      parser.get<0>().pop(),
+      parser.parser<0>().pop(),
       // If second field is present use it, otherwise use some default value
-      parser.get<1>().isSet() ? parser.get<1>().get() : 0,
+      parser.parser<1>().isSet() ? parser.get<1>() : 0,
       // Rvalue reference to the third object field (std::vector<std::string>)
-      parser.get<2>().pop());
+      parser.parser<2>().pop());
     // Returning false from the callback with make parser stop with an error
     return true;
   };
@@ -137,7 +137,10 @@ Parser<Class> parser;
 
 Fields, specified for `SJParser::Object`, `SJParser::SObject` with a custom value type and `SJParser::SObject` with auto value type and a default value are not mandatory, even empty object would be successfully parsed.  
 The validation should be done in finish callback.  
-If you call `get()` or `pop()` on a parser of a field, that was not present in the parsed object, exception will be thrown.  
+If you call `get()` or `pop()` on a parser of an entity, that was not present in the parsed object, exception will be thrown.  
 You can check if field was parsed with method `isSet()`.  
-So, for your mandatory fields you can just use `get()` or `pop()`, and for optional you can do checks with `isSet()` first.
+So, for your mandatory fields you can just use `get()` or `pop()`, and for optional you can do checks with `isSet()` first.  
 
+For the `SJParser::Object` parsers there are two methods for accessing the fields parsers:
+ - `parser<n>()` - Returns a refecence to the n-th field parser;
+ - `get<n>()` - If the n-th field stores parsed value (is  a `SJParser::Value`, `SJParser::SObject` or `SJParser::SArray`), then a reference to a parsed value will be returned (or, if the entity was not present in the json - an exceptuion will be thrown). Otherwise, a reference to the field parser will be returned;

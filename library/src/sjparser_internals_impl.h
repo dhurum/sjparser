@@ -119,9 +119,29 @@ void KeyValueParser<I, Ts...>::onField(const I &field) {
 
 template <typename I, typename... Ts>
 template <size_t n>
-typename KeyValueParser<I, Ts...>::template NthType<n, Ts...>::type &
-KeyValueParser<I, Ts...>::get() {
-  return *reinterpret_cast<typename NthType<n, Ts...>::type *>(
+const typename KeyValueParser<I, Ts...>::template NthTypes<n, Ts...>::
+    template ValueType<>
+        &KeyValueParser<I, Ts...>::get() {
+  return reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
+             _fields_array[n])
+      ->get();
+}
+
+template <typename I, typename... Ts>
+template <size_t n>
+typename KeyValueParser<I, Ts...>::template NthTypes<n, Ts...>::ParserType &
+KeyValueParser<I, Ts...>::get(
+    typename std::enable_if<NthTypes<n, Ts...>::no_value_type>::type
+        * /*unused*/) {
+  return *reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
+      _fields_array[n]);
+}
+
+template <typename I, typename... Ts>
+template <size_t n>
+typename KeyValueParser<I, Ts...>::template NthTypes<n, Ts...>::ParserType &
+KeyValueParser<I, Ts...>::parser() {
+  return *reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
       _fields_array[n]);
 }
 

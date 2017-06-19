@@ -79,24 +79,24 @@ TEST(StandaloneUnion, AllValuesFields) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<1>().isSet());
+  ASSERT_TRUE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
   ASSERT_EQ(0, parser.parser().currentMemberId());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<0>().get<1>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>());
+  ASSERT_EQ(10, parser.parser().get<0>().get<1>());
 
   buf = R"({"type": 2, "double": 11.5, "string": "value"})";
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().parser<1>().isSet());
   ASSERT_EQ(1, parser.parser().currentMemberId());
 
-  ASSERT_EQ(11.5, parser.parser().get<1>().get<0>().get());
-  ASSERT_EQ("value", parser.parser().get<1>().get<1>().get());
+  ASSERT_EQ(11.5, parser.parser().get<1>().get<0>());
+  ASSERT_EQ("value", parser.parser().get<1>().get<1>());
 }
 
 TEST(StandaloneUnion, StringType) {
@@ -118,11 +118,11 @@ TEST(StandaloneUnion, StringType) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<1>().isSet());
+  ASSERT_TRUE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
   ASSERT_EQ(0, parser.parser().currentMemberId());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>());
 
   buf = R"(
 {
@@ -133,11 +133,11 @@ TEST(StandaloneUnion, StringType) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().parser<1>().isSet());
   ASSERT_EQ(1, parser.parser().currentMemberId());
 
-  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>());
 }
 
 TEST(StandaloneUnion, StdStringType) {
@@ -161,11 +161,11 @@ TEST(StandaloneUnion, StdStringType) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<1>().isSet());
+  ASSERT_TRUE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
   ASSERT_EQ(0, parser.parser().currentMemberId());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>());
 
   buf = R"(
 {
@@ -176,11 +176,11 @@ TEST(StandaloneUnion, StdStringType) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().parser<1>().isSet());
   ASSERT_EQ(1, parser.parser().currentMemberId());
 
-  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>());
 }
 
 TEST(StandaloneUnion, IncorrectTypeType) {
@@ -282,12 +282,12 @@ TEST(StandaloneUnion, FieldsWithCallbacks) {
   int64_t int_value;
 
   auto boolCb = [&](Object<Value<bool>> &parser) {
-    bool_value = parser.get<0>().get();
+    bool_value = parser.get<0>();
     return true;
   };
 
   auto intCb = [&](Object<Value<int64_t>> &parser) {
-    int_value = parser.get<0>().get();
+    int_value = parser.get<0>();
     return true;
   };
 
@@ -302,7 +302,7 @@ TEST(StandaloneUnion, FieldsWithCallbacks) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>());
   ASSERT_EQ(true, bool_value);
 
   buf = R"(
@@ -314,7 +314,7 @@ TEST(StandaloneUnion, FieldsWithCallbacks) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>());
   ASSERT_EQ(100, int_value);
 }
 
@@ -389,9 +389,9 @@ TEST(StandaloneUnion, UnionWithCallback) {
 
   auto unionCb = [&](UnionParser &parser) {
     if (parser.currentMemberId() == 0) {
-      bool_value = parser.get<0>().get<0>().get();
+      bool_value = parser.get<0>().get<0>();
     } else {
-      int_value = parser.get<1>().get<0>().get();
+      int_value = parser.get<1>().get<0>();
     }
     return true;
   };
@@ -401,7 +401,7 @@ TEST(StandaloneUnion, UnionWithCallback) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>());
   ASSERT_EQ(true, bool_value);
 
   buf = R"(
@@ -413,7 +413,7 @@ TEST(StandaloneUnion, UnionWithCallback) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>());
   ASSERT_EQ(100, int_value);
 }
 
@@ -470,7 +470,7 @@ TEST(StandaloneUnion, UnionWithArgsStruct) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>());
 
   buf = R"(
 {
@@ -481,7 +481,7 @@ TEST(StandaloneUnion, UnionWithArgsStruct) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>());
 }
 
 TEST(StandaloneUnion, UnionWithUnexpectedObject) {
@@ -531,7 +531,7 @@ TEST(StandaloneUnion, UnionWithSCustomObject) {
       SObject<ObjectStruct, Value<bool>, Value<std::string>>;
 
   auto innerObjectCb = [&](InnerObjectParser &parser, ObjectStruct &value) {
-    value = {parser.get<0>().pop(), parser.get<1>().pop()};
+    value = {parser.parser<0>().pop(), parser.parser<1>().pop()};
     return true;
   };
 
@@ -552,8 +552,8 @@ TEST(StandaloneUnion, UnionWithSCustomObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get().bool_field);
-  ASSERT_EQ("value", parser.parser().get<0>().get().str_field);
+  ASSERT_EQ(true, parser.parser().get<0>().bool_field);
+  ASSERT_EQ("value", parser.parser().get<0>().str_field);
 
   buf = R"(
 {
@@ -564,7 +564,7 @@ TEST(StandaloneUnion, UnionWithSCustomObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>());
 }
 
 TEST(StandaloneUnion, UnionWithSAutoObject) {
@@ -593,8 +593,8 @@ TEST(StandaloneUnion, UnionWithSAutoObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, std::get<0>(parser.parser().get<0>().get()));
-  ASSERT_EQ("value", std::get<1>(parser.parser().get<0>().get()));
+  ASSERT_EQ(true, std::get<0>(parser.parser().get<0>()));
+  ASSERT_EQ("value", std::get<1>(parser.parser().get<0>()));
 
   buf = R"(
 {
@@ -605,7 +605,7 @@ TEST(StandaloneUnion, UnionWithSAutoObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<1>().get<0>());
 }
 
 TEST(StandaloneUnion, UnionWithObjectUnion) {
@@ -638,7 +638,7 @@ TEST(StandaloneUnion, UnionWithObjectUnion) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
 
   buf = R"(
 {
@@ -650,7 +650,7 @@ TEST(StandaloneUnion, UnionWithObjectUnion) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 
   buf = R"(
 {
@@ -661,5 +661,5 @@ TEST(StandaloneUnion, UnionWithObjectUnion) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<1>().get<0>().get());
+  ASSERT_EQ("value", parser.parser().get<1>().get<0>());
 }

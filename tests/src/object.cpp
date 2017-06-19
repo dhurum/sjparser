@@ -35,8 +35,8 @@ TEST(Object, Empty) {
   ASSERT_TRUE(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
 }
 
 TEST(Object, EmptyWithCallback) {
@@ -56,8 +56,8 @@ TEST(Object, EmptyWithCallback) {
   ASSERT_TRUE(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
 
   ASSERT_TRUE(callback_called);
 }
@@ -89,10 +89,10 @@ TEST(Object, AllValuesFields) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<1>().get());
-  ASSERT_EQ(11.5, parser.parser().get<2>().get());
-  ASSERT_EQ("value", parser.parser().get<3>().get());
+  ASSERT_EQ(true, parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
+  ASSERT_EQ(11.5, parser.parser().get<2>());
+  ASSERT_EQ("value", parser.parser().get<3>());
 }
 
 TEST(Object, FieldsWithCallbacks) {
@@ -117,8 +117,8 @@ TEST(Object, FieldsWithCallbacks) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get());
-  ASSERT_EQ("value", parser.parser().get<1>().get());
+  ASSERT_EQ(true, parser.parser().get<0>());
+  ASSERT_EQ("value", parser.parser().get<1>());
 
   ASSERT_EQ(true, bool_value);
   ASSERT_EQ("value", str_value);
@@ -157,8 +157,8 @@ TEST(Object, ObjectWithCallback) {
   using ObjectParser = Object<Value<bool>, Value<std::string>>;
 
   auto objectCb = [&](ObjectParser &parser) {
-    bool_value = parser.get<0>().get();
-    str_value = parser.get<1>().get();
+    bool_value = parser.get<0>();
+    str_value = parser.get<1>();
     return true;
   };
 
@@ -167,8 +167,8 @@ TEST(Object, ObjectWithCallback) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get());
-  ASSERT_EQ("value", parser.parser().get<1>().get());
+  ASSERT_EQ(true, parser.parser().get<0>());
+  ASSERT_EQ("value", parser.parser().get<1>());
   ASSERT_EQ(true, bool_value);
   ASSERT_EQ("value", str_value);
 }
@@ -205,7 +205,7 @@ TEST(Object, OneField) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
 }
 
 TEST(Object, OneFieldWithFieldCallback) {
@@ -222,7 +222,7 @@ TEST(Object, OneFieldWithFieldCallback) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
   ASSERT_EQ("value", value);
 }
 
@@ -233,7 +233,7 @@ TEST(Object, OneFieldWithObjectCallback) {
   using ObjectParser = Object<Value<std::string>>;
 
   auto objectCb = [&](ObjectParser &parser) {
-    value = parser.get<0>().get();
+    value = parser.get<0>();
     return true;
   };
 
@@ -243,7 +243,7 @@ TEST(Object, OneFieldWithObjectCallback) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
   ASSERT_EQ("value", value);
 }
 
@@ -260,7 +260,7 @@ TEST(Object, OneFieldWithElementAndObjectCallbacks) {
   using ObjectParser = Object<Value<std::string>>;
 
   auto objectCb = [&](ObjectParser &parser) {
-    object_value = parser.get<0>().get();
+    object_value = parser.get<0>();
     return true;
   };
 
@@ -269,7 +269,7 @@ TEST(Object, OneFieldWithElementAndObjectCallbacks) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
   ASSERT_EQ("value", value);
   ASSERT_EQ("value", object_value);
 }
@@ -287,8 +287,8 @@ TEST(Object, ObjectWithArgsStruct) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<1>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
 }
 
 TEST(Object, StdStringiFieldNames) {
@@ -302,8 +302,8 @@ TEST(Object, StdStringiFieldNames) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<1>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
 }
 
 TEST(Object, ObjectWithObject) {
@@ -343,11 +343,11 @@ TEST(Object, ObjectWithObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<1>().get());
-  ASSERT_EQ(1, parser.parser().get<2>().get<0>().get());
-  ASSERT_EQ("in_value", parser.parser().get<2>().get<1>().get());
-  ASSERT_EQ(true, parser.parser().get<3>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
+  ASSERT_EQ(1, parser.parser().get<2>().get<0>());
+  ASSERT_EQ("in_value", parser.parser().get<2>().get<1>());
+  ASSERT_EQ(true, parser.parser().get<3>());
 }
 
 TEST(Object, ObjectWithUnexpectedObject) {
@@ -408,8 +408,8 @@ TEST(Object, ObjectWithObjectWithCallback) {
   using InnerObjectParser = Object<Value<int64_t>, Value<std::string>>;
 
   auto callback = [&](InnerObjectParser &parser) {
-    int_value = parser.get<0>().get();
-    str_value = parser.get<1>().get();
+    int_value = parser.get<0>();
+    str_value = parser.get<1>();
     return true;
   };
 
@@ -436,11 +436,11 @@ TEST(Object, ObjectWithObjectWithCallback) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<1>().get());
-  ASSERT_EQ(1, parser.parser().get<2>().get<0>().get());
-  ASSERT_EQ("in_value", parser.parser().get<2>().get<1>().get());
-  ASSERT_EQ(true, parser.parser().get<3>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
+  ASSERT_EQ(1, parser.parser().get<2>().get<0>());
+  ASSERT_EQ("in_value", parser.parser().get<2>().get<1>());
+  ASSERT_EQ(true, parser.parser().get<3>());
 
   ASSERT_EQ(1, int_value);
   ASSERT_EQ("in_value", str_value);
@@ -494,11 +494,11 @@ TEST(Object, ObjectOfObjects) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<0>().get<1>().get());
-  ASSERT_EQ(1, parser.parser().get<1>().get<0>().get());
-  ASSERT_EQ("value2", parser.parser().get<1>().get<1>().get());
-  ASSERT_EQ(true, parser.parser().get<2>().get<0>().get());
+  ASSERT_EQ("value", parser.parser().get<0>().get<0>());
+  ASSERT_EQ(10, parser.parser().get<0>().get<1>());
+  ASSERT_EQ(1, parser.parser().get<1>().get<0>());
+  ASSERT_EQ("value2", parser.parser().get<1>().get<1>());
+  ASSERT_EQ(true, parser.parser().get<2>().get<0>());
 }
 
 TEST(Object, ObjectWithSCustomObject) {
@@ -523,7 +523,7 @@ TEST(Object, ObjectWithSCustomObject) {
       SObject<ObjectStruct, Value<int64_t>, Value<std::string>>;
 
   auto innerObjectCb = [&](InnerObjectParser &parser, ObjectStruct &value) {
-    value = {parser.get<0>().pop(), parser.get<1>().pop()};
+    value = {parser.parser<0>().pop(), parser.parser<1>().pop()};
     return true;
   };
 
@@ -550,11 +550,11 @@ TEST(Object, ObjectWithSCustomObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<1>().get());
-  ASSERT_EQ(1, parser.parser().get<2>().get().int_field);
-  ASSERT_EQ("in_value", parser.parser().get<2>().get().str_field);
-  ASSERT_EQ(true, parser.parser().get<3>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
+  ASSERT_EQ(1, parser.parser().get<2>().int_field);
+  ASSERT_EQ("in_value", parser.parser().get<2>().str_field);
+  ASSERT_EQ(true, parser.parser().get<3>());
 }
 
 TEST(Object, ObjectWithSAutoObject) {
@@ -594,14 +594,14 @@ TEST(Object, ObjectWithSAutoObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<1>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
 
-  auto inner_value = parser.parser().get<2>().get();
+  auto inner_value = parser.parser().get<2>();
   ASSERT_EQ(1, std::get<0>(inner_value));
   ASSERT_EQ("in_value", std::get<1>(inner_value));
 
-  ASSERT_EQ(true, parser.parser().get<3>().get());
+  ASSERT_EQ(true, parser.parser().get<3>());
 }
 
 TEST(Object, ObjectWithStandaloneUnion) {
@@ -628,12 +628,12 @@ TEST(Object, ObjectWithStandaloneUnion) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<1>().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().parser<1>().isSet());
   ASSERT_EQ(0, parser.parser().get<1>().currentMemberId());
 
-  ASSERT_EQ(10, parser.parser().get<0>().get());
-  ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>().get());
+  ASSERT_EQ(10, parser.parser().get<0>());
+  ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>());
 
   std::string buf2(
       R"(
@@ -648,12 +648,12 @@ TEST(Object, ObjectWithStandaloneUnion) {
   ASSERT_TRUE(parser.parse(buf2));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<1>().get<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().parser<1>().isSet());
   ASSERT_EQ(1, parser.parser().get<1>().currentMemberId());
 
-  ASSERT_EQ(10, parser.parser().get<0>().get());
-  ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>().get());
+  ASSERT_EQ(10, parser.parser().get<0>());
+  ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>());
 }
 
 TEST(Object, ObjectWithObjectUnion) {
@@ -678,12 +678,12 @@ TEST(Object, ObjectWithObjectUnion) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<1>().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().parser<1>().isSet());
   ASSERT_EQ(0, parser.parser().get<1>().currentMemberId());
 
-  ASSERT_EQ(10, parser.parser().get<0>().get());
-  ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>().get());
+  ASSERT_EQ(10, parser.parser().get<0>());
+  ASSERT_EQ(true, parser.parser().get<1>().get<0>().get<0>());
 
   std::string buf2(
       R"(
@@ -696,12 +696,12 @@ TEST(Object, ObjectWithObjectUnion) {
   ASSERT_TRUE(parser.parse(buf2));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<1>().get<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<1>().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().get<1>().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<1>().parser<1>().isSet());
   ASSERT_EQ(1, parser.parser().get<1>().currentMemberId());
 
-  ASSERT_EQ(10, parser.parser().get<0>().get());
-  ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>().get());
+  ASSERT_EQ(10, parser.parser().get<0>());
+  ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>());
 }
 
 TEST(Object, ObjectWithArray) {
@@ -732,8 +732,8 @@ TEST(Object, ObjectWithArray) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<1>().get());
+  ASSERT_EQ("value", parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
   ASSERT_EQ(3, array_value.size());
   ASSERT_EQ("elt1", array_value[0]);
   ASSERT_EQ("elt2", array_value[1]);
@@ -761,10 +761,10 @@ TEST(Object, ObjectWithSArray) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<1>().get());
-  ASSERT_EQ(3, parser.parser().get<2>().get().size());
-  ASSERT_EQ("elt1", parser.parser().get<2>().get()[0]);
-  ASSERT_EQ("elt2", parser.parser().get<2>().get()[1]);
-  ASSERT_EQ("elt3", parser.parser().get<2>().get()[2]);
+  ASSERT_EQ("value", parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
+  ASSERT_EQ(3, parser.parser().get<2>().size());
+  ASSERT_EQ("elt1", parser.parser().get<2>()[0]);
+  ASSERT_EQ("elt2", parser.parser().get<2>()[1]);
+  ASSERT_EQ("elt3", parser.parser().get<2>()[2]);
 }

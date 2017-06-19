@@ -173,7 +173,7 @@ template <size_t n, typename T, typename... TDs>
 SAutoObject<Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
     Type &value, SAutoObject<Ts...> &parser)
     : ValueSetter<n + 1, TDs...>(value, parser) {
-  auto &field_parser = parser.template get<n>();
+  auto &field_parser = parser.template parser<n>();
   if (field_parser.isSet()) {
     std::get<n>(value) = field_parser.pop();
   } else if (!parser._allow_default_value) {

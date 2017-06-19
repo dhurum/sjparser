@@ -82,24 +82,24 @@ TEST(ObjectUnion, AllValuesFields) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<0>().get<1>().isSet());
+  ASSERT_TRUE(parser.parser().get<0>().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<0>().parser<1>().isSet());
   ASSERT_EQ(0, parser.parser().get<0>().currentMemberId());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get());
-  ASSERT_EQ(10, parser.parser().get<0>().get<0>().get<1>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
+  ASSERT_EQ(10, parser.parser().get<0>().get<0>().get<1>());
 
   buf = R"({"type": 2, "double": 11.5, "string": "value"})";
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<0>().get<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<0>().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().get<0>().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<0>().parser<1>().isSet());
   ASSERT_EQ(1, parser.parser().get<0>().currentMemberId());
 
-  ASSERT_EQ(11.5, parser.parser().get<0>().get<1>().get<0>().get());
-  ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<1>().get());
+  ASSERT_EQ(11.5, parser.parser().get<0>().get<1>().get<0>());
+  ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<1>());
 }
 
 TEST(ObjectUnion, StringType) {
@@ -122,11 +122,11 @@ TEST(ObjectUnion, StringType) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<0>().get<1>().isSet());
+  ASSERT_TRUE(parser.parser().get<0>().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<0>().parser<1>().isSet());
   ASSERT_EQ(0, parser.parser().get<0>().currentMemberId());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
 
   buf = R"(
 {
@@ -137,11 +137,11 @@ TEST(ObjectUnion, StringType) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<0>().get<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<0>().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().get<0>().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<0>().parser<1>().isSet());
   ASSERT_EQ(1, parser.parser().get<0>().currentMemberId());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
 TEST(ObjectUnion, StdStringType) {
@@ -166,11 +166,11 @@ TEST(ObjectUnion, StdStringType) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().get<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<0>().get<1>().isSet());
+  ASSERT_TRUE(parser.parser().get<0>().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<0>().parser<1>().isSet());
   ASSERT_EQ(0, parser.parser().get<0>().currentMemberId());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
 
   buf = R"(
 {
@@ -181,11 +181,11 @@ TEST(ObjectUnion, StdStringType) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<0>().get<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<0>().get<1>().isSet());
+  ASSERT_FALSE(parser.parser().get<0>().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().get<0>().parser<1>().isSet());
   ASSERT_EQ(1, parser.parser().get<0>().currentMemberId());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
 TEST(ObjectUnion, IncorrectTypeType) {
@@ -206,7 +206,7 @@ TEST(ObjectUnion, IncorrectTypeType) {
   // clang-format on
 
   ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
   ASSERT_EQ("Unexpected token string", parser.getError());
   ASSERT_EQ(
@@ -236,7 +236,7 @@ TEST(ObjectUnion, IncorrectTypeValue) {
   // clang-format on
 
   ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
   ASSERT_EQ("Unexpected field 3", parser.getError());
   ASSERT_EQ(
@@ -260,12 +260,12 @@ TEST(ObjectUnion, FieldsWithCallbacks) {
   int64_t int_value;
 
   auto boolCb = [&](Object<Value<bool>> &parser) {
-    bool_value = parser.get<0>().get();
+    bool_value = parser.get<0>();
     return true;
   };
 
   auto intCb = [&](Object<Value<int64_t>> &parser) {
-    int_value = parser.get<0>().get();
+    int_value = parser.get<0>();
     return true;
   };
 
@@ -281,7 +281,7 @@ TEST(ObjectUnion, FieldsWithCallbacks) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
   ASSERT_EQ(true, bool_value);
 
   buf = R"(
@@ -293,7 +293,7 @@ TEST(ObjectUnion, FieldsWithCallbacks) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
   ASSERT_EQ(100, int_value);
 }
 
@@ -319,7 +319,7 @@ TEST(ObjectUnion, FieldsWithCallbackError) {
   // clang-format on
 
   ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
   ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
@@ -337,7 +337,7 @@ Callback returned false
 })";
 
   ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
   ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
@@ -369,9 +369,9 @@ TEST(ObjectUnion, UnionWithCallback) {
 
   auto unionCb = [&](UnionParser &parser) {
     if (parser.currentMemberId() == 0) {
-      bool_value = parser.get<0>().get<0>().get();
+      bool_value = parser.get<0>().get<0>();
     } else {
-      int_value = parser.get<1>().get<0>().get();
+      int_value = parser.get<1>().get<0>();
     }
     return true;
   };
@@ -382,7 +382,7 @@ TEST(ObjectUnion, UnionWithCallback) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
   ASSERT_EQ(true, bool_value);
 
   buf = R"(
@@ -394,7 +394,7 @@ TEST(ObjectUnion, UnionWithCallback) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
   ASSERT_EQ(100, int_value);
 }
 
@@ -418,7 +418,7 @@ TEST(ObjectUnion, UnionWithCallbackError) {
       {{"type", {{{1, "bool"}, {2, "int"}}, unionCb}}});
 
   ASSERT_FALSE(parser.parse(buf));
-  ASSERT_TRUE(parser.parser().get<0>().isSet());
+  ASSERT_TRUE(parser.parser().parser<0>().isSet());
 
   ASSERT_EQ("Callback returned false", parser.getError());
   ASSERT_EQ(
@@ -452,7 +452,7 @@ TEST(ObjectUnion, UnionWithArgsStruct) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
 
   buf = R"(
 {
@@ -463,7 +463,7 @@ TEST(ObjectUnion, UnionWithArgsStruct) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
 TEST(ObjectUnion, UnionWithUnexpectedObject) {
@@ -484,7 +484,7 @@ TEST(ObjectUnion, UnionWithUnexpectedObject) {
   // clang-format on
 
   ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
   ASSERT_EQ("Unexpected field error", parser.getError());
   ASSERT_EQ(
@@ -514,7 +514,7 @@ TEST(ObjectUnion, UnionWithSCustomObject) {
       SObject<ObjectStruct, Value<bool>, Value<std::string>>;
 
   auto innerObjectCb = [&](InnerObjectParser &parser, ObjectStruct &value) {
-    value = {parser.get<0>().pop(), parser.get<1>().pop()};
+    value = {parser.parser<0>().pop(), parser.parser<1>().pop()};
     return true;
   };
 
@@ -536,8 +536,8 @@ TEST(ObjectUnion, UnionWithSCustomObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get().bool_field);
-  ASSERT_EQ("value", parser.parser().get<0>().get<0>().get().str_field);
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().bool_field);
+  ASSERT_EQ("value", parser.parser().get<0>().get<0>().str_field);
 
   buf = R"(
 {
@@ -548,7 +548,7 @@ TEST(ObjectUnion, UnionWithSCustomObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
 TEST(ObjectUnion, UnionWithSAutoObject) {
@@ -578,8 +578,8 @@ TEST(ObjectUnion, UnionWithSAutoObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, std::get<0>(parser.parser().get<0>().get<0>().get()));
-  ASSERT_EQ("value", std::get<1>(parser.parser().get<0>().get<0>().get()));
+  ASSERT_EQ(true, std::get<0>(parser.parser().get<0>().get<0>()));
+  ASSERT_EQ("value", std::get<1>(parser.parser().get<0>().get<0>()));
 
   buf = R"(
 {
@@ -590,7 +590,7 @@ TEST(ObjectUnion, UnionWithSAutoObject) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
 TEST(ObjectUnion, UnionWithObjectUnion) {
@@ -624,7 +624,7 @@ TEST(ObjectUnion, UnionWithObjectUnion) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get<0>().get());
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get<0>());
 
   buf = R"(
 {
@@ -636,7 +636,7 @@ TEST(ObjectUnion, UnionWithObjectUnion) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ(100, parser.parser().get<0>().get<0>().get<1>().get<0>());
 
   buf = R"(
 {
@@ -647,7 +647,7 @@ TEST(ObjectUnion, UnionWithObjectUnion) {
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<0>().get());
+  ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<0>());
 }
 
 TEST(ObjectUnion, UnionWithUnexpectedMapStart) {
@@ -667,7 +667,7 @@ TEST(ObjectUnion, UnionWithUnexpectedMapStart) {
   // clang-format on
 
   ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().get<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
   ASSERT_EQ("Union with an empty type field can't parse this",
             parser.getError());
