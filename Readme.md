@@ -40,11 +40,11 @@ int main() {
     // Some external API call
     DB.writeObject(
       // Rvalue reference to the first object field (std::string)
-      parser.parser<0>().pop(),
+      parser.pop<0>(),
       // If second field is present use it, otherwise use some default value
       parser.parser<1>().isSet() ? parser.get<1>() : 0,
       // Rvalue reference to the third object field (std::vector<std::string>)
-      parser.parser<2>().pop());
+      parser.pop<2>());
     // Returning false from the callback with make parser stop with an error
     return true;
   };
@@ -143,4 +143,5 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
 
 For the `SJParser::Object` parsers there are two methods for accessing the fields parsers:
  - `parser<n>()` - Returns a refecence to the n-th field parser;
- - `get<n>()` - If the n-th field stores parsed value (is  a `SJParser::Value`, `SJParser::SObject` or `SJParser::SArray`), then a reference to a parsed value will be returned (or, if the entity was not present in the json - an exceptuion will be thrown). Otherwise, a reference to the field parser will be returned;
+ - `get<n>()` - If the n-th field stores parsed value (is  a `SJParser::Value`, `SJParser::SObject` or `SJParser::SArray`), then a reference to a parsed value will be returned (or, if the entity was not present in the json - an exception will be thrown). Otherwise, a reference to the field parser will be returned;
+ - `pop<n>()` - If the n-th field stores parsed value (is  a `SJParser::Value`, `SJParser::SObject` or `SJParser::SArray`), then an rvalue reference to a parsed value will be returned (or, if the entity was not present in the json - an exception will be thrown). Otherwise, this method is not defined;

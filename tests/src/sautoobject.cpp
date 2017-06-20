@@ -581,7 +581,7 @@ TEST(SAutoObject, SAutoObjectWithSCustomObject) {
       SObject<ObjectStruct, Value<int64_t>, Value<std::string>>;
 
   auto innerObjectCb = [&](InnerObjectParser &parser, ObjectStruct &value) {
-    value = {parser.parser<0>().pop(), parser.parser<1>().pop()};
+    value = {parser.pop<0>(), parser.pop<1>()};
     return true;
   };
 

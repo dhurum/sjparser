@@ -439,7 +439,7 @@ TEST(SArray, SArrayOfSCustomObjects) {
       SObject<ObjectStruct, Value<std::string>, Value<int64_t>>;
 
   auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value = {parser.parser<0>().pop(), parser.parser<1>().pop()};
+    value = {parser.pop<0>(), parser.pop<1>()};
     return true;
   };
 
