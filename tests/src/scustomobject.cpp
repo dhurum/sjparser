@@ -1023,3 +1023,72 @@ TEST(SCustomObject, SCustomObjectWithSArray) {
   ASSERT_EQ("elt2", parser.parser().get().array_value[1]);
   ASSERT_EQ("elt3", parser.parser().get().array_value[2]);
 }
+
+TEST(SCustomObject, Move) {
+  std::string buf(
+      R"(
+{
+  "integer": 1,
+  "string": "in_value"
+})");
+
+  struct ObjectStruct {
+    int64_t int_field;
+    std::string str_field;
+
+    ObjectStruct() {}
+
+    ObjectStruct(ObjectStruct &&other) {
+      int_field = std::move(other.int_field);
+      str_field = std::move(other.str_field);
+    }
+
+    // Needed for parser internals
+    ObjectStruct &operator=(ObjectStruct &&other) {
+      int_field = std::move(other.int_field);
+      str_field = std::move(other.str_field);
+      return *this;
+    }
+  };
+
+  using ObjectParser =
+      SObject<ObjectStruct, Value<int64_t>, Value<std::string>>;
+
+  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+    value.int_field = parser.get<0>();
+    value.str_field = parser.get<1>();
+    return true;
+  };
+
+  // clang-format off
+  Parser<ObjectParser> parser({
+      {
+          "integer",
+          "string"
+      }, objectCb});
+  // clang-format on
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  auto value = parser.parser().pop();
+  ASSERT_FALSE(parser.parser().isSet());
+
+  ASSERT_EQ(1, value.int_field);
+  ASSERT_EQ("in_value", value.str_field);
+
+  buf = R"(
+{
+  "integer": 10,
+  "string": "in_value2"
+})";
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  auto value2 = parser.parser().pop();
+  ASSERT_FALSE(parser.parser().isSet());
+
+  ASSERT_EQ(10, value2.int_field);
+  ASSERT_EQ("in_value2", value2.str_field);
+}

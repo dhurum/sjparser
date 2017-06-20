@@ -672,37 +672,92 @@ TEST(SAutoObject, SAutoObjectWithDefaultSArray) {
   ASSERT_EQ("elt2", array[1]);
 }
 
-TEST(SAutoObject, SAutoObjectMove) {
+TEST(SAutoObject, Move) {
   std::string buf(
-      R"({"string": "value", "integer": 10})");
+      R"(
+{
+  "object": {
+    "integer": 1,
+    "string": "in_value"
+  }
+})");
+  static bool copy_used = false;
 
-  Parser<SObject<Value<std::string>, Value<int64_t>>> parser(
-      {"string", "integer"});
+  struct ObjectStruct {
+    int64_t int_field;
+    std::string str_field;
+
+    ObjectStruct() {}
+
+    ObjectStruct(const ObjectStruct &other) {
+      int_field = other.int_field;
+      str_field = other.str_field;
+      copy_used = true;
+    }
+
+    ObjectStruct &operator=(const ObjectStruct &other) {
+      int_field = other.int_field;
+      str_field = other.str_field;
+      copy_used = true;
+      return *this;
+    }
+
+    ObjectStruct(ObjectStruct &&other) {
+      int_field = std::move(other.int_field);
+      str_field = std::move(other.str_field);
+    }
+  };
+
+  using InnerObjectParser =
+      SObject<ObjectStruct, Value<int64_t>, Value<std::string>>;
+
+  auto innerObjectCb = [&](InnerObjectParser &parser, ObjectStruct &value) {
+    value.int_field = parser.get<0>();
+    value.str_field = parser.get<1>();
+    return true;
+  };
+
+  // clang-format off
+  Parser<SObject<InnerObjectParser>> parser({
+      {
+        "object", {
+          {
+            "integer",
+            "string"
+          }, innerObjectCb
+        }
+      }});
+  // clang-format on
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().isSet());
+  copy_used = false;
+
   auto value = parser.parser().pop();
   ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("value", std::get<0>(value));
-  ASSERT_EQ(10, std::get<1>(value));
+  ASSERT_FALSE(copy_used);
+  ASSERT_EQ(1, std::get<0>(value).int_field);
+  ASSERT_EQ("in_value", std::get<0>(value).str_field);
 
   buf = R"(
-
 {
-  "string": "value2",
-  "integer": 20
+  "object": {
+    "integer": 10,
+    "string": "in_value2"
+  }
 })";
 
   ASSERT_TRUE(parser.parse(buf));
   ASSERT_TRUE(parser.finish());
 
-  ASSERT_TRUE(parser.parser().isSet());
-  value = parser.parser().pop();
+  copy_used = false;
+
+  auto value2 = parser.parser().pop();
   ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("value2", std::get<0>(value));
-  ASSERT_EQ(20, std::get<1>(value));
+  ASSERT_FALSE(copy_used);
+  ASSERT_EQ(10, std::get<0>(value2).int_field);
+  ASSERT_EQ("in_value2", std::get<0>(value2).str_field);
 }

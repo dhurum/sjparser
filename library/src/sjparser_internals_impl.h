@@ -146,6 +146,16 @@ KeyValueParser<I, Ts...>::parser() {
 }
 
 template <typename I, typename... Ts>
+template <size_t n>
+typename KeyValueParser<I, Ts...>::template NthTypes<n, Ts...>::
+    template ValueType<>
+        &&KeyValueParser<I, Ts...>::pop() {
+  return reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
+             _fields_array[n])
+      ->pop();
+}
+
+template <typename I, typename... Ts>
 template <size_t n, typename Args, typename T, typename... TDs>
 KeyValueParser<I, Ts...>::Field<n, Args, T, TDs...>::Field(
     std::array<TokenParser *, sizeof...(Ts)> &fields_array,

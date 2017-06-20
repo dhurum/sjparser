@@ -523,7 +523,7 @@ TEST(Object, ObjectWithSCustomObject) {
       SObject<ObjectStruct, Value<int64_t>, Value<std::string>>;
 
   auto innerObjectCb = [&](InnerObjectParser &parser, ObjectStruct &value) {
-    value = {parser.parser<0>().pop(), parser.parser<1>().pop()};
+    value = {parser.pop<0>(), parser.pop<1>()};
     return true;
   };
 
@@ -767,4 +767,81 @@ TEST(Object, ObjectWithSArray) {
   ASSERT_EQ("elt1", parser.parser().get<2>()[0]);
   ASSERT_EQ("elt2", parser.parser().get<2>()[1]);
   ASSERT_EQ("elt3", parser.parser().get<2>()[2]);
+}
+
+TEST(Object, Move) {
+  std::string buf(
+      R"(
+{
+  "object": {
+    "integer": 1,
+    "string": "in_value"
+  }
+})");
+
+  struct ObjectStruct {
+    int64_t int_field;
+    std::string str_field;
+
+    ObjectStruct() {}
+
+    ObjectStruct(ObjectStruct &&other) {
+      int_field = std::move(other.int_field);
+      str_field = std::move(other.str_field);
+    }
+
+    // Needed for parser internals
+    ObjectStruct &operator=(ObjectStruct &&other) {
+      int_field = std::move(other.int_field);
+      str_field = std::move(other.str_field);
+      return *this;
+    }
+  };
+
+  using InnerObjectParser =
+      SObject<ObjectStruct, Value<int64_t>, Value<std::string>>;
+
+  auto innerObjectCb = [&](InnerObjectParser &parser, ObjectStruct &value) {
+    value.int_field = parser.get<0>();
+    value.str_field = parser.get<1>();
+    return true;
+  };
+
+  // clang-format off
+  Parser<Object<InnerObjectParser>> parser({
+      {
+        "object", {
+          {
+            "integer",
+            "string"
+          }, innerObjectCb
+        }
+      }});
+  // clang-format on
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  auto value = parser.parser().pop<0>();
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+
+  ASSERT_EQ(1, value.int_field);
+  ASSERT_EQ("in_value", value.str_field);
+
+  buf = R"(
+{
+  "object": {
+    "integer": 10,
+    "string": "in_value2"
+  }
+})";
+
+  ASSERT_TRUE(parser.parse(buf));
+  ASSERT_TRUE(parser.finish());
+
+  auto value2 = parser.parser().pop<0>();
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+
+  ASSERT_EQ(10, value2.int_field);
+  ASSERT_EQ("in_value2", value2.str_field);
 }

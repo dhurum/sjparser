@@ -160,6 +160,9 @@ class KeyValueParser : public TokenParser {
 
   template <size_t n> inline typename NthTypes<n, Ts...>::ParserType &parser();
 
+  template <size_t n>
+  inline typename NthTypes<n, Ts...>::template ValueType<> &&pop();
+
  protected:
   template <size_t, typename Args, typename...> struct Field {
     Field(std::array<TokenParser *, sizeof...(Ts)> & /*fields_array*/,

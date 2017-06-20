@@ -44,22 +44,10 @@ template <typename T> const T &Value<T>::get() const {
   return _value;
 }
 
-template <typename T>
-template <typename U>
-typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&
-Value<T>::pop() {
+template <typename T> T &&Value<T>::pop() {
   checkSet();
   _set = false;
   return std::move(_value);
-}
-
-template <typename T>
-template <typename U>
-const typename std::enable_if<!std::is_same<U, std::string>::value, U>::type &
-Value<T>::pop() {
-  checkSet();
-  _set = false;
-  return _value;
 }
 
 template <typename... Ts>

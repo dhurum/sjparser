@@ -80,31 +80,14 @@ template <typename T> class Value : public TokenParser {
 
   /** @brief Get the parsed value and unset the parser.
    *
-   * For std::string values moves the parsed value out of the parser.
+   * Moves the parsed value out of the parser.
    *
    * @note If value is unset (no value was parsed or #pop was called), throws
    * std::runtime_error.
    *
    * @return Rvalue reference to the parsed value.
    */
-  template <typename U = Type>
-  inline
-      typename std::enable_if<std::is_same<U, std::string>::value, U>::type &&
-      pop();
-
-  /** @brief Get the parsed value, and unset the parser.
-   *
-   * For non std::string values.
-   *
-   * @note If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
-   *
-   * @return Const lvalue reference to the parsed value.
-   */
-  template <typename U = Type>
-  inline const typename std::enable_if<!std::is_same<U, std::string>::value,
-                                       U>::type &
-  pop();
+  inline Type &&pop();
 
  private:
   Type _value;
@@ -308,12 +291,40 @@ class SCustomObject : public Object<Ts...> {
    */
   inline const Type &get() const;
 
+#ifdef DOXYGEN_ONLY
+  /** @brief Get the field parsed value and unset the field parser.
+   *
+   * Moves the n-th field parsed value out of the field parser.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @note @par
+   * If value is unset (no value was parsed or #pop was called), throws
+   * std::runtime_error.
+   *
+   * @return Rvalue reference to n-th field parser value.
+   */
+  template <size_t n>
+  inline typename NthTypes<n, Ts...>::template ValueType<> &&pop();
+#endif
+  using Object<Ts...>::pop;
+
   /** @brief Get the parsed value and unset the parser.
    *
    * Moves the parsed value out of the parser.
    *
    * @note If value is unset (no value was parsed or #pop was called), throws
    * std::runtime_error.
+   *
+   * @note
+   * @par
+   * If you want your SCustomObject::Type to be movable, you need to provide
+   * either a move assignment operator or a copy assignment operator, they are
+   * used internally.
+   * @par
+   * If you want to use this parser in the SAutoObject, you need to provide both
+   * a copy constructor and a copy assignment operator in the
+   * SCustomObject::Type, they are used by std::tuple.
    *
    * @return Rvalue reference to the parsed value.
    */
@@ -425,8 +436,13 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    *
    * Moves the parsed value out of the parser.
    *
-   * @note If value is unset (no value was parsed or #pop was called), throws
+   * @note @par
+   * If value is unset (no value was parsed or #pop was called), throws
    * std::runtime_error.
+   *
+   * @note If you want to use SCustomObject inside this parser, you need to
+   * provide both a copy constructor and a copy assignment operators in the
+   * SCustomObject::Type, they are used by std::tuple.
    *
    * @return Rvalue reference to the parsed value.
    */
