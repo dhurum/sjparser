@@ -14,6 +14,8 @@ set(SRCS
   src/sautoobject.cpp
   src/standalone_union.cpp
   src/object_union.cpp
+  src/parse_error.cpp
+  src/yajl_parser.cpp
 )
 
 add_executable(${TARGET} ${SRCS})

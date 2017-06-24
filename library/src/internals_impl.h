@@ -172,19 +172,6 @@ template <typename T> void Dispatcher::on(const T &value) {
   }
   _parsers.back()->on(value);
 }
-
-template <typename T> int ParserImpl::on(const T &token) noexcept {
-  try {
-    _dispatcher.on(token);
-  } catch (std::exception &e) {
-    _sjparser_error = e.what();
-    return 0;
-  } catch (...) {
-    _sjparser_error = "Unexpected exception";
-    return 0;
-  }
-  return 1;
-}
 }  // namespace SJParser
 
 namespace std {

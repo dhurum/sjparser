@@ -33,8 +33,8 @@ TEST(Value, Boolean) {
 
   ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_EQ(true, parser.parser().get());
@@ -51,8 +51,8 @@ TEST(Value, Integer) {
 
   ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_EQ(10, parser.parser().get());
@@ -69,8 +69,8 @@ TEST(Value, Double) {
 
   ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_EQ(1.3, parser.parser().get());
@@ -87,8 +87,8 @@ TEST(Value, String) {
 
   ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_EQ("value", parser.parser().get());
@@ -103,8 +103,8 @@ TEST(Value, Null) {
 
   Parser<Value<bool>> parser;
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
 }
@@ -114,18 +114,22 @@ TEST(Value, UnexpectedBoolean) {
 
   Parser<Value<std::string>> parser;
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token boolean", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token boolean", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                     true
                      (right here) ------^
-Unexpected token boolean
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Value, UnexpectedString) {
@@ -133,18 +137,22 @@ TEST(Value, UnexpectedString) {
 
   Parser<Value<bool>> parser;
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token string", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token string", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                  "error"
                      (right here) ------^
-Unexpected token string
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Value, UnexpectedInteger) {
@@ -152,19 +160,23 @@ TEST(Value, UnexpectedInteger) {
 
   Parser<Value<bool>> parser;
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_FALSE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  try {
+    parser.finish();
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token integer", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token integer", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                         10
                      (right here) ------^
-Unexpected token integer
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Value, UnexpectedDouble) {
@@ -172,19 +184,23 @@ TEST(Value, UnexpectedDouble) {
 
   Parser<Value<bool>> parser;
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_FALSE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  try {
+    parser.finish();
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token double", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token double", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                         10.5
                      (right here) ------^
-Unexpected token double
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Value, UnexpectedMapStart) {
@@ -192,18 +208,22 @@ TEST(Value, UnexpectedMapStart) {
 
   Parser<Value<bool>> parser;
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token map start", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token map start", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                        {
                      (right here) ------^
-Unexpected token map start
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Value, UnexpectedArrayStart) {
@@ -211,18 +231,22 @@ TEST(Value, UnexpectedArrayStart) {
 
   Parser<Value<bool>> parser;
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token array start", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token array start", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                        [
                      (right here) ------^
-Unexpected token array start
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Value, UnsetValue) {
@@ -250,8 +274,8 @@ TEST(Value, ValueWithCallback) {
 
   Parser<Value<std::string>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_EQ("value", parser.parser().get());
@@ -265,14 +289,18 @@ TEST(Value, ValueWithCallbackError) {
 
   Parser<Value<std::string>> parser(elementCb);
 
-  ASSERT_FALSE(parser.parse(buf));
-
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                  "value"
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }

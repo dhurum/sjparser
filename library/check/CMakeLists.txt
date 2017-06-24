@@ -25,6 +25,8 @@ set(CHECKS
   -llvm-header-guard
   # 4.0.1 complains about std::runtime_error
   -cert-err60-cpp
+  # clang-tidy and clang-format seems to disagree
+  -llvm-include-order
 )
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")

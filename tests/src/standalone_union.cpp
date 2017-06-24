@@ -37,8 +37,8 @@ TEST(StandaloneUnion, Empty) {
   >> parser({"type", {{1, "bool"}, {2, "int"}}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
 }
@@ -54,8 +54,8 @@ TEST(StandaloneUnion, Null) {
   >> parser({"type", {{1, "bool"}, {2, "int"}}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
 }
@@ -76,8 +76,8 @@ TEST(StandaloneUnion, AllValuesFields) {
   >> parser({"type", {{1, {"bool", "integer"}}, {2, {"double", "string"}}}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().parser<0>().isSet());
   ASSERT_FALSE(parser.parser().parser<1>().isSet());
@@ -88,8 +88,8 @@ TEST(StandaloneUnion, AllValuesFields) {
 
   buf = R"({"type": 2, "double": 11.5, "string": "value"})";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().parser<0>().isSet());
   ASSERT_TRUE(parser.parser().parser<1>().isSet());
@@ -115,8 +115,8 @@ TEST(StandaloneUnion, StringType) {
   >> parser({"type", {{"1", "bool"}, {"2", "int"}}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().parser<0>().isSet());
   ASSERT_FALSE(parser.parser().parser<1>().isSet());
@@ -130,8 +130,8 @@ TEST(StandaloneUnion, StringType) {
   "int": 100
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().parser<0>().isSet());
   ASSERT_TRUE(parser.parser().parser<1>().isSet());
@@ -158,8 +158,8 @@ TEST(StandaloneUnion, StdStringType) {
   >> parser({"type", {{types[0], "bool"}, {types[1], "int"}}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().parser<0>().isSet());
   ASSERT_FALSE(parser.parser().parser<1>().isSet());
@@ -173,8 +173,8 @@ TEST(StandaloneUnion, StdStringType) {
   "int": 100
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().parser<0>().isSet());
   ASSERT_TRUE(parser.parser().parser<1>().isSet());
@@ -199,17 +199,22 @@ TEST(StandaloneUnion, IncorrectTypeType) {
   >> parser({"type", {{1, "bool"}, {2, "int"}}});
   // clang-format on
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("Unexpected token string", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Unexpected token string", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                          {   "type": "1",   "bool": true }
                      (right here) ------^
-Unexpected token string
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(StandaloneUnion, IncorrectTypeValue) {
@@ -228,17 +233,22 @@ TEST(StandaloneUnion, IncorrectTypeValue) {
   >> parser({"type", {{1, "bool"}, {2, "int"}}});
   // clang-format on
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("Unexpected field 3", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Unexpected field 3", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                            {   "type": 3,   "bool": true }
                      (right here) ------^
-Unexpected field 3
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(StandaloneUnion, IncorrectTypeField) {
@@ -257,17 +267,22 @@ TEST(StandaloneUnion, IncorrectTypeField) {
   >> parser({"type", {{1, "bool"}, {2, "int"}}});
   // clang-format on
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("Unexpected field error", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Unexpected field error", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                              {   "error": 1,   "bool": true }
                      (right here) ------^
-Unexpected field error
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(StandaloneUnion, FieldsWithCallbacks) {
@@ -299,8 +314,8 @@ TEST(StandaloneUnion, FieldsWithCallbacks) {
   >> parser({"type", {{1, {"bool", boolCb}}, {2, {"int", intCb}}}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, parser.parser().get<0>().get<0>());
   ASSERT_EQ(true, bool_value);
@@ -311,8 +326,8 @@ TEST(StandaloneUnion, FieldsWithCallbacks) {
   "int": 100
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(100, parser.parser().get<1>().get<0>());
   ASSERT_EQ(100, int_value);
@@ -338,17 +353,22 @@ TEST(StandaloneUnion, FieldsWithCallbackError) {
   >> parser({"type", {{1, {"bool", boolCb}}, {2, {"int", intCb}}}});
   // clang-format on
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
              "type": 1,   "bool": true }
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 
   buf = R"(
 {
@@ -356,17 +376,22 @@ Callback returned false
   "int": 100
 })";
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
-                                         {   "type": 2,   "int": 100 }
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+           {   "type": 2,   "int": 100 }
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(StandaloneUnion, UnionWithCallback) {
@@ -398,8 +423,8 @@ TEST(StandaloneUnion, UnionWithCallback) {
 
   Parser<UnionParser> parser({"type", {{1, "bool"}, {2, "int"}}, unionCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, parser.parser().get<0>().get<0>());
   ASSERT_EQ(true, bool_value);
@@ -410,8 +435,8 @@ TEST(StandaloneUnion, UnionWithCallback) {
   "int": 100
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(100, parser.parser().get<1>().get<0>());
   ASSERT_EQ(100, int_value);
@@ -435,17 +460,22 @@ TEST(StandaloneUnion, UnionWithCallbackError) {
 
   Parser<UnionParser> parser({"type", {{1, "bool"}, {2, "int"}}, unionCb});
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_TRUE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_TRUE(parser.parser().isSet());
 
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
              "type": 1,   "bool": true }
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(StandaloneUnion, UnionWithArgsStruct) {
@@ -467,8 +497,8 @@ TEST(StandaloneUnion, UnionWithArgsStruct) {
 
   Parser<UnionParser> parser(union_args);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, parser.parser().get<0>().get<0>());
 
@@ -478,8 +508,8 @@ TEST(StandaloneUnion, UnionWithArgsStruct) {
   "int": 100
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(100, parser.parser().get<1>().get<0>());
 }
@@ -500,17 +530,22 @@ TEST(StandaloneUnion, UnionWithUnexpectedObject) {
   >> parser({"type", {{1, "bool"}, {2, "int"}}});
   // clang-format on
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("Unexpected field error", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Unexpected field error", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                 {   "type": 1,   "error": true }
                      (right here) ------^
-Unexpected field error
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(StandaloneUnion, UnionWithSCustomObject) {
@@ -549,8 +584,8 @@ TEST(StandaloneUnion, UnionWithSCustomObject) {
       }}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, parser.parser().get<0>().bool_field);
   ASSERT_EQ("value", parser.parser().get<0>().str_field);
@@ -561,8 +596,8 @@ TEST(StandaloneUnion, UnionWithSCustomObject) {
   "int": 100
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(100, parser.parser().get<1>().get<0>());
 }
@@ -590,8 +625,8 @@ TEST(StandaloneUnion, UnionWithSAutoObject) {
       }}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, std::get<0>(parser.parser().get<0>()));
   ASSERT_EQ("value", std::get<1>(parser.parser().get<0>()));
@@ -602,8 +637,8 @@ TEST(StandaloneUnion, UnionWithSAutoObject) {
   "int": 100
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(100, parser.parser().get<1>().get<0>());
 }
@@ -635,8 +670,8 @@ TEST(StandaloneUnion, UnionWithObjectUnion) {
         }}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
 
@@ -647,8 +682,8 @@ TEST(StandaloneUnion, UnionWithObjectUnion) {
   "int": 100
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 
@@ -658,8 +693,8 @@ TEST(StandaloneUnion, UnionWithObjectUnion) {
   "string": "value"
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get<1>().get<0>());
 }

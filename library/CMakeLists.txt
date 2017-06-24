@@ -11,13 +11,19 @@ set(SJPARSER_LIB
 
 include_directories(${SJPARSER_INCLUDES})
 
-set(SRCS src/sjparser_internals.cpp)
+set(SRCS
+  src/internals.cpp
+  src/parse_error.cpp
+  src/yajl_parser.cpp
+)
 
 set(HDRS
   src/sjparser.h
   src/sjparser_impl.h
-  src/sjparser_internals.h
-  src/sjparser_internals_impl.h
+  src/internals.h
+  src/internals_impl.h
+  src/parse_error.h
+  src/yajl_parser.h
 )
 
 add_library(${TARGET} STATIC ${SRCS})

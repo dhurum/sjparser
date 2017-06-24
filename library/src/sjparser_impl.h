@@ -306,42 +306,27 @@ template <typename T> void SArray<T>::reset() {
   _values = Type();
 }
 
-template <typename T>
-Parser<T>::Parser(const typename T::Args &args)
-    : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+template <typename T, typename Impl>
+Parser<T, Impl>::Parser(const typename T::Args &args) : _parser(args) {
+  this->setTokenParser(&_parser);
+}
 
-template <typename T>
+template <typename T, typename Impl>
 template <typename U>
-Parser<T>::Parser(const typename U::ChildArgs &args)
-    : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+Parser<T, Impl>::Parser(const typename U::ChildArgs &args)
+    : Parser(typename T::Args(args)) {}
 
-template <typename T>
+template <typename T, typename Impl>
 template <typename U>
-Parser<T>::Parser(const typename U::template GrandChildArgs<U> &args)
-    : _parser(args), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+Parser<T, Impl>::Parser(const typename U::template GrandChildArgs<U> &args)
+    : Parser(typename T::Args(args)) {}
 
-template <typename T>
+template <typename T, typename Impl>
 template <typename U>
-Parser<T>::Parser(const typename U::CallbackType &callback)
-    : _parser(callback), _impl(std::make_unique<ParserImpl>(&_parser)) {}
+Parser<T, Impl>::Parser(const typename U::CallbackType &callback)
+    : Parser(typename T::Args(callback)) {}
 
-template <typename T> bool Parser<T>::parse(const std::string &data) {
-  return _impl->parse(data.data(), data.size());
-}
-
-template <typename T> bool Parser<T>::parse(const char *data, size_t len) {
-  return _impl->parse(data, len);
-}
-
-template <typename T> bool Parser<T>::finish() {
-  return _impl->finish();
-}
-
-template <typename T> std::string Parser<T>::getError(bool verbose) {
-  return _impl->getError(verbose);
-}
-
-template <typename T> T &Parser<T>::parser() {
+template <typename T, typename Impl> T &Parser<T, Impl>::parser() {
   return _parser;
 }
 }  // namespace SJParser

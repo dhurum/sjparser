@@ -38,8 +38,8 @@ TEST(SCustomObject, Empty) {
 
   Parser<ObjectParser> parser({{"string", "integer"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
 }
@@ -56,8 +56,8 @@ TEST(SCustomObject, Null) {
 
   Parser<ObjectParser> parser({{"string", "integer"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
 }
@@ -93,8 +93,8 @@ TEST(SCustomObject, AllValuesFields) {
   Parser<ObjectParser> parser(
       {{"bool", "integer", "double", "string"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, parser.parser().get().bool_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
@@ -139,8 +139,8 @@ TEST(SCustomObject, FieldsWithCallbacks) {
   Parser<ObjectParser> parser(
       {{{"bool", boolCb}, {"string", stringCb}}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, parser.parser().get().bool_value);
   ASSERT_EQ("value", parser.parser().get().str_value);
@@ -178,16 +178,20 @@ TEST(SCustomObject, FieldsWithCallbackError) {
   Parser<ObjectParser> parser(
       {{{"bool", boolCb}, {"string", stringCb}}, objectCb});
 
-  ASSERT_FALSE(parser.parse(buf));
-
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                            {"bool": true, "string": "value"}
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(SCustomObject, SCustomObjectWithCallbackError) {
@@ -210,16 +214,20 @@ TEST(SCustomObject, SCustomObjectWithCallbackError) {
 
   Parser<ObjectParser> parser({{"bool", "string"}, objectCb});
 
-  ASSERT_FALSE(parser.parse(buf));
-
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
           ool": true, "string": "value"}
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(SCustomObject, OneField) {
@@ -242,8 +250,8 @@ TEST(SCustomObject, OneField) {
 
   Parser<ObjectParser> parser({"string", objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
 }
@@ -274,8 +282,8 @@ TEST(SCustomObject, OneFieldWithFieldCallback) {
 
   Parser<ObjectParser> parser({{{"string", elementCb}}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ("value", value);
@@ -307,8 +315,8 @@ TEST(SCustomObject, ObjectWithArgsStruct) {
 
   Parser<ObjectParser> parser(object_args);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
@@ -341,8 +349,8 @@ TEST(SCustomObject, StdStringiFieldNames) {
 
   Parser<ObjectParser> parser({{string_name, integer_name}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
@@ -372,8 +380,8 @@ TEST(SCustomObject, PopValue) {
 
   Parser<ObjectParser> parser({{"string", "integer"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
   auto value = parser.parser().pop();
@@ -438,8 +446,8 @@ TEST(SCustomObject, SCustomObjectWithObject) {
       "boolean"}, objectCb});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
@@ -481,18 +489,22 @@ TEST(SCustomObject, SCustomObjectWithUnexpectedObject) {
       }}, objectCb});
   // clang-format on
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected field error", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected field error", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
           ue",   "object": {     "error": 1   } }
                      (right here) ------^
-Unexpected field error
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(SCustomObject, SCustomObjectWithObjectWithCallback) {
@@ -556,8 +568,8 @@ TEST(SCustomObject, SCustomObjectWithObjectWithCallback) {
       "boolean"}, objectCb});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
@@ -633,8 +645,8 @@ TEST(SCustomObject, SCustomObjectOfObjects) {
     }, objectCb});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().first_str_value);
   ASSERT_EQ(10, parser.parser().get().first_int_value);
@@ -709,8 +721,8 @@ TEST(SCustomObject, SCustomObjectWithSCustomObject) {
       "boolean"}, objectCb});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
@@ -772,8 +784,8 @@ TEST(SCustomObject, SCustomObjectWithSAutoObject) {
       "boolean"}, objectCb});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
@@ -827,8 +839,8 @@ TEST(SCustomObject, SCustomObjectWithStandaloneUnion) {
   Parser<ObjectParser> parser(
       {{"id", {"data", {"type", {{"1", "bool"}, {"2", "int"}}}}}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().get().inner_bool);
 
@@ -845,8 +857,8 @@ TEST(SCustomObject, SCustomObjectWithStandaloneUnion) {
   }
 })");
 
-  ASSERT_TRUE(parser.parse(buf2));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf2));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().get().inner_bool);
 
@@ -897,8 +909,8 @@ TEST(SCustomObject, SCustomObjectWithObjectUnion) {
   Parser<ObjectParser> parser(
       {{"id", {"type", {{"1", "bool"}, {"2", "int"}}}}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().get().inner_bool);
 
@@ -913,8 +925,8 @@ TEST(SCustomObject, SCustomObjectWithObjectUnion) {
   "int": 100
 })");
 
-  ASSERT_TRUE(parser.parse(buf2));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf2));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().get().inner_bool);
 
@@ -966,8 +978,8 @@ TEST(SCustomObject, SCustomObjectWithArray) {
   Parser<ObjectParser> parser(
       {{"string", "integer", {"array", arrayCb}}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
@@ -1013,8 +1025,8 @@ TEST(SCustomObject, SCustomObjectWithSArray) {
 
   Parser<ObjectParser> parser({{"string", "integer", "array"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", parser.parser().get().str_value);
   ASSERT_EQ(10, parser.parser().get().int_value);
@@ -1068,8 +1080,8 @@ TEST(SCustomObject, Move) {
       }, objectCb});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   auto value = parser.parser().pop();
   ASSERT_FALSE(parser.parser().isSet());
@@ -1083,8 +1095,8 @@ TEST(SCustomObject, Move) {
   "string": "in_value2"
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   auto value2 = parser.parser().pop();
   ASSERT_FALSE(parser.parser().isSet());

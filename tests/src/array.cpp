@@ -37,8 +37,8 @@ TEST(Array, Empty) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(0, values.size());
 
@@ -56,8 +56,8 @@ TEST(Array, Null) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(0, values.size());
 
@@ -75,8 +75,8 @@ TEST(Array, ArrayOfBooleans) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ(true, values[0]);
@@ -96,8 +96,8 @@ TEST(Array, ArrayOfIntegers) {
 
   Parser<Array<Value<int64_t>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ(10, values[0]);
@@ -117,8 +117,8 @@ TEST(Array, ArrayOfDoubles) {
 
   Parser<Array<Value<double>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ(10.5, values[0]);
@@ -138,8 +138,8 @@ TEST(Array, ArrayOfStrings) {
 
   Parser<Array<Value<std::string>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ("value1", values[0]);
@@ -159,8 +159,8 @@ TEST(Array, ArrayWithNull) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(0, values.size());
 
@@ -178,8 +178,8 @@ TEST(Array, ArrayWithNullAndValues) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ(true, values[0]);
@@ -195,18 +195,22 @@ TEST(Array, UnexpectedBoolean) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token boolean", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token boolean", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                     true
                      (right here) ------^
-Unexpected token boolean
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, UnexpectedInteger) {
@@ -216,19 +220,23 @@ TEST(Array, UnexpectedInteger) {
 
   Parser<Array<Value<int64_t>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_FALSE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  try {
+    parser.finish();
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token integer", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token integer", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                         10
                      (right here) ------^
-Unexpected token integer
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, UnexpectedDouble) {
@@ -238,19 +246,23 @@ TEST(Array, UnexpectedDouble) {
 
   Parser<Array<Value<double>>> parser(elementCb);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_FALSE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  try {
+    parser.finish();
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token double", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token double", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                         10.5
                      (right here) ------^
-Unexpected token double
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, UnexpectedString) {
@@ -260,18 +272,22 @@ TEST(Array, UnexpectedString) {
 
   Parser<Array<Value<std::string>>> parser(elementCb);
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token string", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token string", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                  "value"
                      (right here) ------^
-Unexpected token string
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, ArrayWithUnexpectedBoolean) {
@@ -281,18 +297,22 @@ TEST(Array, ArrayWithUnexpectedBoolean) {
 
   Parser<Array<Value<std::string>>> parser(elementCb);
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token boolean", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token boolean", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                    [true]
                      (right here) ------^
-Unexpected token boolean
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, ArrayWithUnexpectedInteger) {
@@ -302,18 +322,22 @@ TEST(Array, ArrayWithUnexpectedInteger) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token integer", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token integer", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                      [10]
                      (right here) ------^
-Unexpected token integer
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, ArrayWithUnexpectedDouble) {
@@ -323,18 +347,22 @@ TEST(Array, ArrayWithUnexpectedDouble) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token double", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token double", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                    [10.5]
                      (right here) ------^
-Unexpected token double
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, ArrayWithUnexpectedString) {
@@ -344,18 +372,22 @@ TEST(Array, ArrayWithUnexpectedString) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token string", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token string", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                 ["value"]
                      (right here) ------^
-Unexpected token string
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, ArrayWithElementCallbackError) {
@@ -365,17 +397,22 @@ TEST(Array, ArrayWithElementCallbackError) {
 
   Parser<Array<Value<bool>>> parser(elementCb);
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                    [true, false]
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, ArrayWithCallback) {
@@ -397,8 +434,8 @@ TEST(Array, ArrayWithCallback) {
 
   Parser<ArrayParser> parser({elementCb, arrayCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ(true, values[0]);
@@ -420,17 +457,22 @@ TEST(Array, ArrayWithCallbackError) {
 
   Parser<ArrayParser> parser({elementCb, arrayCb});
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_TRUE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_TRUE(parser.parser().isSet());
 
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                            [true, false]
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, ArrayWithArgsStruct) {
@@ -448,8 +490,8 @@ TEST(Array, ArrayWithArgsStruct) {
 
   Parser<ArrayParser> parser(array_args);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ(true, values[0]);
@@ -478,8 +520,8 @@ TEST(Array, ArrayOfObjects) {
 
   Parser<Array<ObjectParser>> parser({{"key", "key2"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ("value", values[0].field1);
@@ -508,8 +550,8 @@ TEST(Array, ArrayOfObjectsWithoutCallbacks) {
   Parser<Array<Object<Value<std::string>, Value<int64_t>>>> parser(
       {{"key", stringCb}, {"key2", integerCb}});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, str_values.size());
   ASSERT_EQ("value", str_values[0]);
@@ -525,18 +567,22 @@ TEST(Array, UnexpectedObject) {
 
   Parser<Array<Object<Value<std::string>>>> parser("key");
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected token map start", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected token map start", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                        {"key": "value"}
                      (right here) ------^
-Unexpected token map start
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, ArrayWithUnexpectedObject) {
@@ -545,18 +591,22 @@ TEST(Array, ArrayWithUnexpectedObject) {
 
   Parser<Array<Object<Value<std::string>>>> parser("key");
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected field key2", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected field key2", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                 [{"key2": "value"}]
                      (right here) ------^
-Unexpected field key2
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(Array, ArrayOfSCustomObjects) {
@@ -581,8 +631,8 @@ TEST(Array, ArrayOfSCustomObjects) {
 
   Parser<Array<ObjectParser>> parser({{"key", "key2"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ("value", values[0].field1);
@@ -606,8 +656,8 @@ TEST(Array, ArrayOfSAutoObjects) {
 
   Parser<Array<ObjectParser>> parser({{"key", "key2"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ("value", std::get<0>(values[0]));
@@ -643,8 +693,8 @@ TEST(Array, ArrayOfStandaloneUnions) {
   Parser<Array<UnionParser>> parser(
       {"type", {{"str", "key"}, {"int", "key"}}, unionCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", value_str);
   ASSERT_EQ(10, value_int);
@@ -690,8 +740,8 @@ TEST(Array, ArrayOfObjectUnions) {
   Parser<Array<ObjectParser>> parser(
       {{"id", {"type", {{"str", "key"}, {"int", "key"}}}}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, ids.size());
   ASSERT_EQ(1, ids[0]);
@@ -720,8 +770,8 @@ TEST(Array, ArrayOfArrays) {
 
   Parser<Array<InnerArrayParser>> parser({elementCb, innerArrayCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ(2, values[0].size());
@@ -744,8 +794,8 @@ TEST(Array, ArrayOfSArrays) {
 
   Parser<Array<SArray<Value<bool>>>> parser({innerArrayCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
   ASSERT_EQ(2, values[0].size());

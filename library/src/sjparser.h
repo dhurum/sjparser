@@ -23,7 +23,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "sjparser_internals.h"
+#include "internals.h"
+#include "yajl_parser.h"
 
 #include <array>
 #include <functional>
@@ -71,10 +72,10 @@ template <typename T> class Value : public TokenParser {
 
   /** @brief Parsed value getter.
    *
-   * @note If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
-   *
    * @return Const reference to a parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
    */
   inline const Type &get() const;
 
@@ -82,10 +83,10 @@ template <typename T> class Value : public TokenParser {
    *
    * Moves the parsed value out of the parser.
    *
-   * @note If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
-   *
    * @return Rvalue reference to the parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
    */
   inline Type &&pop();
 
@@ -150,6 +151,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
    * If you do not specify @ref Args::on_finish "on_finish" callback,
    * you can pass a @ref Args::args "tuple of field arguments" directly
    * into the constructor.
+   *
    * @note If you are passing a single field name (without arguments), you must
    * pass it directly to the constructor, without surrounding {}:
    * @code {.cpp} Object<...> object("field"); @endcode
@@ -284,10 +286,10 @@ class SCustomObject : public Object<Ts...> {
 
   /** @brief Parsed value getter.
    *
-   * @note If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
-   *
    * @return Const reference to a parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
    */
   inline const Type &get() const;
 
@@ -298,11 +300,10 @@ class SCustomObject : public Object<Ts...> {
    *
    * @tparam n Index of the parser's field.
    *
-   * @note @par
-   * If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
-   *
    * @return Rvalue reference to n-th field parser value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
    */
   template <size_t n>
   inline typename NthTypes<n, Ts...>::template ValueType<> &&pop();
@@ -312,9 +313,6 @@ class SCustomObject : public Object<Ts...> {
   /** @brief Get the parsed value and unset the parser.
    *
    * Moves the parsed value out of the parser.
-   *
-   * @note If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
    *
    * @note
    * @par
@@ -327,6 +325,9 @@ class SCustomObject : public Object<Ts...> {
    * SCustomObject::Type, they are used by std::tuple.
    *
    * @return Rvalue reference to the parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
    */
   inline Type &&pop();
 
@@ -408,6 +409,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    * If you do not specify @ref Args::default_value "defult_value" default value
    * and @ref Args::on_finish "on_finish" callback, you can pass a
    * @ref Args::args "tuple of field arguments" directly into the constructor.
+   *
    * @note If you are passing a single field name (without arguments), you must
    * pass it directly to the constructor, without surrounding {}:
    * @code {.cpp} SObject<...> object("field"); @endcode
@@ -425,10 +427,10 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
 
   /** @brief Parsed value getter.
    *
-   * @note If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
-   *
    * @return Const reference to a parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
    */
   inline const Type &get() const;
 
@@ -436,15 +438,14 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    *
    * Moves the parsed value out of the parser.
    *
-   * @note @par
-   * If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
-   *
    * @note If you want to use SCustomObject inside this parser, you need to
    * provide both a copy constructor and a copy assignment operators in the
    * SCustomObject::Type, they are used by std::tuple.
    *
    * @return Rvalue reference to the parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
    */
   inline Type &&pop();
 
@@ -599,9 +600,9 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
 
   /** @brief Parsed object index getter.
    *
-   * @note If no members were parsed, throws std::runtime_error.
-   *
    * @return Index of a parsed object.
+   *
+   * @throw std::runtime_error Thrown if no members were parsed.
    */
   size_t currentMemberId();
 
@@ -789,10 +790,10 @@ template <typename T> class SArray : public Array<T> {
 
   /** @brief Parsed value getter.
    *
-   * @note If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
-   *
    * @return Const reference to a parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
    */
   inline const Type &get() const;
 
@@ -800,10 +801,10 @@ template <typename T> class SArray : public Array<T> {
    *
    * Moves the parsed value out of the parser.
    *
-   * @note If value is unset (no value was parsed or #pop was called), throws
-   * std::runtime_error.
-   *
    * @return Rvalue reference to the parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
    */
   inline Type &&pop();
 
@@ -822,58 +823,37 @@ template <typename T> class SArray : public Array<T> {
  *
  * @tparam T Root parser (Value, Object, SObject, Union, Array, SArray)
  * @anchor Parser_T
+ *
+ * @tparam Impl Underlying parser implementation, the default one is YajlParser,
+ * a YAJL parser adapter. This class inherits from the implementation, so please
+ * refer to it's documentation for API details.
  */
-template <typename T> class Parser {
+template <typename T, typename Impl = YajlParser> class Parser : public Impl {
  public:
   /** @brief Parser constructor.
    *
    * @param [in] args Takes same arguments as the @ref Parser_T "T" does.
    */
   Parser(const typename T::Args &args = {});
+
   /** @brief Parser constructor.
    *
    * @param [in] args Takes same arguments as the @ref Parser_T "T" does.
    */
   template <typename U = T> Parser(const typename U::ChildArgs &args);
+
+  /** @brief Parser constructor.
+   *
+   * @param [in] args Takes same arguments as the @ref Parser_T "T" does.
+   */
   template <typename U = T>
+  Parser(const typename U::template GrandChildArgs<U> &args);
+
   /** @brief Parser constructor.
    *
    * @param [in] callback Takes same arguments as the @ref Parser_T "T" does.
    */
-  Parser(const typename U::template GrandChildArgs<U> &args);
   template <typename U = T> Parser(const typename U::CallbackType &callback);
-
-  /** @brief Parses a piece of JSON from an std::string.
-   *
-   * @param [in] data String to parse.
-   *
-   * @return True if parsing was successful and false otherwise.
-   */
-  inline bool parse(const std::string &data);
-
-  /** @brief Parses a piece of JSON from a C-style string.
-   *
-   * @param [in] data Pointer to a C string to parse.
-   *
-   * @param [in] len String length.
-   *
-   * @return True if parsing was successful and false otherwise.
-   */
-  inline bool parse(const char *data, size_t len);
-
-  /** @brief Finishes parsing.
-   *
-   * @return True if parsing was successful and false otherwise.
-   */
-  inline bool finish();
-
-  /** @brief Parse error message getter.
-   *
-   * @param [in] verbose (optional) Get the yajl error as well.
-   *
-   * @return An std::string with the error message.
-   */
-  inline std::string getError(bool verbose = false);
 
   /** @brief Root parser getter.
    *
@@ -883,7 +863,6 @@ template <typename T> class Parser {
 
  private:
   T _parser;
-  std::unique_ptr<ParserImpl> _impl;
 };
 }  // namespace SJParser
 

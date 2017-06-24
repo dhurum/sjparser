@@ -219,29 +219,6 @@ class Dispatcher {
   std::function<void()> _on_completion;
   std::string _error;
 };
-
-class YajlInfo;
-
-class ParserImpl {
- public:
-  ParserImpl(TokenParser *parser);
-  ~ParserImpl();
-  bool parse(const char *data, size_t len);
-  bool finish();
-  std::string getError(bool verbose);
-
-  template <typename T> int on(const T &token) noexcept;
-
- private:
-  void getYajlError();
-
-  Dispatcher _dispatcher;
-  std::unique_ptr<YajlInfo> _yajl_info;
-  const unsigned char *_data = nullptr;
-  size_t _len = 0;
-  std::string _sjparser_error;
-  std::string _yajl_error;
-};
 }  // namespace SJParser
 
-#include "sjparser_internals_impl.h"
+#include "internals_impl.h"

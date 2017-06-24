@@ -32,21 +32,26 @@ TEST(SAutoObject, Empty) {
   Parser<SObject<Value<std::string>, Value<int64_t>>> parser(
       {"string", "integer"});
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ(
+        "Can not set value: Not all fields are set in an storage object "
+        "without "
+        "a default value",
+        e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ(
-      "Can not set value: Not all fields are set in an storage object without "
-      "a default value",
-      parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                       {}
                      (right here) ------^
-Can not set value: Not all fields are set in an storage object without a default value
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(SAutoObject, EmptyDefault) {
@@ -55,8 +60,8 @@ TEST(SAutoObject, EmptyDefault) {
   Parser<SObject<Value<std::string>, Value<int64_t>>> parser(
       {{"string", "integer"}, {"test", 1}});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
 
@@ -76,8 +81,8 @@ TEST(SAutoObject, EmptyWithCallback) {
   Parser<SObject<Value<bool>, Value<std::string>>> parser(
       {{"bool", "string"}, {true, "test"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
 
@@ -89,8 +94,8 @@ TEST(SAutoObject, Null) {
 
   Parser<SObject<Value<bool>, Value<std::string>>> parser({"bool", "string"});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
 }
@@ -108,8 +113,8 @@ TEST(SAutoObject, AllValuesFields) {
   >> parser({"bool", "integer", "double", "string"});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, std::get<0>(parser.parser().get()));
   ASSERT_EQ(10, std::get<1>(parser.parser().get()));
@@ -131,8 +136,8 @@ TEST(SAutoObject, Default) {
       {false, 10, 10.0, "value"}});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, std::get<0>(parser.parser().get()));
   ASSERT_EQ(10, std::get<1>(parser.parser().get()));
@@ -159,8 +164,8 @@ TEST(SAutoObject, FieldsWithCallbacks) {
   Parser<SObject<Value<bool>, Value<std::string>>> parser(
       {{"bool", boolCb}, {"string", stringCb}});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, std::get<0>(parser.parser().get()));
   ASSERT_EQ("value", std::get<1>(parser.parser().get()));
@@ -180,17 +185,22 @@ TEST(SAutoObject, FieldsWithCallbackError) {
   Parser<SObject<Value<bool>, Value<std::string>>> parser(
       {{"bool", boolCb}, {"string", stringCb}});
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_FALSE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                            {"bool": true, "string": "value"}
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(SAutoObject, SAutoObjectWithCallback) {
@@ -208,8 +218,8 @@ TEST(SAutoObject, SAutoObjectWithCallback) {
   Parser<SObject<Value<bool>, Value<std::string>>> parser(
       {{"bool", "string"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(true, std::get<0>(value));
   ASSERT_EQ("value", std::get<1>(value));
@@ -224,17 +234,22 @@ TEST(SAutoObject, SAutoObjectWithCallbackError) {
   Parser<SObject<Value<bool>, Value<std::string>>> parser(
       {{"bool", "string"}, objectCb});
 
-  ASSERT_FALSE(parser.parse(buf));
-  ASSERT_TRUE(parser.parser().isSet());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_TRUE(parser.parser().isSet());
 
-  ASSERT_EQ("Callback returned false", parser.getError());
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ("Callback returned false", e.sjparserError());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
           ool": true, "string": "value"}
                      (right here) ------^
-Callback returned false
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(SAutoObject, OneField) {
@@ -242,8 +257,8 @@ TEST(SAutoObject, OneField) {
 
   Parser<SObject<Value<std::string>>> parser("string");
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
 }
@@ -253,21 +268,26 @@ TEST(SAutoObject, OneFieldEmpty) {
 
   Parser<SObject<Value<std::string>>> parser("string");
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ(
+        "Can not set value: Not all fields are set in an storage object "
+        "without "
+        "a default value",
+        e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ(
-      "Can not set value: Not all fields are set in an storage object without "
-      "a default value",
-      parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
                                       {}
                      (right here) ------^
-Can not set value: Not all fields are set in an storage object without a default value
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(SAutoObject, OneFieldEmptyDefault) {
@@ -275,8 +295,8 @@ TEST(SAutoObject, OneFieldEmptyDefault) {
 
   Parser<SObject<Value<std::string>>> parser({"string", "value"});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
 }
@@ -292,8 +312,8 @@ TEST(SAutoObject, OneFieldWithFieldCallback) {
 
   Parser<SObject<Value<std::string>>> parser({{"string", elementCb}});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
   ASSERT_EQ("value", value);
@@ -313,8 +333,8 @@ TEST(SAutoObject, OneFieldWithObjectCallback) {
   // {} around "string" are optional, but they make it a bit more clear
   Parser<SObject<Value<std::string>>> parser({{"string"}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
   ASSERT_EQ("value", std::get<0>(value));
@@ -340,8 +360,8 @@ TEST(SAutoObject, OneFieldWithElementAndObjectCallbacks) {
   Parser<SObject<Value<std::string>>> parser(
       {{{"string", elementCb}}, objectCb});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
   ASSERT_EQ("value", value);
@@ -358,8 +378,8 @@ TEST(SAutoObject, SAutoObjectWithArgsStruct) {
 
   Parser<ObjectParser> parser(object_args);
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
   ASSERT_EQ(10, std::get<1>(parser.parser().get()));
@@ -399,8 +419,8 @@ TEST(SAutoObject, SAutoObjectWithSAutoObject) {
       "boolean"});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
   ASSERT_EQ(10, std::get<1>(parser.parser().get()));
@@ -434,18 +454,22 @@ TEST(SAutoObject, SAutoObjectWithUnexpectedSAutoObject) {
       }});
   // clang-format on
 
-  ASSERT_FALSE(parser.parse(buf));
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParseError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected field error", e.sjparserError());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_EQ("Unexpected field error", parser.getError());
-
-  ASSERT_EQ(
-      R"(parse error: client cancelled parse via callback return value
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
           ue",   "object": {     "error": 1   } }
                      (right here) ------^
-Unexpected field error
 )",
-      parser.getError(true));
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
 TEST(SAutoObject, SAutoObjectWithSAutoObjectWithCallback) {
@@ -491,8 +515,8 @@ TEST(SAutoObject, SAutoObjectWithSAutoObjectWithCallback) {
       "boolean"});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
   ASSERT_EQ(10, std::get<1>(parser.parser().get()));
@@ -549,8 +573,8 @@ TEST(SAutoObject, SAutoObjectOfSAutoObjects) {
     });
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(std::get<0>(parser.parser().get())));
   ASSERT_EQ(10, std::get<1>(std::get<0>(parser.parser().get())));
@@ -605,8 +629,8 @@ TEST(SAutoObject, SAutoObjectWithSCustomObject) {
       "boolean"});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
   ASSERT_EQ(10, std::get<1>(parser.parser().get()));
@@ -633,8 +657,8 @@ TEST(SAutoObject, SAutoObjectWithSArray) {
 
   Parser<ParserType> parser({"string", "integer", "array"});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
   ASSERT_EQ(10, std::get<1>(parser.parser().get()));
@@ -660,8 +684,8 @@ TEST(SAutoObject, SAutoObjectWithDefaultSArray) {
   Parser<ParserType> parser(
       {{"string", "integer", "array"}, {"default", 0, {"elt1", "elt2"}}});
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ("value", std::get<0>(parser.parser().get()));
   ASSERT_EQ(10, std::get<1>(parser.parser().get()));
@@ -729,8 +753,8 @@ TEST(SAutoObject, Move) {
       }});
   // clang-format on
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   copy_used = false;
 
@@ -749,8 +773,8 @@ TEST(SAutoObject, Move) {
   }
 })";
 
-  ASSERT_TRUE(parser.parse(buf));
-  ASSERT_TRUE(parser.finish());
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
 
   copy_used = false;
 
