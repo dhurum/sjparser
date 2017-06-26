@@ -3,8 +3,6 @@ set(TARGET sjparser_tests)
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
 
-include_directories(${SJPARSER_INCLUDES} ${GTEST_INCLUDE_DIRS})
-
 set(SRCS
   src/value.cpp
   src/array.cpp
@@ -20,7 +18,8 @@ set(SRCS
 
 add_executable(${TARGET} ${SRCS})
 
-target_link_libraries(${TARGET} ${SJPARSER_LIB} ${GTEST_BOTH_LIBRARIES} pthread)
+target_link_libraries(${TARGET} sjparser ${GTEST_BOTH_LIBRARIES} pthread)
+target_include_directories(${TARGET} PRIVATE ${GTEST_INCLUDE_DIRS})
 
 add_test(sjparser ${TARGET})
 

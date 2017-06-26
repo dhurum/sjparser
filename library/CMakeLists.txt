@@ -1,15 +1,8 @@
 set(TARGET sjparser)
 
-set(SJPARSER_INCLUDES
+set(SJPARSER_INCLUDES_DIR
   ${CMAKE_CURRENT_SOURCE_DIR}/src
-  CACHE INTERNAL ""
 )
-set(SJPARSER_LIB
-  ${TARGET}
-  CACHE INTERNAL ""
-)
-
-include_directories(${SJPARSER_INCLUDES})
 
 set(SRCS
   src/internals.cpp
@@ -29,11 +22,13 @@ set(HDRS
 add_library(${TARGET} STATIC ${SRCS})
 
 target_link_libraries(${TARGET} ${YAJL_LIB})
+target_include_directories(${TARGET} PUBLIC ${SJPARSER_INCLUDES_DIR})
 
 add_library(${TARGET}_shared SHARED ${SRCS})
 
 target_link_libraries(${TARGET}_shared ${YAJL_LIB})
 set_target_properties(${TARGET}_shared PROPERTIES OUTPUT_NAME ${TARGET})
+target_include_directories(${TARGET}_shared PUBLIC ${SJPARSER_INCLUDES_DIR})
 
 install(TARGETS ${TARGET} ${TARGET}_shared DESTINATION lib/sjparser)
 install(FILES ${HDRS} DESTINATION include/sjparser)
