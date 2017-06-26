@@ -181,7 +181,7 @@ TEST(SCustomObject, FieldsWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_EQ("Callback returned false", e.sjparserError());
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
@@ -217,7 +217,7 @@ TEST(SCustomObject, SCustomObjectWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_EQ("Callback returned false", e.sjparserError());
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
@@ -492,7 +492,7 @@ TEST(SCustomObject, SCustomObjectWithUnexpectedObject) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected field error", e.sjparserError());
 

@@ -35,7 +35,7 @@ TEST(SAutoObject, Empty) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ(
         "Can not set value: Not all fields are set in an storage object "
@@ -188,7 +188,7 @@ TEST(SAutoObject, FieldsWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -237,7 +237,7 @@ TEST(SAutoObject, SAutoObjectWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_TRUE(parser.parser().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -271,7 +271,7 @@ TEST(SAutoObject, OneFieldEmpty) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ(
         "Can not set value: Not all fields are set in an storage object "
@@ -457,7 +457,7 @@ TEST(SAutoObject, SAutoObjectWithUnexpectedSAutoObject) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected field error", e.sjparserError());
 

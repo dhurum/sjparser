@@ -21,31 +21,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "parse_error.h"
-#include <gtest/gtest.h>
+#include "parsing_error.h"
 
-using namespace SJParser;
+namespace SJParser {
 
-TEST(ParseError, SjparserError) {
-  ParseError error("Test error");
+ParsingError::ParsingError(std::string sjparser_error, std::string parser_error)
+    : _sjparser_error(std::move(sjparser_error)),
+      _parser_error(std::move(parser_error)) {}
 
-  ASSERT_EQ("Test error", error.sjparserError());
-  ASSERT_EQ("", error.parserError());
-  ASSERT_STREQ("Test error", error.what());
+const char *ParsingError::what() const noexcept {
+  if (!_sjparser_error.empty()) {
+    return _sjparser_error.c_str();
+  }
+  return _parser_error.c_str();
 }
 
-TEST(ParseError, ParserError) {
-  ParseError error("", "Parser error");
-
-  ASSERT_EQ("", error.sjparserError());
-  ASSERT_EQ("Parser error", error.parserError());
-  ASSERT_STREQ("Parser error", error.what());
+const std::string &ParsingError::sjparserError() const noexcept {
+  return _sjparser_error;
 }
 
-TEST(ParseError, BothErrors) {
-  ParseError error("Test error", "Parser error");
-
-  ASSERT_EQ("Test error", error.sjparserError());
-  ASSERT_EQ("Parser error", error.parserError());
-  ASSERT_STREQ("Test error", error.what());
+const std::string &ParsingError::parserError() const noexcept {
+  return _parser_error;
 }
+}  // namespace SJParser

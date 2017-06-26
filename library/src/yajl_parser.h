@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <memory>
 #include <string>
 #include "internals.h"
-#include "parse_error.h"
+#include "parsing_error.h"
 
 namespace SJParser {
 
@@ -48,13 +48,13 @@ class YajlParser {
    *
    * @return True if parsing was successful and false otherwise.
    *
-   * @throw ParseError Thrown in case of parsing problems.
+   * @throw ParsingError Thrown in case of parsing problems.
    *
    * @throw std::runtime_error Thrown if yajl memory allocation fails.
    *
    * @note
    * @par
-   * After ParseError exception is thrown the parser will be reset, so you can
+   * After ParsingError exception is thrown the parser will be reset, so you can
    * use it again.
    * @par
    * After any other exception is thrown the state of this parser is undefined,
@@ -68,13 +68,13 @@ class YajlParser {
    *
    * @param [in] len String length.
    *
-   * @throw ParseError Thrown in case of parsing problems.
+   * @throw ParsingError Thrown in case of parsing problems.
    *
    * @throw std::runtime_error Thrown if yajl memory allocation fails.
    *
    * @note
    * @par
-   * After ParseError exception is thrown the parser will be reset, so you can
+   * After ParsingError exception is thrown the parser will be reset, so you can
    * use it again.
    * @par
    * After any other exception is thrown the state of this parser is undefined,
@@ -84,11 +84,11 @@ class YajlParser {
 
   /** @brief Finishes parsing.
    *
-   * @throw ParseError Thrown in case of parsing problems.
+   * @throw ParsingError Thrown in case of parsing problems.
    *
    * @note
    * @par
-   * After ParseError exception is thrown the parser will be reset, so you can
+   * After ParsingError exception is thrown the parser will be reset, so you can
    * use it again.
    * @par
    * After any other exception is thrown the state of this parser is undefined,
@@ -103,7 +103,7 @@ class YajlParser {
   void resetYajlHandle();
   void freeYajlHandle();
   void checkDispatcherStack();
-  void throwParseError();
+  void throwParsingError();
 
   template <typename T> int on(const T &token) noexcept;
 

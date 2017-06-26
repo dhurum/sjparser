@@ -21,26 +21,39 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "parse_error.h"
+#pragma once
+
+#include <exception>
+#include <string>
 
 namespace SJParser {
 
-ParseError::ParseError(std::string sjparser_error, std::string parser_error)
-    : _sjparser_error(std::move(sjparser_error)),
-      _parser_error(std::move(parser_error)) {}
+/** @brief Parsing error exception.
+ */
+class ParsingError : public std::exception {
+ public:
+  ParsingError(std::string sjparser_error, std::string parser_error = "");
 
-const char *ParseError::what() const noexcept {
-  if (!_sjparser_error.empty()) {
-    return _sjparser_error.c_str();
-  }
-  return _parser_error.c_str();
-}
+  /** @brief Error getter.
+   *
+   * @return SJParser or underlying parser error.
+   */
+  const char *what() const noexcept override;
 
-const std::string &ParseError::sjparserError() const noexcept {
-  return _sjparser_error;
-}
+  /** @brief SJParser error getter.
+   *
+   * @return SJParser error.
+   */
+  const std::string &sjparserError() const noexcept;
 
-const std::string &ParseError::parserError() const noexcept {
-  return _parser_error;
-}
+  /** @brief Underlying parser error getter.
+   *
+   * @return Underlying parser error.
+   */
+  const std::string &parserError() const noexcept;
+
+ private:
+  std::string _sjparser_error;
+  std::string _parser_error;
+};
 }  // namespace SJParser

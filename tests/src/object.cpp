@@ -138,7 +138,7 @@ TEST(Object, FieldsWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -191,7 +191,7 @@ TEST(Object, ObjectWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_TRUE(parser.parser().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -388,7 +388,7 @@ TEST(Object, ObjectWithUnexpectedObject) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected field error", e.sjparserError());
 

@@ -202,7 +202,7 @@ TEST(StandaloneUnion, IncorrectTypeType) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
     ASSERT_EQ("Unexpected token string", e.sjparserError());
@@ -236,7 +236,7 @@ TEST(StandaloneUnion, IncorrectTypeValue) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
     ASSERT_EQ("Unexpected field 3", e.sjparserError());
@@ -270,7 +270,7 @@ TEST(StandaloneUnion, IncorrectTypeField) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
     ASSERT_EQ("Unexpected field error", e.sjparserError());
@@ -356,7 +356,7 @@ TEST(StandaloneUnion, FieldsWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -379,7 +379,7 @@ TEST(StandaloneUnion, FieldsWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -463,7 +463,7 @@ TEST(StandaloneUnion, UnionWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_TRUE(parser.parser().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -533,7 +533,7 @@ TEST(StandaloneUnion, UnionWithUnexpectedObject) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
     ASSERT_EQ("Unexpected field error", e.sjparserError());

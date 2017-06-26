@@ -117,7 +117,7 @@ TEST(Value, UnexpectedBoolean) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token boolean", e.sjparserError());
 
@@ -140,7 +140,7 @@ TEST(Value, UnexpectedString) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token string", e.sjparserError());
 
@@ -164,7 +164,7 @@ TEST(Value, UnexpectedInteger) {
   try {
     parser.finish();
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token integer", e.sjparserError());
 
@@ -188,7 +188,7 @@ TEST(Value, UnexpectedDouble) {
   try {
     parser.finish();
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token double", e.sjparserError());
 
@@ -211,7 +211,7 @@ TEST(Value, UnexpectedMapStart) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token map start", e.sjparserError());
 
@@ -234,7 +234,7 @@ TEST(Value, UnexpectedArrayStart) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token array start", e.sjparserError());
 
@@ -292,7 +292,7 @@ TEST(Value, ValueWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_EQ("Callback returned false", e.sjparserError());
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value

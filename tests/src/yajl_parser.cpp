@@ -39,7 +39,7 @@ TEST(YajlParser, OnUnknownException) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_EQ("Unknown exception", e.sjparserError());
 
     ASSERT_EQ(

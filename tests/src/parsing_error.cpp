@@ -21,39 +21,31 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
+#include "parsing_error.h"
+#include <gtest/gtest.h>
 
-#include <exception>
-#include <string>
+using namespace SJParser;
 
-namespace SJParser {
+TEST(ParsingError, SjparserError) {
+  ParsingError error("Test error");
 
-/** @brief Parsing error exception.
- */
-class ParseError : public std::exception {
- public:
-  ParseError(std::string sjparser_error, std::string parser_error = "");
+  ASSERT_EQ("Test error", error.sjparserError());
+  ASSERT_EQ("", error.parserError());
+  ASSERT_STREQ("Test error", error.what());
+}
 
-  /** @brief Error getter.
-   *
-   * @return SJParser or underlying parser error.
-   */
-  const char *what() const noexcept override;
+TEST(ParsingError, ParserError) {
+  ParsingError error("", "Parser error");
 
-  /** @brief SJParser error getter.
-   *
-   * @return SJParser error.
-   */
-  const std::string &sjparserError() const noexcept;
+  ASSERT_EQ("", error.sjparserError());
+  ASSERT_EQ("Parser error", error.parserError());
+  ASSERT_STREQ("Parser error", error.what());
+}
 
-  /** @brief Underlying parser error getter.
-   *
-   * @return Underlying parser error.
-   */
-  const std::string &parserError() const noexcept;
+TEST(ParsingError, BothErrors) {
+  ParsingError error("Test error", "Parser error");
 
- private:
-  std::string _sjparser_error;
-  std::string _parser_error;
-};
-}  // namespace SJParser
+  ASSERT_EQ("Test error", error.sjparserError());
+  ASSERT_EQ("Parser error", error.parserError());
+  ASSERT_STREQ("Test error", error.what());
+}

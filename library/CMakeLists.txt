@@ -13,7 +13,7 @@ include_directories(${SJPARSER_INCLUDES})
 
 set(SRCS
   src/internals.cpp
-  src/parse_error.cpp
+  src/parsing_error.cpp
   src/yajl_parser.cpp
 )
 
@@ -22,7 +22,7 @@ set(HDRS
   src/sjparser_impl.h
   src/internals.h
   src/internals_impl.h
-  src/parse_error.h
+  src/parsing_error.h
   src/yajl_parser.h
 )
 

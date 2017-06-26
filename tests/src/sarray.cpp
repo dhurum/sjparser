@@ -146,7 +146,7 @@ TEST(SArray, UnexpectedBoolean) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token boolean", e.sjparserError());
 
@@ -170,7 +170,7 @@ TEST(SArray, UnexpectedInteger) {
   try {
     parser.finish();
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token integer", e.sjparserError());
 
@@ -194,7 +194,7 @@ TEST(SArray, UnexpectedDouble) {
   try {
     parser.finish();
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token double", e.sjparserError());
 
@@ -217,7 +217,7 @@ TEST(SArray, UnexpectedString) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token string", e.sjparserError());
 
@@ -240,7 +240,7 @@ TEST(SArray, SArrayWithUnexpectedBoolean) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token boolean", e.sjparserError());
 
@@ -263,7 +263,7 @@ TEST(SArray, SArrayWithUnexpectedInteger) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token integer", e.sjparserError());
 
@@ -286,7 +286,7 @@ TEST(SArray, SArrayWithUnexpectedDouble) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token double", e.sjparserError());
 
@@ -309,7 +309,7 @@ TEST(SArray, SArrayWithUnexpectedString) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token string", e.sjparserError());
 
@@ -334,7 +334,7 @@ TEST(SArray, SArrayWithElementCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -384,7 +384,7 @@ TEST(SArray, SArrayWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_TRUE(parser.parser().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -437,7 +437,7 @@ TEST(SArray, UnexpectedSObject) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected token map start", e.sjparserError());
 
@@ -461,7 +461,7 @@ TEST(SArray, SArrayWithUnexpectedSObject) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
     ASSERT_EQ("Unexpected field key2", e.sjparserError());
 

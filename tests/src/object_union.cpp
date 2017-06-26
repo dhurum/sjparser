@@ -208,7 +208,7 @@ TEST(ObjectUnion, IncorrectTypeType) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
     ASSERT_EQ("Unexpected token string", e.sjparserError());
@@ -243,7 +243,7 @@ TEST(ObjectUnion, IncorrectTypeValue) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
     ASSERT_EQ("Unexpected field 3", e.sjparserError());
@@ -331,7 +331,7 @@ TEST(ObjectUnion, FieldsWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -354,7 +354,7 @@ TEST(ObjectUnion, FieldsWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -440,7 +440,7 @@ TEST(ObjectUnion, UnionWithCallbackError) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_TRUE(parser.parser().parser<0>().isSet());
 
     ASSERT_EQ("Callback returned false", e.sjparserError());
@@ -511,7 +511,7 @@ TEST(ObjectUnion, UnionWithUnexpectedObject) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
     ASSERT_EQ("Unexpected field error", e.sjparserError());
@@ -699,7 +699,7 @@ TEST(ObjectUnion, UnionWithUnexpectedMapStart) {
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
-  } catch (ParseError &e) {
+  } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
     ASSERT_EQ("Union with an empty type field can't parse this",

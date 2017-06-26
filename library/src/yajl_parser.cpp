@@ -22,7 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "yajl_parser.h"
-#include "parse_error.h"
+#include "parsing_error.h"
 
 namespace SJParser {
 
@@ -75,7 +75,7 @@ void YajlParser::parse(const char *data, size_t len) {
 
   if (yajl_parse(_yajl_handle, _data, _len) != yajl_status_ok) {
     _reset_needed = true;
-    throwParseError();
+    throwParsingError();
   }
 }
 
@@ -83,7 +83,7 @@ void YajlParser::finish() {
   _reset_needed = true;
 
   if (yajl_complete_parse(_yajl_handle) != yajl_status_ok) {
-    throwParseError();
+    throwParsingError();
   } else {
     checkDispatcherStack();
   }
@@ -94,10 +94,10 @@ void YajlParser::checkDispatcherStack() {
     return;
   }
 
-  throw ParseError("Dispatcher parsers stack is not empty in the end");
+  throw ParsingError("Dispatcher parsers stack is not empty in the end");
 }
 
-void YajlParser::throwParseError() {
+void YajlParser::throwParsingError() {
   auto yajl_error_ptr = yajl_get_error(_yajl_handle, 1, _data, _len);
   std::string yajl_error;
 
@@ -107,7 +107,7 @@ void YajlParser::throwParseError() {
   } else {
     yajl_error = "Unknown YAJL error\n";
   }
-  throw ParseError(_sjparser_error, yajl_error);
+  throw ParsingError(_sjparser_error, yajl_error);
 }
 
 int YajlParser::yajlOnNull(void *ctx) {
