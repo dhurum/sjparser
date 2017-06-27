@@ -25,6 +25,13 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
   set(NEED_COVERAGE TRUE)
 endif()
 
+set(STANDALONE_BUILD TRUE)
+
+if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message("The sjparser is a part of some project, disabling all but necessary targets.")
+  set(STANDALONE_BUILD FALSE)
+endif()
+
 set(CMAKE_CXX_FLAGS
   ${CMAKE_CXX_FLAGS}
   -Werror
@@ -33,10 +40,6 @@ set(CMAKE_CXX_FLAGS
   -Wpedantic
   --std=c++1y
 )
-
-if(NEED_TESTS)
-  enable_testing()
-endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG -g3)
 set(CMAKE_CXX_FLAGS_COVERAGE
@@ -55,20 +58,23 @@ find_program(CLANG_FORMAT_BIN clang-format)
 
 add_subdirectory(library)
 
-if(CLANG_FORMAT_BIN)
-  add_custom_target(format DEPENDS format_library)
-else()
-  message(STATUS "Can't find clang-format, no format target created")
-endif()
-
-if(NEED_TESTS)
-  add_subdirectory(tests)
-
+if(STANDALONE_BUILD)
   if(CLANG_FORMAT_BIN)
-    add_dependencies(format format_tests)
+    add_custom_target(format DEPENDS format_library)
+  else()
+    message(STATUS "Can't find clang-format, no format target created")
   endif()
-endif()
 
-if(NEED_COVERAGE)
-  add_subdirectory(coverage)
+  if(NEED_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+
+    if(CLANG_FORMAT_BIN)
+      add_dependencies(format format_tests)
+    endif()
+  endif()
+
+  if(NEED_COVERAGE)
+    add_subdirectory(coverage)
+  endif()
 endif()
