@@ -172,13 +172,13 @@ template <typename T> void Dispatcher::on(const T &value) {
   }
   _parsers.back()->on(value);
 }
+
+std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
+                                     const FieldName &name);
 }  // namespace SJParser
 
 namespace std {
 template <> struct hash<SJParser::FieldName> {
   std::size_t operator()(const SJParser::FieldName &key) const;
 };
-
-std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
-                                     const SJParser::FieldName &name);
 }  // namespace std

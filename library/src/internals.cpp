@@ -189,6 +189,11 @@ void Dispatcher::reset() {
   _parsers.clear();
   _parsers.push_back(_root_parser);
 }
+
+std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
+                                     const FieldName &name) {
+  return stream << name.str();
+}
 }  // namespace SJParser
 
 namespace std {
@@ -196,9 +201,5 @@ namespace std {
 size_t hash<SJParser::FieldName>::operator()(
     const SJParser::FieldName &key) const {
   return hash<std::string>()(key.str());
-}
-basic_ostream<char> &operator<<(basic_ostream<char> &stream,
-                                const SJParser::FieldName &name) {
-  return stream << name.str();
 }
 }  // namespace std
