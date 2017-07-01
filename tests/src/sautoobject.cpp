@@ -22,7 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include <gtest/gtest.h>
-#include "sjparser.h"
+#include "sjparser/sjparser.h"
 
 using namespace SJParser;
 

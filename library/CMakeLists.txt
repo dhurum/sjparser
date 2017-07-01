@@ -1,22 +1,22 @@
 set(TARGET sjparser)
 
 set(SJPARSER_INCLUDES_DIR
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 set(SRCS
-  src/internals.cpp
-  src/parsing_error.cpp
-  src/yajl_parser.cpp
+  sjparser/internals.cpp
+  sjparser/parsing_error.cpp
+  sjparser/yajl_parser.cpp
 )
 
 set(HDRS
-  src/sjparser.h
-  src/sjparser_impl.h
-  src/internals.h
-  src/internals_impl.h
-  src/parsing_error.h
-  src/yajl_parser.h
+  sjparser/sjparser.h
+  sjparser/sjparser_impl.h
+  sjparser/internals.h
+  sjparser/internals_impl.h
+  sjparser/parsing_error.h
+  sjparser/yajl_parser.h
 )
 
 add_library(${TARGET} STATIC ${SRCS})

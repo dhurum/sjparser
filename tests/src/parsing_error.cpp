@@ -21,7 +21,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "parsing_error.h"
+#include "sjparser/parsing_error.h"
 #include <gtest/gtest.h>
 
 using namespace SJParser;
