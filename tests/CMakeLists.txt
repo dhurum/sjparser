@@ -11,7 +11,7 @@ set(SRCS
   src/scustomobject.cpp
   src/sautoobject.cpp
   src/standalone_union.cpp
-  src/object_union.cpp
+  src/embedded_union.cpp
   src/parsing_error.cpp
   src/yajl_parser.cpp
 )

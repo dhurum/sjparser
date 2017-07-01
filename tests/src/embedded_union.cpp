@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using namespace SJParser;
 
-TEST(ObjectUnion, Empty) {
+TEST(EmbeddedUnion, Empty) {
   std::string buf(R"({})");
 
   // clang-format off
@@ -44,7 +44,7 @@ TEST(ObjectUnion, Empty) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
-TEST(ObjectUnion, Null) {
+TEST(EmbeddedUnion, Null) {
   std::string buf(R"(null)");
 
   // clang-format off
@@ -62,7 +62,7 @@ TEST(ObjectUnion, Null) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
-TEST(ObjectUnion, AllValuesFields) {
+TEST(EmbeddedUnion, AllValuesFields) {
   std::string buf(
       R"({"type": 1, "bool": true, "integer": 10})");
 
@@ -102,7 +102,7 @@ TEST(ObjectUnion, AllValuesFields) {
   ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<1>());
 }
 
-TEST(ObjectUnion, StringType) {
+TEST(EmbeddedUnion, StringType) {
   std::string buf(
       R"(
 {
@@ -144,7 +144,7 @@ TEST(ObjectUnion, StringType) {
   ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
-TEST(ObjectUnion, StdStringType) {
+TEST(EmbeddedUnion, StdStringType) {
   std::string buf(
       R"(
 {
@@ -188,7 +188,7 @@ TEST(ObjectUnion, StdStringType) {
   ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
-TEST(ObjectUnion, IncorrectTypeType) {
+TEST(EmbeddedUnion, IncorrectTypeType) {
   std::string buf(
       R"(
 {
@@ -223,7 +223,7 @@ TEST(ObjectUnion, IncorrectTypeType) {
   }
 }
 
-TEST(ObjectUnion, IncorrectTypeValue) {
+TEST(EmbeddedUnion, IncorrectTypeValue) {
   std::string buf(
       R"(
 {
@@ -258,7 +258,7 @@ TEST(ObjectUnion, IncorrectTypeValue) {
   }
 }
 
-TEST(ObjectUnion, FieldsWithCallbacks) {
+TEST(EmbeddedUnion, FieldsWithCallbacks) {
   std::string buf(
       R"(
 {
@@ -307,7 +307,7 @@ TEST(ObjectUnion, FieldsWithCallbacks) {
   ASSERT_EQ(100, int_value);
 }
 
-TEST(ObjectUnion, FieldsWithCallbackError) {
+TEST(EmbeddedUnion, FieldsWithCallbackError) {
   std::string buf(
       R"(
 {
@@ -369,7 +369,7 @@ TEST(ObjectUnion, FieldsWithCallbackError) {
   }
 }
 
-TEST(ObjectUnion, UnionWithCallback) {
+TEST(EmbeddedUnion, UnionWithCallback) {
   std::string buf(
       R"(
 {
@@ -418,7 +418,7 @@ TEST(ObjectUnion, UnionWithCallback) {
   ASSERT_EQ(100, int_value);
 }
 
-TEST(ObjectUnion, UnionWithCallbackError) {
+TEST(EmbeddedUnion, UnionWithCallbackError) {
   std::string buf(R"(
 {
   "type": 1,
@@ -455,7 +455,7 @@ TEST(ObjectUnion, UnionWithCallbackError) {
   }
 }
 
-TEST(ObjectUnion, UnionWithArgsStruct) {
+TEST(EmbeddedUnion, UnionWithArgsStruct) {
   std::string buf(
       R"(
 {
@@ -491,7 +491,7 @@ TEST(ObjectUnion, UnionWithArgsStruct) {
   ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
-TEST(ObjectUnion, UnionWithUnexpectedObject) {
+TEST(EmbeddedUnion, UnionWithUnexpectedObject) {
   std::string buf(
       R"(
 {
@@ -526,7 +526,7 @@ TEST(ObjectUnion, UnionWithUnexpectedObject) {
   }
 }
 
-TEST(ObjectUnion, UnionWithSCustomObject) {
+TEST(EmbeddedUnion, UnionWithSCustomObject) {
   std::string buf(
       R"(
 {
@@ -581,7 +581,7 @@ TEST(ObjectUnion, UnionWithSCustomObject) {
   ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
-TEST(ObjectUnion, UnionWithSAutoObject) {
+TEST(EmbeddedUnion, UnionWithSAutoObject) {
   std::string buf(
       R"(
 {
@@ -623,7 +623,7 @@ TEST(ObjectUnion, UnionWithSAutoObject) {
   ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
 }
 
-TEST(ObjectUnion, UnionWithObjectUnion) {
+TEST(EmbeddedUnion, UnionWithEmbeddedUnion) {
   std::string buf(
       R"(
 {
@@ -680,7 +680,7 @@ TEST(ObjectUnion, UnionWithObjectUnion) {
   ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<0>());
 }
 
-TEST(ObjectUnion, UnionWithUnexpectedMapStart) {
+TEST(EmbeddedUnion, UnionWithUnexpectedMapStart) {
   std::string buf(
       R"(
 {

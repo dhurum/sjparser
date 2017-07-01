@@ -700,7 +700,7 @@ TEST(Array, ArrayOfStandaloneUnions) {
   ASSERT_EQ(10, value_int);
 }
 
-TEST(Array, ArrayOfObjectUnions) {
+TEST(Array, ArrayOfEmbeddedUnions) {
   std::string buf(
       R"([{"id": 1, "type": "str", "key": "value"},
           {"id": 2, "type": "int", "key": 10}])");

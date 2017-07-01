@@ -643,7 +643,7 @@ TEST(StandaloneUnion, UnionWithSAutoObject) {
   ASSERT_EQ(100, parser.parser().get<1>().get<0>());
 }
 
-TEST(StandaloneUnion, UnionWithObjectUnion) {
+TEST(StandaloneUnion, UnionWithEmbeddedUnion) {
   std::string buf(
       R"(
 {

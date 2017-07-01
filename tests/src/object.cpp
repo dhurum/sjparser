@@ -670,7 +670,7 @@ TEST(Object, ObjectWithStandaloneUnion) {
   ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>());
 }
 
-TEST(Object, ObjectWithObjectUnion) {
+TEST(Object, ObjectWithEmbeddedUnion) {
   std::string buf(
       R"(
 {

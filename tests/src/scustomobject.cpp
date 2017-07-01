@@ -866,7 +866,7 @@ TEST(SCustomObject, SCustomObjectWithStandaloneUnion) {
   ASSERT_EQ(100, parser.parser().get().inner_value.int_value);
 }
 
-TEST(SCustomObject, SCustomObjectWithObjectUnion) {
+TEST(SCustomObject, SCustomObjectWithEmbeddedUnion) {
   std::string buf(
       R"(
 {
