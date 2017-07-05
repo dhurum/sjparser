@@ -253,7 +253,7 @@ Array<T>::Args::Args(const GrandChildArgs<U> &args,
 template <typename T>
 Array<T>::Array(const Args &args)
     : _parser(args.args), _on_finish(args.on_finish) {
-  ArrayParser::_parser = &_parser;
+  _parser_ptr = &_parser;
 }
 
 template <typename T> void Array<T>::finish() {

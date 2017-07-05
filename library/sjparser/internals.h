@@ -197,7 +197,7 @@ class ArrayParser : public TokenParser {
   void on(ArrayEndT /*unused*/) override;
 
  protected:
-  TokenParser *_parser;
+  TokenParser *_parser_ptr;
 
  private:
   bool _started = false;
