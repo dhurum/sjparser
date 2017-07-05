@@ -24,13 +24,13 @@ add_library(${TARGET} STATIC ${SRCS})
 target_link_libraries(${TARGET} ${YAJL_LIB})
 target_include_directories(${TARGET} PUBLIC ${SJPARSER_INCLUDES_DIR})
 
-add_library(${TARGET}_shared SHARED ${SRCS})
-
-target_link_libraries(${TARGET}_shared ${YAJL_LIB})
-set_target_properties(${TARGET}_shared PROPERTIES OUTPUT_NAME ${TARGET})
-target_include_directories(${TARGET}_shared PUBLIC ${SJPARSER_INCLUDES_DIR})
-
 if(STANDALONE_BUILD)
+  add_library(${TARGET}_shared SHARED ${SRCS})
+
+  target_link_libraries(${TARGET}_shared ${YAJL_LIB})
+  set_target_properties(${TARGET}_shared PROPERTIES OUTPUT_NAME ${TARGET})
+  target_include_directories(${TARGET}_shared PUBLIC ${SJPARSER_INCLUDES_DIR})
+
   install(TARGETS ${TARGET} ${TARGET}_shared DESTINATION lib/sjparser)
   install(FILES ${HDRS} DESTINATION include/sjparser)
 
