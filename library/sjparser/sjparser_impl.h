@@ -303,6 +303,7 @@ template <typename T> void SArray<T>::finish() {
 }
 
 template <typename T> void SArray<T>::reset() {
+  ArrayParser::reset();
   _values = Type();
 }
 

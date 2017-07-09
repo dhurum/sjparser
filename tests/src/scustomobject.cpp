@@ -62,6 +62,44 @@ TEST(SCustomObject, Null) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
+TEST(SCustomObject, Reset) {
+  std::string buf(
+      R"({"bool": true, "string": "value"})");
+
+  struct ObjectStruct {
+    bool bool_value;
+    std::string str_value;
+  };
+
+  // clang-format off
+  using ObjectParser = SObject<
+    ObjectStruct,
+    Value<bool>,
+    Value<std::string>>;
+  // clang-format on
+
+  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+    value.bool_value = parser.get<0>();
+    value.str_value = parser.get<1>();
+    return true;
+  };
+
+  Parser<ObjectParser> parser({{"bool", "string"}, objectCb});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, parser.parser().get().bool_value);
+  ASSERT_EQ("value", parser.parser().get().str_value);
+
+  buf = R"(null)";
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(SCustomObject, AllValuesFields) {
   std::string buf(
       R"({"bool": true, "integer": 10, "double": 11.5, "string": "value"})");

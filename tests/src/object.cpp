@@ -73,6 +73,31 @@ TEST(Object, Null) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
+TEST(Object, Reset) {
+  std::string buf(
+      R"({"bool": true, "string": "value"})");
+
+  // clang-format off
+  Parser<Object<
+    Value<bool>,
+    Value<std::string>
+  >> parser({"bool", "string"});
+  // clang-format on
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, parser.parser().get<0>());
+  ASSERT_EQ("value", parser.parser().get<1>());
+
+  buf = R"(null)";
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(Object, AllValuesFields) {
   std::string buf(
       R"({"bool": true, "integer": 10, "double": 11.5, "string": "value"})");

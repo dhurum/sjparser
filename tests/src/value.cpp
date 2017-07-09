@@ -109,6 +109,25 @@ TEST(Value, Null) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
+TEST(Value, Reset) {
+  std::string buf(R"(true)");
+
+  Parser<Value<bool>> parser;
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_EQ(true, parser.parser().get());
+
+  buf = R"(null)";
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(Value, UnexpectedBoolean) {
   std::string buf(R"(true)");
 

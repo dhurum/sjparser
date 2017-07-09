@@ -64,6 +64,31 @@ TEST(Array, Null) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
+TEST(Array, Reset) {
+  std::string buf(R"([true])");
+  std::vector<bool> values;
+
+  auto elementCb = [&](const bool &value) {
+    values.push_back(value);
+    return true;
+  };
+
+  Parser<Array<Value<bool>>> parser(elementCb);
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(1, values.size());
+  ASSERT_EQ(true, values[0]);
+
+  buf = R"(null)";
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(Array, ArrayOfBooleans) {
   std::string buf(R"([true, false])");
   std::vector<bool> values;

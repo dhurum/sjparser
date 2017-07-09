@@ -100,6 +100,31 @@ TEST(SAutoObject, Null) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
+TEST(SAutoObject, Reset) {
+  std::string buf(
+      R"({"bool": true, "string": "value"})");
+
+  // clang-format off
+  Parser<SObject<
+    Value<bool>,
+    Value<std::string>
+  >> parser({"bool", "string"});
+  // clang-format on
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
+  ASSERT_EQ("value", std::get<1>(parser.parser().get()));
+
+  buf = R"(null)";
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(SAutoObject, AllValuesFields) {
   std::string buf(
       R"({"bool": true, "integer": 10, "double": 11.5, "string": "value"})");

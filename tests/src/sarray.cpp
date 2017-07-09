@@ -50,6 +50,25 @@ TEST(SArray, Null) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
+TEST(SArray, Reset) {
+  std::string buf(R"([true])");
+
+  Parser<SArray<Value<bool>>> parser;
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(1, parser.parser().get().size());
+  ASSERT_EQ(true, parser.parser().get()[0]);
+
+  buf = R"(null)";
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(SArray, SArrayOfBooleans) {
   std::string buf(R"([true, false])");
 
