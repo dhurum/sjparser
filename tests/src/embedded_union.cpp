@@ -62,6 +62,40 @@ TEST(EmbeddedUnion, Null) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
+TEST(EmbeddedUnion, Reset) {
+  std::string buf(
+      R"({"type": 1, "bool": true, "integer": 10})");
+
+  // clang-format off
+  Parser<Object<
+    Union<
+      int64_t,
+      Object<
+        Value<bool>,
+        Value<int64_t>>,
+      Object<
+        Value<bool>>
+  >>> parser({{"type", {{1, {"bool", "integer"}}, {2, {"bool"}}}}});
+  // clang-format on
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_TRUE(parser.parser().get<0>().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().get<0>().parser<1>().isSet());
+  ASSERT_EQ(0, parser.parser().get<0>().currentMemberId());
+
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
+  ASSERT_EQ(10, parser.parser().get<0>().get<0>().get<1>());
+
+  buf = R"(null)";
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+}
+
 TEST(EmbeddedUnion, AllValuesFields) {
   std::string buf(
       R"({"type": 1, "bool": true, "integer": 10})");
