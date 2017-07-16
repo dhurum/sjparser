@@ -45,7 +45,7 @@ void YajlParser::resetYajlHandle() {
   freeYajlHandle();
   _yajl_handle = yajl_alloc(&_parser_yajl_callbacks, nullptr, this);
   if (!_yajl_handle) {
-    throw std::runtime_error("Can not allocate YAJL handle");
+    throw std::runtime_error("Can not allocate YAJL handle");  // LCOV_EXCL_LINE
   }
 }
 
@@ -94,7 +94,9 @@ void YajlParser::checkDispatcherStack() {
     return;
   }
 
+  // LCOV_EXCL_START
   throw ParsingError("Dispatcher parsers stack is not empty in the end");
+  // LCOV_EXCL_STOP
 }
 
 void YajlParser::throwParsingError() {
@@ -105,7 +107,7 @@ void YajlParser::throwParsingError() {
     yajl_error = reinterpret_cast<char *>(yajl_error_ptr);
     yajl_free_error(_yajl_handle, yajl_error_ptr);
   } else {
-    yajl_error = "Unknown YAJL error\n";
+    yajl_error = "Unknown YAJL error\n";  // LCOV_EXCL_LINE
   }
   throw ParsingError(_sjparser_error, yajl_error);
 }

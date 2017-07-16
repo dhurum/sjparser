@@ -14,6 +14,7 @@ set(SRCS
   src/embedded_union.cpp
   src/parsing_error.cpp
   src/yajl_parser.cpp
+  src/dispatcher.cpp
 )
 
 add_executable(${TARGET} ${SRCS})

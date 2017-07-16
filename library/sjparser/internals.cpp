@@ -52,39 +52,39 @@ void TokenParser::on(NullT /*unused*/) {
 
 void TokenParser::on(const bool & /*value*/) {
   unexpectedToken("boolean");
-}
+}  // LCOV_EXCL_LINE
 
 void TokenParser::on(const int64_t & /*value*/) {
   unexpectedToken("integer");
-}
+}  // LCOV_EXCL_LINE
 
 void TokenParser::on(const double & /*value*/) {
   unexpectedToken("double");
-}
+}  // LCOV_EXCL_LINE
 
 void TokenParser::on(const std::string & /*value*/) {
   unexpectedToken("string");
-}
+}  // LCOV_EXCL_LINE
 
 void TokenParser::on(MapStartT /*unused*/) {
   unexpectedToken("map start");
-}
+}  // LCOV_EXCL_LINE
 
 void TokenParser::on(const MapKeyT & /*key*/) {
   unexpectedToken("map key");
-}
+}  // LCOV_EXCL_LINE
 
 void TokenParser::on(MapEndT /*unused*/) {
   unexpectedToken("map end");
-}
+}  // LCOV_EXCL_LINE
 
 void TokenParser::on(ArrayStartT /*unused*/) {
   unexpectedToken("array start");
-}
+}  // LCOV_EXCL_LINE
 
 void TokenParser::on(ArrayEndT /*unused*/) {
   unexpectedToken("array end");
-}
+}  // LCOV_EXCL_LINE
 
 void TokenParser::childParsed() {}
 

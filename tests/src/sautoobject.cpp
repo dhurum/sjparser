@@ -810,3 +810,67 @@ TEST(SAutoObject, Move) {
   ASSERT_EQ(10, std::get<0>(value2).int_field);
   ASSERT_EQ("in_value2", std::get<0>(value2).str_field);
 }
+
+TEST(SAutoObject, UnknownExceptionInValueSetter) {
+  std::string buf(
+      R"(
+{
+  "object": {
+    "integer": 1,
+    "string": "in_value"
+  }
+})");
+
+  struct ObjectStruct {
+    bool throw_on_assign = false;
+
+    ObjectStruct() {}
+
+    ObjectStruct(const ObjectStruct &) {}
+
+    ObjectStruct &operator=(const ObjectStruct &other) {
+      throw_on_assign = other.throw_on_assign;
+      if (throw_on_assign) {
+        throw 10;
+      }
+      return *this;
+    }
+  };
+
+  using InnerObjectParser =
+      SObject<ObjectStruct, Value<int64_t>, Value<std::string>>;
+
+  auto innerObjectCb = [&](InnerObjectParser &, ObjectStruct &object) {
+    object.throw_on_assign = true;
+    return true;
+  };
+
+  // clang-format off
+  Parser<SObject<InnerObjectParser>> parser({
+      {
+        "object", {
+          {
+            "integer",
+            "string"
+          }, innerObjectCb
+        }
+      }});
+  // clang-format on
+
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Can not set value: unknown exception", e.sjparserError());
+
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+              "string": "in_value"   } }
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}

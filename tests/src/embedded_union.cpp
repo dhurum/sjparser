@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <gtest/gtest.h>
 #include "sjparser/sjparser.h"
+#include "test_parser.h"
 
 using namespace SJParser;
 
@@ -744,6 +745,30 @@ TEST(EmbeddedUnion, UnionWithUnexpectedMapStart) {
                      (right here) ------^
 )",
         e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(EmbeddedUnion, UnionWithUnexpectedMapKey) {
+  // clang-format off
+  Parser<Union<
+    int64_t,
+    Object<Value<bool>>,
+    Object<Value<int64_t>>
+  >, TestParser> parser({{1, "bool"}, {2, "int"}});
+  // clang-format on
+
+  auto test = [](TestParser *parser) {
+    parser->dispatcher->on(MapKeyT{"test"});
+  };
+
+  try {
+    parser.run(test);
+    FAIL() << "No exception thrown";
+  } catch (std::runtime_error &e) {
+    ASSERT_FALSE(parser.parser().parser<0>().isSet());
+    ASSERT_STREQ("Union with an empty type field can't parse this", e.what());
   } catch (...) {
     FAIL() << "Invalid exception thrown";
   }

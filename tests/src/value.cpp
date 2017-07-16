@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <gtest/gtest.h>
 #include "sjparser/sjparser.h"
+#include "test_parser.h"
 
 using namespace SJParser;
 
@@ -245,6 +246,38 @@ TEST(Value, UnexpectedMapStart) {
   }
 }
 
+TEST(Value, UnexpectedMapKey) {
+  Parser<Value<bool>, TestParser> parser;
+
+  auto test = [](TestParser *parser) {
+    parser->dispatcher->on(MapKeyT{"test"});
+  };
+
+  try {
+    parser.run(test);
+    FAIL() << "No exception thrown";
+  } catch (std::runtime_error &e) {
+    ASSERT_STREQ("Unexpected token map key", e.what());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(Value, UnexpectedMapEnd) {
+  Parser<Value<bool>, TestParser> parser;
+
+  auto test = [](TestParser *parser) { parser->dispatcher->on(MapEndT()); };
+
+  try {
+    parser.run(test);
+    FAIL() << "No exception thrown";
+  } catch (std::runtime_error &e) {
+    ASSERT_STREQ("Unexpected token map end", e.what());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
 TEST(Value, UnexpectedArrayStart) {
   std::string buf(R"([)");
 
@@ -263,6 +296,21 @@ TEST(Value, UnexpectedArrayStart) {
                      (right here) ------^
 )",
         e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(Value, UnexpectedArrayEnd) {
+  Parser<Value<bool>, TestParser> parser;
+
+  auto test = [](TestParser *parser) { parser->dispatcher->on(ArrayEndT()); };
+
+  try {
+    parser.run(test);
+    FAIL() << "No exception thrown";
+  } catch (std::runtime_error &e) {
+    ASSERT_STREQ("Unexpected token array end", e.what());
   } catch (...) {
     FAIL() << "Invalid exception thrown";
   }
