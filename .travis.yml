@@ -24,11 +24,13 @@ addons:
       - clang-4.0
       - clang-tidy-4.0
       - doxygen
+      - lcov
 env:
   - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
 
 before_install:
   - eval "${MATRIX_EVAL}"
+  - pip install --user cpp-coveralls
 
 install:
   - pushd /usr/src/gtest
@@ -37,10 +39,16 @@ install:
   - sudo ln -s `which clang-tidy-4.0` /usr/bin/clang-tidy
 
 script:
-  - mkdir build
-  - cd build
+  - mkdir build && cd build
   - cmake ../ -DWITH_TESTS=True && make && make test && make check
   - make documentation && mkdir to_deploy && mv documentation to_deploy
+
+after_success:
+  # code coverage
+  - mkdir coverage_build && pushd coverage_build
+  - cmake ../../ -DCMAKE_BUILD_TYPE=Coverage && make
+  - GITHUB_TOKEN= coveralls --no-gcov --lcov-file coverage/sjparser.clean.info
+  - popd
 
 deploy:
   provider: pages
