@@ -1,5 +1,6 @@
 [//]: # (start nodoc)
 [![Build Status](https://travis-ci.org/dhurum/sjparser.svg?branch=master)](https://travis-ci.org/dhurum/sjparser)
+[![Coverage Status](https://coveralls.io/repos/github/dhurum/sjparser/badge.svg)](https://coveralls.io/github/dhurum/sjparser)
 [![License](https://img.shields.io/:license-mit-blue.svg)](https://badges.mit-license.org)
 
 [//]: # (end nodoc)
