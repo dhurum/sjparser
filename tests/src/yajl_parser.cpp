@@ -52,3 +52,30 @@ TEST(YajlParser, OnUnknownException) {
     FAIL() << "Invalid exception thrown";
   }
 }
+
+class TestParser : public TokenParser {
+ public:
+  void finish() override {}
+  void on(NullT /*unused*/) {}
+  struct Args {};
+
+  TestParser(Args /*unused*/) {}
+};
+
+TEST(YajlParser, NoneEmtyParsersStackOnFinish) {
+  std::string buf(R"(null)");
+
+  Parser<TestParser> parser;
+  parser.parse(buf);
+
+  try {
+    parser.finish();
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_EQ("Dispatcher parsers stack is not empty in the end",
+              e.sjparserError());
+    ASSERT_EQ("", e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}

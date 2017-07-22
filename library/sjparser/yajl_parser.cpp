@@ -94,9 +94,7 @@ void YajlParser::checkDispatcherStack() {
     return;
   }
 
-  // LCOV_EXCL_START
   throw ParsingError("Dispatcher parsers stack is not empty in the end");
-  // LCOV_EXCL_STOP
 }
 
 void YajlParser::throwParsingError() {
