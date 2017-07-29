@@ -120,6 +120,13 @@ class Object : public KeyValueParser<FieldName, Ts...> {
     /** @param [in] args Sets #args.
      *
      * @param [in] on_finish (optional) Sets #on_finish.
+     *
+     * @note If you are passing a single field name (without arguments)
+     * to the constructor, you must pass it without surrounding {}:
+     * @code {.cpp} Object<...>::Args args("field"); @endcode
+     * However, if you initialize Args, you can pass the extra {}:
+     * @code {.cpp} Object<...>::Args args = {"field"}; @endcode
+     * @code {.cpp} Object<...>::Args args = {{"field"}}; @endcode
      */
     Args(const ChildArgs &args,
          const std::function<bool(Object<Ts...> &)> &on_finish = nullptr);
@@ -152,8 +159,8 @@ class Object : public KeyValueParser<FieldName, Ts...> {
    * you can pass a @ref Args::args "tuple of field arguments" directly
    * into the constructor.
    *
-   * @note If you are passing a single field name (without arguments), you must
-   * pass it directly to the constructor, without surrounding {}:
+   * @note If you are passing a single field name (without arguments) directly
+   * to the constructor, you must pass it without surrounding {}:
    * @code {.cpp} Object<...> object("field"); @endcode
    */
   Object(const Args &args);

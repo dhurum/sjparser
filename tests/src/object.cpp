@@ -309,6 +309,66 @@ TEST(Object, OneFieldWithElementAndObjectCallbacks) {
   ASSERT_EQ("value", object_value);
 }
 
+TEST(Object, OneFieldWithArgsStruct) {
+  std::string buf(R"({"string": "value"})");
+  
+  using ObjectParser = Object<Value<std::string>>;
+
+  // Notice - no {} around the argument!
+  ObjectParser::Args object_args("string");
+
+  Parser<ObjectParser> parser(object_args);
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get<0>());
+}
+
+TEST(Object, OneFieldWithArgsStructInitializer) {
+  std::string buf(R"({"string": "value"})");
+  
+  using ObjectParser = Object<Value<std::string>>;
+
+  // Extra {} around the argument is optional
+  ObjectParser::Args object_args = {{"string"}};
+
+  Parser<ObjectParser> parser(object_args);
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get<0>());
+}
+
+TEST(Object, ObjectWithObjectWithOneField) {
+  std::string buf(R"({"object": {"string": "value"}})");
+  
+  // {} around "string" are optional, but they make it a bit more clear
+  Parser<Object<Object<Value<std::string>>>> parser({{"object", {"string"}}});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get<0>().get<0>());
+}
+
+TEST(Object, ObjectWithObjectWithOneFieldWithArgsStruct) {
+  std::string buf(R"({"object": {"string": "value"}})");
+  
+  using ObjectParser = Object<Object<Value<std::string>>>;
+
+  // {} around "string" are optional, but they make it a bit more clear
+  ObjectParser::Args object_args({{"object", {"string"}}});
+
+  Parser<ObjectParser> parser(object_args);
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get<0>().get<0>());
+}
+
 TEST(Object, ObjectWithArgsStruct) {
   std::string buf(
       R"({"string": "value", "integer": 10})");
