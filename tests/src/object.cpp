@@ -311,7 +311,7 @@ TEST(Object, OneFieldWithElementAndObjectCallbacks) {
 
 TEST(Object, OneFieldWithArgsStruct) {
   std::string buf(R"({"string": "value"})");
-  
+
   using ObjectParser = Object<Value<std::string>>;
 
   // Notice - no {} around the argument!
@@ -327,7 +327,7 @@ TEST(Object, OneFieldWithArgsStruct) {
 
 TEST(Object, OneFieldWithArgsStructInitializer) {
   std::string buf(R"({"string": "value"})");
-  
+
   using ObjectParser = Object<Value<std::string>>;
 
   // Extra {} around the argument is optional
@@ -343,7 +343,7 @@ TEST(Object, OneFieldWithArgsStructInitializer) {
 
 TEST(Object, ObjectWithObjectWithOneField) {
   std::string buf(R"({"object": {"string": "value"}})");
-  
+
   // {} around "string" are optional, but they make it a bit more clear
   Parser<Object<Object<Value<std::string>>>> parser({{"object", {"string"}}});
 
@@ -355,7 +355,7 @@ TEST(Object, ObjectWithObjectWithOneField) {
 
 TEST(Object, ObjectWithObjectWithOneFieldWithArgsStruct) {
   std::string buf(R"({"object": {"string": "value"}})");
-  
+
   using ObjectParser = Object<Object<Value<std::string>>>;
 
   // {} around "string" are optional, but they make it a bit more clear
