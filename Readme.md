@@ -15,7 +15,9 @@ Basically it is a SAX parser on steroids - you specify the expected json structu
 [//]: # (start nodoc)
 ## Documentation
 
-You can find class reference [here](https://dhurum.github.io/sjparser/documentation/html/).  
+[Class reference](https://dhurum.github.io/sjparser/documentation/html/).  
+
+[Tutorial](https://github.com/dhurum/sjparser_tutorial).  
 
 Also you can check the [Concepts](#concepts).
 
