@@ -8,9 +8,9 @@
 
 Streaming json parser, written on top of yajl.  
 
-The main use case for this parser is very long json documents with known structure, e.g. importing some data from a json representation.  
+The main use case for this parser is very long json documents with known structure, e.g. importing some data from a json representation, or reading a json from network and processing it chunk by chunk.  
 
-Basically it is a SAX parser on steroids - you specify the expected json structure and your callbacks, and they will be called after a whole object or array is parsed, not just on a `MapKey` or `ArrayEnd` events.
+This is an event-driven parser on steroids - you specify the expected json structure and your callbacks, and they will be called after a whole piece of document is parsed (an object, for example), not just on `MapKey` or `ArrayEnd` events.
 
 [//]: # (start nodoc)
 ## Documentation
