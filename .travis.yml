@@ -40,7 +40,7 @@ install:
 
 script:
   - mkdir build && cd build
-  - cmake ../ -DWITH_TESTS=True && make && make test && make check
+  - cmake ../ -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=True && make && make test && make check
   - make documentation && mkdir to_deploy && mv documentation to_deploy
 
 after_success:
