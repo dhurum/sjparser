@@ -77,6 +77,93 @@ int main() {
 
 For more examples, please see [tests](https://github.com/dhurum/sjparser/blob/master/tests).
 
+[//]: # (start nodoc)
+## Building
+
+For building sjparser you will need:
+
+- `cmake`;
+- `make`;
+- `yajl`;
+- c++ compiler with c++14 support;
+
+### Release build
+
+~~~bash
+mkdir build
+cd build
+cmake ../ -DCMAKE_BUILD_TYPE=Release 
+make
+~~~
+
+If you want to build tests for the release build you can use this command:
+
+~~~bash
+cmake ../ -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=True
+~~~
+
+### Installation
+
+~~~bash
+make install
+~~~
+
+### Debug build
+
+For the debug build you will need `gtest`.
+
+~~~bash
+cmake ../ -DCMAKE_BUILD_TYPE=Debug
+~~~
+
+### Running tests
+
+~~~bash
+make test
+~~~
+
+### Generating documentation
+
+For the documentation you will need `doxygen`.
+
+~~~bash
+make documentation
+~~~
+
+The documentation will be available in `documentation/html`.
+
+
+### Coverage build
+
+For the coverage you will need:
+
+- `gcov`;
+- `lcov` with `genhtml`;
+
+~~~bash
+cmake ../ -DCMAKE_BUILD_TYPE=Coverage
+make
+~~~
+
+The coverage report will be available in `coverage/report`.
+
+### Static analyzer run
+
+For the static analysis you will need `clang-tidy`.
+
+~~~bash
+make check
+~~~
+
+### Fix code formatting
+
+For code formatting you will need `clang-format`.
+
+~~~bash
+make format
+~~~
+
+[//]: # (end nodoc)
 ## Concepts <a name="concepts"></a>
 
 Expected json structure is specified as template parameters of `SJParser::Parser` and entities parsers.  
