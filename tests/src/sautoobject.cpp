@@ -736,7 +736,7 @@ TEST(SAutoObject, Move) {
     int64_t int_field;
     std::string str_field;
 
-    ObjectStruct() {}
+    ObjectStruct() { int_field = 0; }
 
     ObjectStruct(const ObjectStruct &other) {
       int_field = other.int_field;
