@@ -1,16 +1,11 @@
 set(TARGET sjparser)
 
-set(SJPARSER_INCLUDES_DIR
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-set(SRCS
+add_library(sjparser STATIC
   sjparser/internals.cpp
   sjparser/parsing_error.cpp
   sjparser/yajl_parser.cpp
 )
-
-set(HDRS
+set_property(TARGET sjparser PROPERTY SJPARSER_HEADERS
   sjparser/sjparser.h
   sjparser/sjparser_impl.h
   sjparser/internals.h
@@ -18,31 +13,29 @@ set(HDRS
   sjparser/parsing_error.h
   sjparser/yajl_parser.h
 )
+set_target_properties(sjparser PROPERTIES OUTPUT_NAME sjparser_static)
 
-add_library(${TARGET} STATIC ${SRCS})
+setup_compilation_options(sjparser)
+target_link_libraries(sjparser PUBLIC ${YAJL_LIB})
+target_include_directories(sjparser PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(${TARGET} ${YAJL_LIB})
-target_include_directories(${TARGET} PUBLIC ${SJPARSER_INCLUDES_DIR})
+include(format)
+add_format_target(sjparser)
+
+if(SJPARSER_BUILD_SHARED_LIBRARY)
+  add_library(sjparser_shared SHARED $<TARGET_PROPERTY:sjparser,SOURCES>)
+  set_target_properties(sjparser_shared PROPERTIES OUTPUT_NAME sjparser)
+
+  setup_compilation_options(sjparser_shared)
+  target_link_libraries(sjparser_shared PUBLIC ${YAJL_LIB})
+  target_include_directories(sjparser_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
 
 if(STANDALONE_BUILD)
-  add_library(${TARGET}_shared SHARED ${SRCS})
-
-  target_link_libraries(${TARGET}_shared ${YAJL_LIB})
-  set_target_properties(${TARGET}_shared PROPERTIES OUTPUT_NAME ${TARGET})
-  target_include_directories(${TARGET}_shared PUBLIC ${SJPARSER_INCLUDES_DIR})
-
-  install(TARGETS ${TARGET} ${TARGET}_shared DESTINATION lib/sjparser)
-  install(FILES ${HDRS} DESTINATION include/sjparser)
-
-  set(SJPARSER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+  install(TARGETS sjparser sjparser_shared DESTINATION lib/sjparser)
+  get_target_property(HEADERS sjparser SJPARSER_HEADERS)
+  install(FILES ${HEADERS} DESTINATION include/sjparser)
 
   add_subdirectory(check)
   add_subdirectory(documentation)
-
-  if(CLANG_FORMAT_BIN)
-    add_custom_target(format_library
-      COMMAND ${CLANG_FORMAT_BIN} -i ${SRCS} ${HDRS}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-  endif()
 endif()

@@ -6,12 +6,16 @@ if(NOT DOXYGEN_FOUND)
 endif()
 
 set(CUT_README ${CMAKE_CURRENT_BINARY_DIR}/Readme.md)
-set(CUTTER ${CMAKE_CURRENT_SOURCE_DIR}/cut_nodoc.sh)
 
+# We can safely use CMAKE_SOURCE_DIR because documentation is built only in
+# standalone mode.
 add_custom_command(OUTPUT ${CUT_README}
-  COMMAND ${CUTTER} ${CMAKE_SOURCE_DIR}/Readme.md > ${CUT_README}
+  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/cut_nodoc.sh ${CMAKE_SOURCE_DIR}/Readme.md
+  > ${CUT_README}
   DEPENDS ${CMAKE_SOURCE_DIR}/Readme.md
 )
+
+get_target_property(SJPARSER_SOURCE_DIR sjparser SOURCE_DIR)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
   ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile

@@ -82,10 +82,14 @@ For more examples, please see [tests](https://github.com/dhurum/sjparser/blob/ma
 
 For building sjparser you will need:
 
-- `cmake`;
+- `cmake` 3.8 or higher;
 - `make`;
 - `yajl`;
 - c++ compiler with c++14 support;
+
+### CMake variables:
+- `SJPARSER_WITH_TESTS` - Build tests if the config is not Debug or Coverage;
+- `SJPARSER_BUILD_SHARED_LIBRARY` - Build shared library even in case of submodule build;
 
 ### Release build
 
@@ -99,7 +103,7 @@ make
 If you want to build tests for the release build you can use this command:
 
 ~~~bash
-cmake ../ -DCMAKE_BUILD_TYPE=Release -DWITH_TESTS=True
+cmake ../ -DCMAKE_BUILD_TYPE=Release -DSJPARSER_WITH_TESTS=True
 ~~~
 
 ### Installation

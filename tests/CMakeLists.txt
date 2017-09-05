@@ -1,9 +1,8 @@
 set(TARGET sjparser_tests)
 
 find_package(GTest REQUIRED)
-find_package(Threads REQUIRED)
 
-set(SRCS
+add_executable(${TARGET}
   src/value.cpp
   src/array.cpp
   src/sarray.cpp
@@ -17,16 +16,10 @@ set(SRCS
   src/dispatcher.cpp
 )
 
-add_executable(${TARGET} ${SRCS})
+setup_compilation_options(${TARGET})
+target_link_libraries(${TARGET} PUBLIC sjparser GTest::GTest GTest::Main)
 
-target_link_libraries(${TARGET} sjparser ${GTEST_BOTH_LIBRARIES} pthread)
-target_include_directories(${TARGET} PRIVATE ${GTEST_INCLUDE_DIRS})
+include(format)
+add_format_target(${TARGET})
 
 add_test(sjparser ${TARGET})
-
-if(CLANG_FORMAT_BIN)
-  add_custom_target(format_tests
-    COMMAND ${CLANG_FORMAT_BIN} -i ${SRCS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  )
-endif()
