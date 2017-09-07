@@ -1,5 +1,3 @@
-set(TARGET sjparser)
-
 add_library(sjparser STATIC
   sjparser/internals.cpp
   sjparser/parsing_error.cpp
@@ -17,10 +15,15 @@ set_target_properties(sjparser PROPERTIES OUTPUT_NAME sjparser_static)
 
 setup_compilation_options(sjparser)
 target_link_libraries(sjparser PUBLIC ${YAJL_LIB})
-target_include_directories(sjparser PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(sjparser PUBLIC 
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
 
 include(format)
 add_format_target(sjparser)
+
+add_library(sjparser::sjparser ALIAS sjparser)
 
 if(SJPARSER_BUILD_SHARED_LIBRARY)
   add_library(sjparser_shared SHARED $<TARGET_PROPERTY:sjparser,SOURCES>)
@@ -28,13 +31,28 @@ if(SJPARSER_BUILD_SHARED_LIBRARY)
 
   setup_compilation_options(sjparser_shared)
   target_link_libraries(sjparser_shared PUBLIC ${YAJL_LIB})
-  target_include_directories(sjparser_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(sjparser_shared PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+  )
+
+  add_library(sjparser::sjparser_shared ALIAS sjparser_shared)
 endif()
 
 if(STANDALONE_BUILD)
-  install(TARGETS sjparser sjparser_shared DESTINATION lib/sjparser)
+  install(TARGETS sjparser sjparser_shared
+    EXPORT sjparser-targets
+    DESTINATION lib/sjparser
+  )
   get_target_property(HEADERS sjparser SJPARSER_HEADERS)
   install(FILES ${HEADERS} DESTINATION include/sjparser)
+
+  set(PACKAGE_LOCATION lib/cmake/sjparser)
+  install(FILES sjparser-config.cmake DESTINATION ${PACKAGE_LOCATION})
+  install(EXPORT sjparser-targets
+    NAMESPACE sjparser::
+    DESTINATION ${PACKAGE_LOCATION}
+  )
 
   add_subdirectory(check)
   add_subdirectory(documentation)
