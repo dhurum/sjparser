@@ -30,6 +30,8 @@ set(CHECKS
   -cert-err60-cpp
   # clang-tidy and clang-format seems to disagree
   -llvm-include-order
+  # clang-tidy on travis started to give weird warnings for base constructor
+  -cppcoreguidelines-pro-type-member-init
 )
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")
