@@ -10,13 +10,14 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-# Command-line variables:
-# SJPARSER_WITH_TESTS - Build tests if the config is not Debug or Coverage;
-# SJPARSER_BUILD_SHARED_LIBRARY - Build shared library even in case of submodule
-#                                 build;
+option(SJPARSER_WITH_TESTS
+  "Build tests if the config is not Debug or Coverage" OFF)
+option(SJPARSER_BUILD_SHARED_LIBRARY
+  "Build shared library even in case of submodule build" OFF)
 
 if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  message(STATUS "Sjparser is a part of some project, only library targets are enabled.")
+  message(STATUS
+    "Sjparser is a part of some project, only library targets are enabled.")
   set(STANDALONE_BUILD FALSE)
 else()
   set(STANDALONE_BUILD TRUE)
