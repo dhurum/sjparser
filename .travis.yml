@@ -43,7 +43,7 @@ install:
 
 script:
   - mkdir build && cd build
-  - cmake ../ -DCMAKE_BUILD_TYPE=Release -DSJPARSER_WITH_TESTS=True && make && make test && make check
+  - cmake ../ -DCMAKE_BUILD_TYPE=Release -DSJPARSER_WITH_TESTS=True && make && make test
   - make documentation && mkdir to_deploy && mv documentation to_deploy
 
 after_success:

@@ -24,14 +24,13 @@ set(CHECKS
   -google-runtime-int
   -google-explicit-constructor
   -cppcoreguidelines-special-member-functions
+  -hicpp-special-member-functions
+  -hicpp-explicit-conversions
   # For some reason, it does not play well with comments before pragma once
   -llvm-header-guard
-  # 4.0.1 complains about std::runtime_error
-  -cert-err60-cpp
   # clang-tidy and clang-format seems to disagree
   -llvm-include-order
-  # clang-tidy on travis started to give weird warnings for base constructor
-  -cppcoreguidelines-pro-type-member-init
+
 )
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")
