@@ -98,10 +98,10 @@ void YajlParser::checkDispatcherStack() {
 }
 
 void YajlParser::throwParsingError() {
-  auto yajl_error_ptr = yajl_get_error(_yajl_handle, 1, _data, _len);
   std::string yajl_error;
 
-  if (yajl_error_ptr) {
+  if (auto yajl_error_ptr = yajl_get_error(_yajl_handle, 1, _data, _len);
+      yajl_error_ptr) {
     yajl_error = reinterpret_cast<char *>(yajl_error_ptr);
     yajl_free_error(_yajl_handle, yajl_error_ptr);
   } else {
@@ -111,72 +111,46 @@ void YajlParser::throwParsingError() {
 }
 
 int YajlParser::yajlOnNull(void *ctx) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return parser->on(NullT{});
+  return reinterpret_cast<YajlParser *>(ctx)->on(NullT{});
 }
 
 int YajlParser::yajlOnBool(void *ctx, int value) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return parser->on(static_cast<bool>(value));
+  return reinterpret_cast<YajlParser *>(ctx)->on(static_cast<bool>(value));
 }
 
 int YajlParser::yajlOnInt(void *ctx, long long value) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return parser->on(static_cast<int64_t>(value));
+  return reinterpret_cast<YajlParser *>(ctx)->on(static_cast<int64_t>(value));
 }
 
 int YajlParser::yajlOnDouble(void *ctx, double value) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return parser->on(value);
+  return reinterpret_cast<YajlParser *>(ctx)->on(value);
 }
 
 int YajlParser::yajlOnString(void *ctx, const unsigned char *value,
                              size_t len) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return static_cast<int>(
-      parser->on(std::string(reinterpret_cast<const char *>(value), len)));
+  return reinterpret_cast<YajlParser *>(ctx)->on(
+      std::string(reinterpret_cast<const char *>(value), len));
 }
 
 int YajlParser::yajlOnMapStart(void *ctx) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return parser->on(MapStartT{});
+  return reinterpret_cast<YajlParser *>(ctx)->on(MapStartT{});
 }
 
 int YajlParser::yajlOnMapKey(void *ctx, const unsigned char *value,
                              size_t len) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return static_cast<int>(parser->on(
-      MapKeyT{std::string(reinterpret_cast<const char *>(value), len)}));
+  return reinterpret_cast<YajlParser *>(ctx)->on(
+      MapKeyT{std::string(reinterpret_cast<const char *>(value), len)});
 }
 
 int YajlParser::yajlOnMapEnd(void *ctx) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return parser->on(MapEndT{});
+  return reinterpret_cast<YajlParser *>(ctx)->on(MapEndT{});
 }
 
 int YajlParser::yajlOnArrayStart(void *ctx) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return parser->on(ArrayStartT{});
+  return reinterpret_cast<YajlParser *>(ctx)->on(ArrayStartT{});
 }
 
 int YajlParser::yajlOnArrayEnd(void *ctx) {
-  auto parser = reinterpret_cast<YajlParser *>(ctx);
-  return parser->on(ArrayEndT{});
-}
-
-FieldName::FieldName(std::string str) : _str(std::move(str)) {}
-
-FieldName::FieldName(const char *str) : _str(str) {}
-
-FieldName::operator const std::string &() const {
-  return _str;
-}
-
-bool FieldName::operator==(const FieldName &other) const {
-  return _str == other._str;
-}
-
-const std::string &FieldName::str() const {
-  return _str;
+  return reinterpret_cast<YajlParser *>(ctx)->on(ArrayEndT{});
 }
 }  // namespace SJParser

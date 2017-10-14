@@ -194,12 +194,20 @@ std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
                                      const FieldName &name) {
   return stream << name.str();
 }
-}  // namespace SJParser
 
-namespace std {
+FieldName::FieldName(std::string str) : _str(std::move(str)) {}
 
-size_t hash<SJParser::FieldName>::operator()(
-    const SJParser::FieldName &key) const {
-  return hash<std::string>()(key.str());
+FieldName::FieldName(const char *str) : _str(str) {}
+
+FieldName::operator const std::string &() const {
+  return _str;
 }
-}  // namespace std
+
+bool FieldName::operator==(const FieldName &other) const {
+  return _str == other._str;
+}
+
+const std::string &FieldName::str() const {
+  return _str;
+}
+}  // namespace SJParser

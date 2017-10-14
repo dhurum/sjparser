@@ -77,7 +77,7 @@ template <typename T> class Value : public TokenParser {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  inline const Type &get() const;
+  const Type &get() const;
 
   /** @brief Get the parsed value and unset the parser.
    *
@@ -88,7 +88,7 @@ template <typename T> class Value : public TokenParser {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  inline Type &&pop();
+  Type &&pop();
 
  private:
   Type _value;
@@ -176,7 +176,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
    * value. Otherwise, returns a reference to the n-th field parser.
    */
   template <size_t n>
-  inline const typename NthTypes<n, Ts...>::template ValueType<> &get();
+  const typename NthTypes<n, Ts...>::template ValueType<> &get();
 
   /** @brief Universal field getter.
    *
@@ -186,7 +186,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
    * SArray), then the method returns a const reference to the n-th field parser
    * value. Otherwise, returns a reference to the n-th field parser.
    */
-  template <size_t n> inline typename NthTypes<n, Ts...>::ParserType &get();
+  template <size_t n> typename NthTypes<n, Ts...>::ParserType &get();
 
   /** @brief Field parser getter.
    *
@@ -194,7 +194,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
    *
    * @return Reference to n-th field parser.
    */
-  template <size_t n> inline typename NthTypes<n, Ts...>::ParserType &parser();
+  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
 #endif
 
  private:
@@ -287,7 +287,7 @@ class SCustomObject : public Object<Ts...> {
    *
    * @return Reference to n-th field parser.
    */
-  template <size_t n> inline typename NthType<n, Ts...>::type &get();
+  template <size_t n> typename NthType<n, Ts...>::type &get();
 #endif
   using Object<Ts...>::get;
 
@@ -298,7 +298,7 @@ class SCustomObject : public Object<Ts...> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  inline const Type &get() const;
+  const Type &get() const;
 
 #ifdef DOXYGEN_ONLY
   /** @brief Get the field parsed value and unset the field parser.
@@ -312,8 +312,7 @@ class SCustomObject : public Object<Ts...> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  template <size_t n>
-  inline typename NthTypes<n, Ts...>::template ValueType<> &&pop();
+  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 #endif
   using Object<Ts...>::pop;
 
@@ -336,7 +335,7 @@ class SCustomObject : public Object<Ts...> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  inline Type &&pop();
+  Type &&pop();
 
  private:
   T _value;
@@ -439,7 +438,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  inline const Type &get() const;
+  const Type &get() const;
 
   /** @brief Get the parsed value and unset the parser.
    *
@@ -454,7 +453,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  inline Type &&pop();
+  Type &&pop();
 
  private:
   using TokenParser::_set;
@@ -628,12 +627,12 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
    *
    * @return Reference to n-th object parser.
    */
-  template <size_t n> inline typename NthType<n, Ts...>::type &get();
+  template <size_t n> typename NthType<n, Ts...>::type &get();
 #endif
 
  private:
-  using TokenParser::checkSet;
   using KVParser::on;
+  using TokenParser::checkSet;
 
   void on(const I &value) override;
   void on(MapStartT /*unused*/) override;
@@ -802,7 +801,7 @@ template <typename T> class SArray : public Array<T> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  inline const Type &get() const;
+  const Type &get() const;
 
   /** @brief Get the parsed value and unset the parser.
    *
@@ -813,7 +812,7 @@ template <typename T> class SArray : public Array<T> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  inline Type &&pop();
+  Type &&pop();
 
  private:
   std::vector<EltType> _values;
@@ -866,7 +865,7 @@ template <typename T, typename Impl = YajlParser> class Parser : public Impl {
    *
    * @return A reference to the root parser (@ref Parser_T "T").
    */
-  inline T &parser();
+  T &parser();
 
  private:
   T _parser;

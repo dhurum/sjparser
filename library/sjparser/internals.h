@@ -127,12 +127,16 @@ class KeyValueParser : public TokenParser {
   void onField(const I &field);
 
   template <size_t n, typename T, typename... TDs> struct NthTypes {
-    using ParserType = typename NthTypes<n - 1, TDs...>::ParserType;
+   private:
+    using NextLevel = NthTypes<n - 1, TDs...>;
 
-    template <typename U = NthTypes<n - 1, TDs...>>
+   public:
+    using ParserType = typename NextLevel::ParserType;
+
+    template <typename U = NextLevel>
     using ValueType = typename U::template ValueType<>;
 
-    enum { no_value_type = NthTypes<n - 1, TDs...>::no_value_type };
+    enum { has_value_type = NextLevel::has_value_type };
   };
 
   template <typename T, typename... TDs> struct NthTypes<0, T, TDs...> {
@@ -141,27 +145,25 @@ class KeyValueParser : public TokenParser {
     template <typename U = T> using ValueType = typename U::Type;
 
    private:
-    using HasType = uint8_t;
-    using NoType = uint32_t;
-    template <typename U> static HasType test(typename U::Type * /*unused*/);
-    template <typename U> static NoType test(...);
+    using HasValueType = uint8_t;
+    using NoValueType = uint32_t;
+    template <typename U>
+    static HasValueType valueTypeTest(typename U::Type * /*unused*/);
+    template <typename U> static NoValueType valueTypeTest(...);
 
    public:
-    enum { no_value_type = sizeof(test<T>(nullptr)) == sizeof(NoType) };
+    enum {
+      has_value_type = sizeof(valueTypeTest<T>(nullptr)) == sizeof(HasValueType)
+    };
   };
 
-  template <size_t n>
-  inline const typename NthTypes<n, Ts...>::template ValueType<> &get();
-  template <size_t n>
-  inline typename NthTypes<n, Ts...>::ParserType &get(
-      typename std::enable_if<NthTypes<n, Ts...>::no_value_type>::type
-          * /*unused*/
-      = nullptr);
+  // Returns NthTypes<n, Ts...>::template ValueType<> if it is available,
+  // otherwise NthTypes<n, Ts...>::ParserType
+  template <size_t n> auto &get();
 
-  template <size_t n> inline typename NthTypes<n, Ts...>::ParserType &parser();
+  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
 
-  template <size_t n>
-  inline typename NthTypes<n, Ts...>::template ValueType<> &&pop();
+  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 
  protected:
   template <size_t, typename Args, typename...> struct Field {

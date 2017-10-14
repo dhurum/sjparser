@@ -119,22 +119,16 @@ void KeyValueParser<I, Ts...>::onField(const I &field) {
 
 template <typename I, typename... Ts>
 template <size_t n>
-const typename KeyValueParser<I, Ts...>::template NthTypes<n, Ts...>::
-    template ValueType<>
-        &KeyValueParser<I, Ts...>::get() {
-  return reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
-             _fields_array[n])
-      ->get();
-}
+auto &KeyValueParser<I, Ts...>::get() {
+  const auto parser =
+      reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
+          _fields_array[n]);
 
-template <typename I, typename... Ts>
-template <size_t n>
-typename KeyValueParser<I, Ts...>::template NthTypes<n, Ts...>::ParserType &
-KeyValueParser<I, Ts...>::get(
-    typename std::enable_if<NthTypes<n, Ts...>::no_value_type>::type
-        * /*unused*/) {
-  return *reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
-      _fields_array[n]);
+  if constexpr (NthTypes<n, Ts...>::has_value_type) {
+    return parser->get();
+  } else {  // NOLINT
+    return *parser;
+  }
 }
 
 template <typename I, typename... Ts>
@@ -147,9 +141,9 @@ KeyValueParser<I, Ts...>::parser() {
 
 template <typename I, typename... Ts>
 template <size_t n>
-typename KeyValueParser<I, Ts...>::template NthTypes<n, Ts...>::
-    template ValueType<>
-        &&KeyValueParser<I, Ts...>::pop() {
+typename KeyValueParser<I, Ts...>::template NthTypes<
+    n, Ts...>::template ValueType<>
+    &&KeyValueParser<I, Ts...>::pop() {
   return reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
              _fields_array[n])
       ->pop();
@@ -179,6 +173,8 @@ std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
 
 namespace std {
 template <> struct hash<SJParser::FieldName> {
-  std::size_t operator()(const SJParser::FieldName &key) const;
+  std::size_t operator()(const SJParser::FieldName &key) const {
+    return hash<std::string>()(key.str());
+  }
 };
 }  // namespace std
