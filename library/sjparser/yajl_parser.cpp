@@ -26,9 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-// clang-tidy thinks this is redundant, while the standart thinks otherwise
-constexpr yajl_callbacks YajlParser::_parser_yajl_callbacks;  // NOLINT
-
 YajlParser::YajlParser() {
   resetYajlHandle();
 }
