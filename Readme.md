@@ -85,7 +85,7 @@ For building sjparser you will need:
 - `cmake` 3.8 or higher;
 - `make`;
 - `yajl`;
-- c++ compiler with c++14 support;
+- c++ compiler with c++17 support;
 
 ### CMake variables:
 - `SJPARSER_WITH_TESTS` - Build tests if the config is not Debug or Coverage;
