@@ -91,28 +91,28 @@ class FieldName {
   std::string _str;
 };
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 class KeyValueParser : public TokenParser {
  public:
   template <typename T> struct FieldArgs {
     using Args = typename T::Args;
 
-    FieldArgs(const I &field, const Args &value);
+    FieldArgs(const FieldIDType &field, const Args &value);
     template <typename U = T>
-    FieldArgs(const I &field, const typename U::ChildArgs &value);
-    FieldArgs(const I &field);
-    template <typename U = I>
+    FieldArgs(const FieldIDType &field, const typename U::ChildArgs &value);
+    FieldArgs(const FieldIDType &field);
+    template <typename U = FieldIDType>
     FieldArgs(const char *field,
               typename std::enable_if<std::is_same<U, FieldName>::value>::type
                   * /*unused*/
               = 0);
-    template <typename U = I>
+    template <typename U = FieldIDType>
     FieldArgs(const std::string &field,
               typename std::enable_if<std::is_same<U, FieldName>::value>::type
                   * /*unused*/
               = 0);
 
-    I field;
+    FieldIDType field;
     Args value;
   };
   using ChildArgs = std::tuple<FieldArgs<Ts>...>;
@@ -125,7 +125,7 @@ class KeyValueParser : public TokenParser {
   void on(MapStartT /*unused*/) override;
   void on(MapEndT /*unused*/) override;
 
-  void onField(const I &field);
+  void onField(const FieldIDType &field);
 
   template <size_t n, typename T, typename... TDs> struct NthTypes {
    private:
@@ -169,20 +169,21 @@ class KeyValueParser : public TokenParser {
  protected:
   template <size_t, typename Args, typename...> struct Field {
     Field(std::array<TokenParser *, sizeof...(Ts)> & /*fields_array*/,
-          std::unordered_map<I, TokenParser *> & /*fields_map*/,
+          std::unordered_map<FieldIDType, TokenParser *> & /*fields_map*/,
           const Args & /*args*/) {}
   };
 
   template <size_t n, typename Args, typename T, typename... TDs>
   struct Field<n, Args, T, TDs...> : private Field<n + 1, Args, TDs...> {
     Field(std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-          std::unordered_map<I, TokenParser *> &fields_map, const Args &args);
+          std::unordered_map<FieldIDType, TokenParser *> &fields_map,
+          const Args &args);
 
     T _field;
   };
 
   std::array<TokenParser *, sizeof...(Ts)> _fields_array;
-  std::unordered_map<I, TokenParser *> _fields_map;
+  std::unordered_map<FieldIDType, TokenParser *> _fields_map;
   Field<0, ChildArgs, Ts...> _fields;
 };
 

@@ -39,55 +39,58 @@ void TokenParser::unexpectedToken(const std::string &type) {
   throw std::runtime_error("Unexpected token " + type);
 }
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 template <typename T>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(const I &field,
-                                                  const Args &value)
+KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
+    const FieldIDType &field, const Args &value)
     : field(field), value(value) {}
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 template <typename T>
 template <typename U>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
-    const I &field, const typename U::ChildArgs &value)
+KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
+    const FieldIDType &field, const typename U::ChildArgs &value)
     : field(field), value(value) {}
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 template <typename T>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(const I &field)
+KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
+    const FieldIDType &field)
     : field(field) {}
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 template <typename T>
 template <typename U>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
+KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
     const char *field,
     typename std::enable_if<std::is_same<U, FieldName>::value>::type
         * /*unused*/)
     : field(field) {}
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 template <typename T>
 template <typename U>
-KeyValueParser<I, Ts...>::FieldArgs<T>::FieldArgs(
+KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
     const std::string &field,
     typename std::enable_if<std::is_same<U, FieldName>::value>::type
         * /*unused*/)
     : field(field) {}
 
-template <typename I, typename... Ts>
-KeyValueParser<I, Ts...>::KeyValueParser(const ChildArgs &args)
+template <typename FieldIDType, typename... Ts>
+KeyValueParser<FieldIDType, Ts...>::KeyValueParser(const ChildArgs &args)
     : _fields(_fields_array, _fields_map, args) {}
 
-template <typename I, typename... Ts>
-void KeyValueParser<I, Ts...>::setDispatcher(Dispatcher *dispatcher) noexcept {
+template <typename FieldIDType, typename... Ts>
+void KeyValueParser<FieldIDType, Ts...>::setDispatcher(
+    Dispatcher *dispatcher) noexcept {
   TokenParser::setDispatcher(dispatcher);
   for (auto &field : _fields_map) {
     field.second->setDispatcher(dispatcher);
   }
 }
 
-template <typename I, typename... Ts> void KeyValueParser<I, Ts...>::reset() {
+template <typename FieldIDType, typename... Ts>
+void KeyValueParser<FieldIDType, Ts...>::reset() {
   TokenParser::reset();
 
   for (auto &field : _fields_map) {
@@ -95,18 +98,18 @@ template <typename I, typename... Ts> void KeyValueParser<I, Ts...>::reset() {
   }
 }
 
-template <typename I, typename... Ts>
-void KeyValueParser<I, Ts...>::on(MapStartT /*unused*/) {
+template <typename FieldIDType, typename... Ts>
+void KeyValueParser<FieldIDType, Ts...>::on(MapStartT /*unused*/) {
   reset();
 }
 
-template <typename I, typename... Ts>
-void KeyValueParser<I, Ts...>::on(MapEndT /*unused*/) {
+template <typename FieldIDType, typename... Ts>
+void KeyValueParser<FieldIDType, Ts...>::on(MapEndT /*unused*/) {
   endParsing();
 }
 
-template <typename I, typename... Ts>
-void KeyValueParser<I, Ts...>::onField(const I &field) {
+template <typename FieldIDType, typename... Ts>
+void KeyValueParser<FieldIDType, Ts...>::onField(const FieldIDType &field) {
   try {
     auto &parser = _fields_map.at(field);
     _dispatcher->pushParser(parser);
@@ -117,9 +120,9 @@ void KeyValueParser<I, Ts...>::onField(const I &field) {
   }
 }
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 template <size_t n>
-auto &KeyValueParser<I, Ts...>::get() {
+auto &KeyValueParser<FieldIDType, Ts...>::get() {
   const auto parser =
       reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
           _fields_array[n]);
@@ -131,29 +134,31 @@ auto &KeyValueParser<I, Ts...>::get() {
   }
 }
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 template <size_t n>
-typename KeyValueParser<I, Ts...>::template NthTypes<n, Ts...>::ParserType &
-KeyValueParser<I, Ts...>::parser() {
+typename KeyValueParser<FieldIDType,
+                        Ts...>::template NthTypes<n, Ts...>::ParserType &
+KeyValueParser<FieldIDType, Ts...>::parser() {
   return *reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
       _fields_array[n]);
 }
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 template <size_t n>
-typename KeyValueParser<I, Ts...>::template NthTypes<
+typename KeyValueParser<FieldIDType, Ts...>::template NthTypes<
     n, Ts...>::template ValueType<>
-    &&KeyValueParser<I, Ts...>::pop() {
+    &&KeyValueParser<FieldIDType, Ts...>::pop() {
   return reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
              _fields_array[n])
       ->pop();
 }
 
-template <typename I, typename... Ts>
+template <typename FieldIDType, typename... Ts>
 template <size_t n, typename Args, typename T, typename... TDs>
-KeyValueParser<I, Ts...>::Field<n, Args, T, TDs...>::Field(
+KeyValueParser<FieldIDType, Ts...>::Field<n, Args, T, TDs...>::Field(
     std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-    std::unordered_map<I, TokenParser *> &fields_map, const Args &args)
+    std::unordered_map<FieldIDType, TokenParser *> &fields_map,
+    const Args &args)
     : Field<n + 1, Args, TDs...>(fields_array, fields_map, args),
       _field(std::get<n>(args).value) {
   fields_array[n] = &_field;
