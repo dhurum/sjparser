@@ -85,7 +85,7 @@ template <typename T> class Value : public TokenParser {
    *
    * @return Rvalue reference to the parsed value.
    *
-   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * @throw std::runtime_error thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
   Type &&pop();
@@ -174,6 +174,9 @@ class Object : public KeyValueParser<FieldName, Ts...> {
    * @return If the n-th field parser stores value (is a Value, SObject or
    * SArray), then the method returns a const reference to the n-th field parser
    * value. Otherwise, returns a reference to the n-th field parser.
+   *
+   * @throw std::runtime_error thrown if the field parser value is unset (no
+   * value was parsed or #pop was called for the field parser).
    */
   template <size_t n>
   const typename NthTypes<n, Ts...>::template ValueType<> &get();
@@ -195,6 +198,19 @@ class Object : public KeyValueParser<FieldName, Ts...> {
    * @return Reference to n-th field parser.
    */
   template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+
+  /** @brief Get the field parsed value and unset the field parser.
+   *
+   * Moves the n-th field parsed value out of the field parser.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return Rvalue reference to n-th field parser value.
+   *
+   * @throw std::runtime_error thrown if the field parser value is unset (no
+   * value was parsed or #pop was called for the field parser).
+   */
+  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 #endif
 
  private:
@@ -281,13 +297,37 @@ class SCustomObject : public Object<Ts...> {
 #endif
 
 #ifdef DOXYGEN_ONLY
+  /** @brief Universal field getter.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return If the n-th field parser stores value (is a Value, SObject or
+   * SArray), then the method returns a const reference to the n-th field parser
+   * value. Otherwise, returns a reference to the n-th field parser.
+   *
+   * @throw std::runtime_error thrown if the field parser value is unset (no
+   * value was parsed or #pop was called for the field parser).
+   */
+  template <size_t n>
+  const typename NthTypes<n, Ts...>::template ValueType<> &get();
+
+  /** @brief Universal field getter.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return If the n-th field parser stores value (is a Value, SObject or
+   * SArray), then the method returns a const reference to the n-th field parser
+   * value. Otherwise, returns a reference to the n-th field parser.
+   */
+  template <size_t n> typename NthTypes<n, Ts...>::ParserType &get();
+
   /** @brief Field parser getter.
    *
    * @tparam n Index of the parser's field.
    *
    * @return Reference to n-th field parser.
    */
-  template <size_t n> typename NthType<n, Ts...>::type &get();
+  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
 #endif
   using Object<Ts...>::get;
 
@@ -309,8 +349,8 @@ class SCustomObject : public Object<Ts...> {
    *
    * @return Rvalue reference to n-th field parser value.
    *
-   * @throw std::runtime_error Thrown if the value is unset (no value was
-   * parsed or #pop was called).
+   * @throw std::runtime_error thrown if the field parser value is unset (no
+   * value was parsed or #pop was called for the field parser).
    */
   template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 #endif
@@ -620,13 +660,50 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::Type, Ts...> {
 #endif
 
 #ifdef DOXYGEN_ONLY
-  /** @brief Object parser getter.
+  /** @brief Universal field getter.
    *
-   * @tparam n Index of the object.
+   * @tparam n Index of the parser's field.
    *
-   * @return Reference to n-th object parser.
+   * @return If the n-th field parser stores value (is a Value, SObject or
+   * SArray), then the method returns a const reference to the n-th field parser
+   * value. Otherwise, returns a reference to the n-th field parser.
+   *
+   * @throw std::runtime_error thrown if the field parser value is unset (no
+   * value was parsed or #pop was called for the field parser).
    */
-  template <size_t n> typename NthType<n, Ts...>::type &get();
+  template <size_t n>
+  const typename NthTypes<n, Ts...>::template ValueType<> &get();
+
+  /** @brief Universal field getter.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return If the n-th field parser stores value (is a Value, SObject or
+   * SArray), then the method returns a const reference to the n-th field parser
+   * value. Otherwise, returns a reference to the n-th field parser.
+   */
+  template <size_t n> typename NthTypes<n, Ts...>::ParserType &get();
+
+  /** @brief Field parser getter.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return Reference to n-th field parser.
+   */
+  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+
+  /** @brief Get the field parsed value and unset the field parser.
+   *
+   * Moves the n-th field parsed value out of the field parser.
+   *
+   * @tparam n Index of the parser's field.
+   *
+   * @return Rvalue reference to n-th field parser value.
+   *
+   * @throw std::runtime_error thrown if the field parser value is unset (no
+   * value was parsed or #pop was called for the field parser).
+   */
+  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 #endif
 
  private:
