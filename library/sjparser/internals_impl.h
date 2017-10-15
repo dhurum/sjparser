@@ -63,8 +63,7 @@ template <typename T>
 template <typename U>
 KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
     const char *field,
-    typename std::enable_if<std::is_same<U, FieldName>::value>::type
-        * /*unused*/)
+    typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/)
     : field(field) {}
 
 template <typename FieldIDType, typename... Ts>
@@ -72,8 +71,7 @@ template <typename T>
 template <typename U>
 KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
     const std::string &field,
-    typename std::enable_if<std::is_same<U, FieldName>::value>::type
-        * /*unused*/)
+    typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/)
     : field(field) {}
 
 template <typename FieldIDType, typename... Ts>

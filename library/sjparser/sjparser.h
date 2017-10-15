@@ -506,15 +506,14 @@ template <typename... Ts> class SObject;
 #endif
 
 template <typename T, typename... Ts>
-using SObject =
-    typename SObjectDispatcher<std::is_base_of<TokenParser, T>::value, T,
-                               Ts...>::Type;
+using SObject = typename SObjectDispatcher<std::is_base_of_v<TokenParser, T>, T,
+                                           Ts...>::Type;
 
 /** @cond Internal class, needed for Union */
 
-template <typename T> struct UnionFieldType { using type = T; };
+template <typename T> struct UnionFieldType { using Type = T; };
 
-template <> struct UnionFieldType<std::string> { using type = FieldName; };
+template <> struct UnionFieldType<std::string> { using Type = FieldName; };
 
 /** @endcond */
 
@@ -536,10 +535,10 @@ template <> struct UnionFieldType<std::string> { using type = FieldName; };
  * @anchor Union_Ts
  */
 template <typename I, typename... Ts>
-class Union : public KeyValueParser<typename UnionFieldType<I>::type, Ts...> {
+class Union : public KeyValueParser<typename UnionFieldType<I>::Type, Ts...> {
  protected:
   /** @cond Internal typedef */
-  using KVParser = KeyValueParser<typename UnionFieldType<I>::type, Ts...>;
+  using KVParser = KeyValueParser<typename UnionFieldType<I>::Type, Ts...>;
   /** @endcond */
 
  public:

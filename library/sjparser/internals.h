@@ -102,15 +102,15 @@ class KeyValueParser : public TokenParser {
     FieldArgs(const FieldIDType &field, const typename U::ChildArgs &value);
     FieldArgs(const FieldIDType &field);
     template <typename U = FieldIDType>
-    FieldArgs(const char *field,
-              typename std::enable_if<std::is_same<U, FieldName>::value>::type
-                  * /*unused*/
-              = 0);
+    FieldArgs(
+        const char *field,
+        typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/
+        = 0);
     template <typename U = FieldIDType>
-    FieldArgs(const std::string &field,
-              typename std::enable_if<std::is_same<U, FieldName>::value>::type
-                  * /*unused*/
-              = 0);
+    FieldArgs(
+        const std::string &field,
+        typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/
+        = 0);
 
     FieldIDType field;
     Args value;
