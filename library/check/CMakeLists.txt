@@ -30,7 +30,7 @@ set(CHECKS
   -llvm-header-guard
   # clang-tidy and clang-format seems to disagree
   -llvm-include-order
-
+  -readability-avoid-const-params-in-decls
 )
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")

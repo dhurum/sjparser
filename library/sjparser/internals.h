@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 namespace SJParser {
@@ -35,8 +36,7 @@ namespace SJParser {
 struct NullT {};
 struct MapStartT {};
 struct MapKeyT {
-  // This ref is used only to forward the key into the 'on' method.
-  const std::string &key;  // NOLINT
+  const std::string_view key;
 };
 struct MapEndT {};
 struct ArrayStartT {};
@@ -81,6 +81,7 @@ class TokenParser {
 class FieldName {
  public:
   FieldName(std::string str);
+  FieldName(const std::string_view str);
   FieldName(const char *str);
   operator const std::string &() const;
   bool operator==(const FieldName &other) const;

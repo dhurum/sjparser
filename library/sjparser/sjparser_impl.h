@@ -219,7 +219,9 @@ void Union<I, Ts...>::on(const MapKeyT &key) {
     throw std::runtime_error("Union with an empty type field can't parse this");
   }
   if (key.key != _type_field) {
-    throw std::runtime_error("Unexpected field " + key.key);
+    std::stringstream err;
+    err << "Unexpected field " << key.key;
+    throw std::runtime_error(err.str());
   }
 }
 

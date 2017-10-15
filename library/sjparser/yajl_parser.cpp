@@ -136,7 +136,7 @@ int YajlParser::yajlOnMapStart(void *ctx) {
 int YajlParser::yajlOnMapKey(void *ctx, const unsigned char *value,
                              size_t len) {
   return reinterpret_cast<YajlParser *>(ctx)->on(
-      MapKeyT{std::string(reinterpret_cast<const char *>(value), len)});
+      MapKeyT{std::string_view(reinterpret_cast<const char *>(value), len)});
 }
 
 int YajlParser::yajlOnMapEnd(void *ctx) {

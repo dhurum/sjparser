@@ -197,6 +197,8 @@ std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
 
 FieldName::FieldName(std::string str) : _str(std::move(str)) {}
 
+FieldName::FieldName(const std::string_view str) : _str(str) {}
+
 FieldName::FieldName(const char *str) : _str(str) {}
 
 FieldName::operator const std::string &() const {
