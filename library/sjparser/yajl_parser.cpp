@@ -126,7 +126,7 @@ int YajlParser::yajlOnDouble(void *ctx, double value) {
 int YajlParser::yajlOnString(void *ctx, const unsigned char *value,
                              size_t len) {
   return reinterpret_cast<YajlParser *>(ctx)->on(
-      std::string(reinterpret_cast<const char *>(value), len));
+      std::string_view(reinterpret_cast<const char *>(value), len));
 }
 
 int YajlParser::yajlOnMapStart(void *ctx) {

@@ -162,7 +162,7 @@ KeyValueParser<TypeFieldT, Ts...>::Field<n, Args, T, TDs...>::Field(
   fields_map[std::get<n>(args).field] = &_field;
 }
 
-template <typename T> void Dispatcher::on(const T &value) {
+template <typename T> void Dispatcher::on(T value) {
   if (_parsers.empty()) {
     throw std::runtime_error("Parsers stack is empty");
   }

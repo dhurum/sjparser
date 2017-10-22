@@ -42,6 +42,14 @@ struct MapEndT {};
 struct ArrayStartT {};
 struct ArrayEndT {};
 
+template <typename T> struct TokenTypeResolver { using Type = T; };
+
+template <> struct TokenTypeResolver<std::string> {
+  using Type = std::string_view;
+};
+
+template <typename T> using TokenType = typename TokenTypeResolver<T>::Type;
+
 class Dispatcher;
 
 class TokenParser {
@@ -53,10 +61,10 @@ class TokenParser {
   virtual void finish() = 0;
 
   virtual void on(NullT /*unused*/);
-  virtual void on(const bool & /*value*/);
-  virtual void on(const int64_t & /*value*/);
-  virtual void on(const double & /*value*/);
-  virtual void on(const std::string & /*value*/);
+  virtual void on(bool /*value*/);
+  virtual void on(int64_t /*value*/);
+  virtual void on(double /*value*/);
+  virtual void on(std::string_view /*value*/);
   virtual void on(MapStartT /*unused*/);
   virtual void on(MapKeyT /*key*/);
   virtual void on(MapEndT /*unused*/);
@@ -192,10 +200,10 @@ class ArrayParser : public TokenParser {
   void reset() override;
 
   void on(NullT /*unused*/) override;
-  void on(const bool &value) override;
-  void on(const int64_t &value) override;
-  void on(const double &value) override;
-  void on(const std::string &value) override;
+  void on(bool value) override;
+  void on(int64_t value) override;
+  void on(double value) override;
+  void on(std::string_view value) override;
   void on(MapStartT /*unused*/) override;
   void on(ArrayStartT /*unused*/) override;
   void on(ArrayEndT /*unused*/) override;
@@ -215,7 +223,7 @@ class Dispatcher {
   bool emptyParsersStack();
   void reset();
 
-  template <typename T> void on(const T &value);
+  template <typename T> void on(T value);
 
  protected:
   std::deque<TokenParser *> _parsers;

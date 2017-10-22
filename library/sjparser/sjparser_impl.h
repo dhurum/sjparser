@@ -28,7 +28,7 @@ namespace SJParser {
 template <typename T>
 Value<T>::Value(const Args &on_finish) : _on_finish(on_finish) {}
 
-template <typename T> void Value<T>::on(const T &value) {
+template <typename T> void Value<T>::on(TokenType<T> value) {
   _value = value;
   endParsing();
 }
@@ -199,7 +199,7 @@ size_t Union<TypeFieldT, Ts...>::currentMemberId() {
 }
 
 template <typename TypeFieldT, typename... Ts>
-void Union<TypeFieldT, Ts...>::on(const TypeFieldT &value) {
+void Union<TypeFieldT, Ts...>::on(TokenType<TypeFieldT> value) {
   KVParser::reset();
   KVParser::onField(value);
   _current_member_id = _fields_ids_map[KVParser::_fields_map[value]];

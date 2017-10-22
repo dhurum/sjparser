@@ -94,7 +94,7 @@ template <typename T> class Value : public TokenParser {
   Type _value;
   Args _on_finish;
 
-  void on(const Type &value) override;
+  void on(TokenType<Type> value) override;
   void finish() override;
 };
 
@@ -714,7 +714,7 @@ class Union
   using KVParser::on;
   using TokenParser::checkSet;
 
-  void on(const TypeFieldT &value) override;
+  void on(TokenType<TypeFieldT> value) override;
   void on(MapStartT /*unused*/) override;
   void on(MapKeyT key) override;
 

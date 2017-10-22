@@ -50,19 +50,19 @@ void TokenParser::on(NullT /*unused*/) {
   }
 }
 
-void TokenParser::on(const bool & /*value*/) {
+void TokenParser::on(bool /*value*/) {
   unexpectedToken("boolean");
 }  // LCOV_EXCL_LINE
 
-void TokenParser::on(const int64_t & /*value*/) {
+void TokenParser::on(int64_t /*value*/) {
   unexpectedToken("integer");
 }  // LCOV_EXCL_LINE
 
-void TokenParser::on(const double & /*value*/) {
+void TokenParser::on(double /*value*/) {
   unexpectedToken("double");
 }  // LCOV_EXCL_LINE
 
-void TokenParser::on(const std::string & /*value*/) {
+void TokenParser::on(std::string_view /*value*/) {
   unexpectedToken("string");
 }  // LCOV_EXCL_LINE
 
@@ -102,7 +102,7 @@ void ArrayParser::on(NullT /*unused*/) {
   _parser_ptr->on(NullT{});
 }
 
-void ArrayParser::on(const bool &value) {
+void ArrayParser::on(bool value) {
   if (!_started) {
     unexpectedToken("boolean");
   }
@@ -110,7 +110,7 @@ void ArrayParser::on(const bool &value) {
   childParsed();
 }
 
-void ArrayParser::on(const int64_t &value) {
+void ArrayParser::on(int64_t value) {
   if (!_started) {
     unexpectedToken("integer");
   }
@@ -118,7 +118,7 @@ void ArrayParser::on(const int64_t &value) {
   childParsed();
 }
 
-void ArrayParser::on(const double &value) {
+void ArrayParser::on(double value) {
   if (!_started) {
     unexpectedToken("double");
   }
@@ -126,7 +126,7 @@ void ArrayParser::on(const double &value) {
   childParsed();
 }
 
-void ArrayParser::on(const std::string &value) {
+void ArrayParser::on(std::string_view value) {
   if (!_started) {
     unexpectedToken("string");
   }
