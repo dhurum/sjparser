@@ -568,17 +568,19 @@ template <> struct UnionFieldType<std::string> { using Type = FieldName; };
  *
  * Union type is defined by the Args, passed to the constructor.
  *
- * @tparam I A type of the type field. Can be int64_t, bool, double and
+ * @tparam TypeFieldT A type of the type field. Can be int64_t, bool, double and
  * std::string.
  *
  * @tparam Ts A list of object parsers.
  * @anchor Union_Ts
  */
-template <typename I, typename... Ts>
-class Union : public KeyValueParser<typename UnionFieldType<I>::Type, Ts...> {
+template <typename TypeFieldT, typename... Ts>
+class Union
+    : public KeyValueParser<typename UnionFieldType<TypeFieldT>::Type, Ts...> {
  protected:
   /** @cond Internal typedef */
-  using KVParser = KeyValueParser<typename UnionFieldType<I>::Type, Ts...>;
+  using KVParser =
+      KeyValueParser<typename UnionFieldType<TypeFieldT>::Type, Ts...>;
   /** @endcond */
 
  public:
@@ -598,7 +600,8 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::Type, Ts...> {
      * @param[in] on_finish (optional) Sets #on_finish.
      */
     Args(const ChildArgs &args,
-         const std::function<bool(Union<I, Ts...> &)> &on_finish = nullptr);
+         const std::function<bool(Union<TypeFieldT, Ts...> &)> &on_finish =
+             nullptr);
     /** @brief Standalone Union constructor arguments.
      *
      * @param [in] type_field Type field name.
@@ -608,7 +611,8 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::Type, Ts...> {
      * @param[in] on_finish (optional) Sets #on_finish.
      */
     Args(const FieldName &type_field, const ChildArgs &args,
-         const std::function<bool(Union<I, Ts...> &)> &on_finish = nullptr);
+         const std::function<bool(Union<TypeFieldT, Ts...> &)> &on_finish =
+             nullptr);
 
     /** Type field name */
     std::string type_field;
@@ -630,7 +634,7 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::Type, Ts...> {
      *
      * If the callback returns false, parsing will be stopped with an error.
      */
-    std::function<bool(Union<I, Ts...> &)> on_finish;
+    std::function<bool(Union<TypeFieldT, Ts...> &)> on_finish;
   };
 
   /** @brief Union constructor.
@@ -710,7 +714,7 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::Type, Ts...> {
   using KVParser::on;
   using TokenParser::checkSet;
 
-  void on(const I &value) override;
+  void on(const TypeFieldT &value) override;
   void on(MapStartT /*unused*/) override;
   void on(MapKeyT key) override;
 
@@ -718,7 +722,7 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::Type, Ts...> {
   void finish() override;
 
   std::string _type_field;
-  std::function<bool(Union<I, Ts...> &)> _on_finish;
+  std::function<bool(Union<TypeFieldT, Ts...> &)> _on_finish;
   std::unordered_map<TokenParser *, size_t> _fields_ids_map;
   size_t _current_member_id;
 };

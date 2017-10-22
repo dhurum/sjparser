@@ -39,47 +39,47 @@ void TokenParser::unexpectedToken(const std::string &type) {
   throw std::runtime_error("Unexpected token " + type);
 }
 
-template <typename FieldIDType, typename... Ts>
+template <typename TypeFieldT, typename... Ts>
 template <typename T>
-KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
-    const FieldIDType &field, const Args &value)
+KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
+    const TypeFieldT &field, const Args &value)
     : field(field), value(value) {}
 
-template <typename FieldIDType, typename... Ts>
+template <typename TypeFieldT, typename... Ts>
 template <typename T>
 template <typename U>
-KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
-    const FieldIDType &field, const typename U::ChildArgs &value)
+KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
+    const TypeFieldT &field, const typename U::ChildArgs &value)
     : field(field), value(value) {}
 
-template <typename FieldIDType, typename... Ts>
+template <typename TypeFieldT, typename... Ts>
 template <typename T>
-KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
-    const FieldIDType &field)
+KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
+    const TypeFieldT &field)
     : field(field) {}
 
-template <typename FieldIDType, typename... Ts>
+template <typename TypeFieldT, typename... Ts>
 template <typename T>
 template <typename U>
-KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
+KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
     const char *field,
     typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/)
     : field(field) {}
 
-template <typename FieldIDType, typename... Ts>
+template <typename TypeFieldT, typename... Ts>
 template <typename T>
 template <typename U>
-KeyValueParser<FieldIDType, Ts...>::FieldArgs<T>::FieldArgs(
+KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
     const std::string &field,
     typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/)
     : field(field) {}
 
-template <typename FieldIDType, typename... Ts>
-KeyValueParser<FieldIDType, Ts...>::KeyValueParser(const ChildArgs &args)
+template <typename TypeFieldT, typename... Ts>
+KeyValueParser<TypeFieldT, Ts...>::KeyValueParser(const ChildArgs &args)
     : _fields(_fields_array, _fields_map, args) {}
 
-template <typename FieldIDType, typename... Ts>
-void KeyValueParser<FieldIDType, Ts...>::setDispatcher(
+template <typename TypeFieldT, typename... Ts>
+void KeyValueParser<TypeFieldT, Ts...>::setDispatcher(
     Dispatcher *dispatcher) noexcept {
   TokenParser::setDispatcher(dispatcher);
   for (auto &field : _fields_map) {
@@ -87,8 +87,8 @@ void KeyValueParser<FieldIDType, Ts...>::setDispatcher(
   }
 }
 
-template <typename FieldIDType, typename... Ts>
-void KeyValueParser<FieldIDType, Ts...>::reset() {
+template <typename TypeFieldT, typename... Ts>
+void KeyValueParser<TypeFieldT, Ts...>::reset() {
   TokenParser::reset();
 
   for (auto &field : _fields_map) {
@@ -96,18 +96,18 @@ void KeyValueParser<FieldIDType, Ts...>::reset() {
   }
 }
 
-template <typename FieldIDType, typename... Ts>
-void KeyValueParser<FieldIDType, Ts...>::on(MapStartT /*unused*/) {
+template <typename TypeFieldT, typename... Ts>
+void KeyValueParser<TypeFieldT, Ts...>::on(MapStartT /*unused*/) {
   reset();
 }
 
-template <typename FieldIDType, typename... Ts>
-void KeyValueParser<FieldIDType, Ts...>::on(MapEndT /*unused*/) {
+template <typename TypeFieldT, typename... Ts>
+void KeyValueParser<TypeFieldT, Ts...>::on(MapEndT /*unused*/) {
   endParsing();
 }
 
-template <typename FieldIDType, typename... Ts>
-void KeyValueParser<FieldIDType, Ts...>::onField(const FieldIDType &field) {
+template <typename TypeFieldT, typename... Ts>
+void KeyValueParser<TypeFieldT, Ts...>::onField(const TypeFieldT &field) {
   try {
     auto &parser = _fields_map.at(field);
     _dispatcher->pushParser(parser);
@@ -118,9 +118,9 @@ void KeyValueParser<FieldIDType, Ts...>::onField(const FieldIDType &field) {
   }
 }
 
-template <typename FieldIDType, typename... Ts>
+template <typename TypeFieldT, typename... Ts>
 template <size_t n>
-auto &KeyValueParser<FieldIDType, Ts...>::get() {
+auto &KeyValueParser<TypeFieldT, Ts...>::get() {
   const auto parser =
       reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
           _fields_array[n]);
@@ -132,31 +132,30 @@ auto &KeyValueParser<FieldIDType, Ts...>::get() {
   }
 }
 
-template <typename FieldIDType, typename... Ts>
+template <typename TypeFieldT, typename... Ts>
 template <size_t n>
-typename KeyValueParser<FieldIDType,
+typename KeyValueParser<TypeFieldT,
                         Ts...>::template NthTypes<n, Ts...>::ParserType &
-KeyValueParser<FieldIDType, Ts...>::parser() {
+KeyValueParser<TypeFieldT, Ts...>::parser() {
   return *reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
       _fields_array[n]);
 }
 
-template <typename FieldIDType, typename... Ts>
+template <typename TypeFieldT, typename... Ts>
 template <size_t n>
-typename KeyValueParser<FieldIDType, Ts...>::template NthTypes<
+typename KeyValueParser<TypeFieldT, Ts...>::template NthTypes<
     n, Ts...>::template ValueType<>
-    &&KeyValueParser<FieldIDType, Ts...>::pop() {
+    &&KeyValueParser<TypeFieldT, Ts...>::pop() {
   return reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
              _fields_array[n])
       ->pop();
 }
 
-template <typename FieldIDType, typename... Ts>
+template <typename TypeFieldT, typename... Ts>
 template <size_t n, typename Args, typename T, typename... TDs>
-KeyValueParser<FieldIDType, Ts...>::Field<n, Args, T, TDs...>::Field(
+KeyValueParser<TypeFieldT, Ts...>::Field<n, Args, T, TDs...>::Field(
     std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-    std::unordered_map<FieldIDType, TokenParser *> &fields_map,
-    const Args &args)
+    std::unordered_map<TypeFieldT, TokenParser *> &fields_map, const Args &args)
     : Field<n + 1, Args, TDs...>(fields_array, fields_map, args),
       _field(std::get<n>(args).value) {
   fields_array[n] = &_field;

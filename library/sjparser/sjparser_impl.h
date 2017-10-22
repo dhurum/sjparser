@@ -169,20 +169,20 @@ SAutoObject<Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
   }
 }
 
-template <typename I, typename... Ts>
-Union<I, Ts...>::Args::Args(
+template <typename TypeFieldT, typename... Ts>
+Union<TypeFieldT, Ts...>::Args::Args(
     const ChildArgs &args,
-    const std::function<bool(Union<I, Ts...> &)> &on_finish)
+    const std::function<bool(Union<TypeFieldT, Ts...> &)> &on_finish)
     : args(args), on_finish(on_finish) {}
 
-template <typename I, typename... Ts>
-Union<I, Ts...>::Args::Args(
+template <typename TypeFieldT, typename... Ts>
+Union<TypeFieldT, Ts...>::Args::Args(
     const FieldName &type_field, const ChildArgs &args,
-    const std::function<bool(Union<I, Ts...> &)> &on_finish)
+    const std::function<bool(Union<TypeFieldT, Ts...> &)> &on_finish)
     : type_field(type_field), args(args), on_finish(on_finish) {}
 
-template <typename I, typename... Ts>
-Union<I, Ts...>::Union(const Args &args)
+template <typename TypeFieldT, typename... Ts>
+Union<TypeFieldT, Ts...>::Union(const Args &args)
     : KVParser(args.args),
       _type_field(args.type_field),
       _on_finish(args.on_finish),
@@ -192,28 +192,29 @@ Union<I, Ts...>::Union(const Args &args)
   }
 }
 
-template <typename I, typename... Ts>
-size_t Union<I, Ts...>::currentMemberId() {
+template <typename TypeFieldT, typename... Ts>
+size_t Union<TypeFieldT, Ts...>::currentMemberId() {
   checkSet();
   return _current_member_id;
 }
 
-template <typename I, typename... Ts> void Union<I, Ts...>::on(const I &value) {
+template <typename TypeFieldT, typename... Ts>
+void Union<TypeFieldT, Ts...>::on(const TypeFieldT &value) {
   KVParser::reset();
   KVParser::onField(value);
   _current_member_id = _fields_ids_map[KVParser::_fields_map[value]];
 }
 
-template <typename I, typename... Ts>
-void Union<I, Ts...>::on(MapStartT /*unused*/) {
+template <typename TypeFieldT, typename... Ts>
+void Union<TypeFieldT, Ts...>::on(MapStartT /*unused*/) {
   if (_type_field.empty()) {
     // Should never happen
     throw std::runtime_error("Union with an empty type field can't parse this");
   }
 }
 
-template <typename I, typename... Ts>
-void Union<I, Ts...>::on(MapKeyT key) {
+template <typename TypeFieldT, typename... Ts>
+void Union<TypeFieldT, Ts...>::on(MapKeyT key) {
   if (_type_field.empty()) {
     // Should never happen
     throw std::runtime_error("Union with an empty type field can't parse this");
@@ -225,7 +226,8 @@ void Union<I, Ts...>::on(MapKeyT key) {
   }
 }
 
-template <typename I, typename... Ts> void Union<I, Ts...>::childParsed() {
+template <typename TypeFieldT, typename... Ts>
+void Union<TypeFieldT, Ts...>::childParsed() {
   KVParser::endParsing();
   if (_type_field.empty()) {
     // The union embedded into an object must propagate the end event to the
@@ -234,7 +236,8 @@ template <typename I, typename... Ts> void Union<I, Ts...>::childParsed() {
   }
 }
 
-template <typename I, typename... Ts> void Union<I, Ts...>::finish() {
+template <typename TypeFieldT, typename... Ts>
+void Union<TypeFieldT, Ts...>::finish() {
   if (_on_finish && !_on_finish(*this)) {
     throw std::runtime_error("Callback returned false");
   }
