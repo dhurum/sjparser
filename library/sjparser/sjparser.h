@@ -215,7 +215,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
 
  private:
   using KVParser::on;
-  void on(const MapKeyT &key) override;
+  void on(MapKeyT key) override;
 
   void finish() override;
 
@@ -712,7 +712,7 @@ class Union : public KeyValueParser<typename UnionFieldType<I>::Type, Ts...> {
 
   void on(const I &value) override;
   void on(MapStartT /*unused*/) override;
-  void on(const MapKeyT &key) override;
+  void on(MapKeyT key) override;
 
   void childParsed() override;
   void finish() override;

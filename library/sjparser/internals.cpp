@@ -70,7 +70,7 @@ void TokenParser::on(MapStartT /*unused*/) {
   unexpectedToken("map start");
 }  // LCOV_EXCL_LINE
 
-void TokenParser::on(const MapKeyT & /*key*/) {
+void TokenParser::on(MapKeyT /*key*/) {
   unexpectedToken("map key");
 }  // LCOV_EXCL_LINE
 
@@ -134,7 +134,7 @@ void ArrayParser::on(const std::string &value) {
   childParsed();
 }
 
-void ArrayParser::on(const MapStartT /*unused*/) {
+void ArrayParser::on(MapStartT /*unused*/) {
   if (!_started) {
     unexpectedToken("map start");
   }
@@ -143,7 +143,7 @@ void ArrayParser::on(const MapStartT /*unused*/) {
   _parser_ptr->on(MapStartT{});
 }
 
-void ArrayParser::on(const ArrayStartT /*unused*/) {
+void ArrayParser::on(ArrayStartT /*unused*/) {
   if (!_started) {
     reset();
     _started = true;
@@ -155,7 +155,7 @@ void ArrayParser::on(const ArrayStartT /*unused*/) {
   _parser_ptr->on(ArrayStartT{});
 }
 
-void ArrayParser::on(const ArrayEndT /*unused*/) {
+void ArrayParser::on(ArrayEndT /*unused*/) {
   _started = false;
   endParsing();
 }
@@ -197,7 +197,7 @@ std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
 
 FieldName::FieldName(std::string str) : _str(std::move(str)) {}
 
-FieldName::FieldName(const std::string_view str) : _str(str) {}
+FieldName::FieldName(std::string_view str) : _str(str) {}
 
 FieldName::FieldName(const char *str) : _str(str) {}
 

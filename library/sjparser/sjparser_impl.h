@@ -59,7 +59,7 @@ template <typename... Ts>
 Object<Ts...>::Object(const Args &args)
     : KVParser(args.args), _on_finish(args.on_finish) {}
 
-template <typename... Ts> void Object<Ts...>::on(const MapKeyT &key) {
+template <typename... Ts> void Object<Ts...>::on(MapKeyT key) {
   KVParser::onField(key.key);
 }
 
@@ -213,7 +213,7 @@ void Union<I, Ts...>::on(MapStartT /*unused*/) {
 }
 
 template <typename I, typename... Ts>
-void Union<I, Ts...>::on(const MapKeyT &key) {
+void Union<I, Ts...>::on(MapKeyT key) {
   if (_type_field.empty()) {
     // Should never happen
     throw std::runtime_error("Union with an empty type field can't parse this");
