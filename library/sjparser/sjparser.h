@@ -33,6 +33,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 namespace SJParser {
@@ -41,6 +42,7 @@ namespace SJParser {
  *
  * @tparam T JSON value type, can be std::string, int64_t, bool or double
  */
+
 template <typename T> class Value : public TokenParser {
  public:
   /** Underlying type, that can be obtained from this parser with #get or #pop.
@@ -142,6 +144,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
      * while field2 does receive something.
      */
     ChildArgs args;
+
     /** Callback, that will be called after an object is parsed.
      *
      * The callback will be called with a reference to the parser as an
@@ -270,6 +273,7 @@ class SCustomObject : public Object<Ts...> {
      * while field2 does receive something.
      */
     ChildArgs args;
+
     /** Callback, that will be called after an object is parsed.
      *
      * The callback will be called with a reference to the parser as a first
@@ -417,6 +421,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
      */
     Args(const ChildArgs &args, const Type &default_value,
          const std::function<bool(const Type &)> &on_finish = nullptr);
+
     /** @param [in] args Sets #args.
      *
      * @param[in] on_finish (optional) Sets #on_finish.
@@ -435,10 +440,13 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
      * while field2 does receive something.
      */
     ChildArgs args;
+
     /** Default for the parser value. */
     Type default_value;
+
     /** @internal Internal flag, shows if default value was set. */
     bool allow_default_value = true;
+
     /** Callback, that will be called after an object is parsed.
      *
      * The callback will be called with a reference to the stored value as an
@@ -485,8 +493,8 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    * Moves the parsed value out of the parser.
    *
    * @note If you want to use SCustomObject inside this parser, you need to
-   * provide both a copy constructor and a copy assignment operators in the
-   * SCustomObject::Type, they are used by std::tuple.
+   * provide both a copy constructor or move constructor and a copy assignment
+   * operators in the SCustomObject::Type, they are used by parser.
    *
    * @return Rvalue reference to the parsed value.
    *
@@ -505,6 +513,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
   // This is placed in the private section because the ValueSetter uses pop on
   // all fields, so they are always unset after parsing.
   using Object<Ts...>::get;
+  using Object<Ts...>::pop;
 
   template <size_t, typename...> struct ValueSetter {
     ValueSetter(Type & /*value*/, SAutoObject<Ts...> & /*parser*/) {}
@@ -574,6 +583,7 @@ template <> struct UnionFieldType<std::string> { using Type = FieldName; };
  * @tparam Ts A list of object parsers.
  * @anchor Union_Ts
  */
+
 template <typename TypeFieldT, typename... Ts>
 class Union
     : public KeyValueParser<typename UnionFieldType<TypeFieldT>::Type, Ts...> {
@@ -602,6 +612,7 @@ class Union
     Args(const ChildArgs &args,
          const std::function<bool(Union<TypeFieldT, Ts...> &)> &on_finish =
              nullptr);
+
     /** @brief Standalone Union constructor arguments.
      *
      * @param [in] type_field Type field name.
@@ -616,6 +627,7 @@ class Union
 
     /** Type field name */
     std::string type_field;
+
     /** A std::tuple with field arguments.
      *
      * A field argument is a structure where the first element is a string
@@ -627,6 +639,7 @@ class Union
      * while field2 does receive something.
      */
     ChildArgs args;
+
     /** Callback, that will be called after a union object is parsed.
      *
      * The callback will be called with a reference to the parser as an
@@ -710,9 +723,11 @@ class Union
   template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 #endif
 
+ protected:
+  using TokenParser::checkSet;
+
  private:
   using KVParser::on;
-  using TokenParser::checkSet;
 
   void on(TokenType<TypeFieldT> value) override;
   void on(MapStartT /*unused*/) override;
@@ -727,6 +742,175 @@ class Union
   size_t _current_member_id;
 };
 
+/** @brief %Union parser, that stores the result in a variant of field parser
+ * types.
+ *
+ * Parses an object from @ref Union_Ts "Ts" list based on a value of the type
+ * field value.
+ *
+ * You can use it stand-alone (in this case the first field of an object must
+ * be a type field) or embedded in an object (in this case object fields after
+ * the type field will be parsed by one of union's object parsers).
+ *
+ * SUnion type is defined by the Args, passed to the constructor.
+ *
+ * @tparam TypeFieldT A type of the type field. Can be int64_t, bool, double and
+ * std::string.
+ *
+ * @tparam Ts A list of object parsers.
+ * @anchor Union_Ts
+ */
+
+template <typename TypeFieldT, typename... Ts>
+class SUnion : public Union<TypeFieldT, Ts...> {
+ public:
+  /** A std::tuple with arguments for field parsers. */
+  using ChildArgs = typename Union<TypeFieldT, Ts...>::ChildArgs;
+
+  /** Stored value type */
+  using Type = std::variant<typename Ts::Type...>;
+
+  /** @brief Struct with arguments for the SUnion @ref SUnion() "constructor".
+   */
+  struct Args {
+    /** @brief Embedded SUnion constructor arguments.
+     *
+     * In this mode the parser must be used as an Object field. That field value
+     * would be used as a type field value by the SUnion.
+     *
+     * @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
+    Args(const ChildArgs &args,
+         const std::function<bool(const Type &)> &on_finish = nullptr);
+
+    /** @brief Standalone SUnion constructor arguments.
+     *
+     * @param [in] type_field Type field name.
+     *
+     * @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
+    Args(const FieldName &type_field, const ChildArgs &args,
+         const std::function<bool(const Type &)> &on_finish = nullptr);
+
+    /** @brief Standalone SUnion constructor arguments.
+     *
+     * @param [in] type_field Type field name.
+     *
+     * @param [in] args Sets #args.
+     *
+     * @param[in] default_value Default for the parser value. Will be used in
+     * case of empty union.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
+    Args(const FieldName &type_field, const ChildArgs &args,
+         const Type &default_value,
+         const std::function<bool(const Type &)> &on_finish = nullptr);
+
+    /** Type field name */
+    std::string type_field;
+    /** A std::tuple with field arguments.
+     *
+     * A field argument is a structure where the first element is a string
+     * with field's name and the second element is arguments to that field's
+     * parser. If you do not want to provide any arguments to the field's
+     * parser, you can pass only the field's name:
+     * @code {.cpp} {"field1", {"field2", ...}, "field3"} @endcode
+     * In this example field1 and field3 parsers do not receive any agruments
+     * while field2 does receive something.
+     */
+    ChildArgs args;
+
+    /** Default for the parser value. */
+    Type default_value;
+
+    /** @internal Internal flag, shows if default value was set. */
+    bool allow_default_value = true;
+
+    /** Callback, that will be called after an sunion object is parsed.
+     *
+     * The callback will be called with a reference to the stored value as an
+     * argument.
+     *
+     * If the callback returns false, parsing will be stopped with an error.
+     */
+    std::function<bool(const Type &)> on_finish;
+  };
+
+  /** @brief SUnion constructor.
+   *
+   * @param [in] args Args stucture.
+   * If you do not specify @ref Args::type_field "type_field" type field
+   * and @ref Args::on_finish "on_finish" callback, you can pass a
+   * @ref Args::args "tuple of field arguments" directly into the constructor.
+   */
+  SUnion(const Args &args);
+  SUnion(const SUnion &) = delete;
+
+#ifdef DOXYGEN_ONLY
+  /** @brief Check if the parser has a value.
+   *
+   * @return True if the parser has some value stored or false otherwise.
+   */
+  bool isSet();
+#endif
+
+  /** @brief Parsed value getter.
+   *
+   * @return Const reference to a parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
+   */
+  const Type &get() const;
+
+  /** @brief Get the parsed value and unset the parser.
+   *
+   * Moves the parsed value out of the parser.
+   *
+   * @note If you want to use SCustomObject inside this parser, you need to
+   * provide both a copy constructor or move constructor and a copy assignment
+   * operators in the SCustomObject::Type, they are used by parser.
+   *
+   * @return Rvalue reference to the parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
+   */
+  Type &&pop();
+
+ private:
+  using TokenParser::_set;
+  using TokenParser::checkSet;
+
+  void finish() override;
+  void reset() override;
+
+  // This is placed in the private section because the ValueSetter uses pop on
+  // all fields, so they are always unset after parsing.
+  using Union<TypeFieldT, Ts...>::get;
+  using Union<TypeFieldT, Ts...>::pop;
+  using Union<TypeFieldT, Ts...>::currentMemberId;
+
+  template <size_t, typename...> struct ValueSetter {
+    ValueSetter(Type & /*value*/, SUnion<TypeFieldT, Ts...> & /*parser*/) {}
+  };
+
+  template <size_t n, typename T, typename... TDs>
+  struct ValueSetter<n, T, TDs...> : private ValueSetter<n + 1, TDs...> {
+    ValueSetter(Type &value, SUnion<TypeFieldT, Ts...> &parser);
+  };
+
+  Type _value;
+  Type _default_value;
+  bool _allow_default_value;
+  std::function<bool(const Type &)> _on_finish;
+};
+
 /** @brief %Array parser.
  *
  * @tparam T Underlying parser type.
@@ -736,9 +920,11 @@ template <typename T> class Array : public ArrayParser {
  public:
   /** Arguments for the underlying parser */
   using ChildArgs = typename T::Args;
+
   /** @cond Underlying parser type */
   using ParserType = T;
   /** @endcond */
+
   /** Child arguments for the underlying type */
   template <typename U = Array<T>>
   using GrandChildArgs = typename U::ParserType::ChildArgs;
@@ -762,6 +948,7 @@ template <typename T> class Array : public ArrayParser {
 
     /** Arguments for the underlying parser */
     ChildArgs args;
+
     /** Callback, that will be called after an object is parsed.
      *
      * The callback will be called with a reference to the parser as an
@@ -806,15 +993,20 @@ template <typename T> class SArray : public Array<T> {
  public:
   /** Arguments for the underlying parser */
   using ChildArgs = typename T::Args;
+
   /** Underlying parser value type */
   using EltType = typename T::Type;
+
   /** Stored value type */
   using Type = std::vector<EltType>;
+
   /** Finish callback type */
   using CallbackType = std::function<bool(const Type &)>;
+
   /** @cond Underlying parser type */
   using ParserType = T;
   /** @endcond */
+
   /** Child arguments for the underlying type */
   template <typename U = Array<T>>
   using GrandChildArgs = typename U::ParserType::ChildArgs;
@@ -914,6 +1106,7 @@ template <typename T> class SArray : public Array<T> {
  * a YAJL parser adapter. This class inherits from the implementation, so please
  * refer to it's documentation for API details.
  */
+
 template <typename T, typename Impl = YajlParser> class Parser : public Impl {
  public:
   /** @brief Parser constructor.

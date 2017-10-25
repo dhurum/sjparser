@@ -904,6 +904,72 @@ TEST(SCustomObject, SCustomObjectWithStandaloneUnion) {
   ASSERT_EQ(100, parser.parser().get().inner_value.int_value);
 }
 
+TEST(SCustomObject, SCustomObjectWithStandaloneSUnion) {
+  std::string buf(
+      R"(
+{
+  "id": 10,
+  "data": {
+    "type": "1",
+    "bool": true
+  }
+})");
+
+  struct ObjectStruct {
+    int64_t int_value;
+    std::variant<bool, int64_t> inner_value;
+  };
+
+  // clang-format off
+  using ObjectParser = SObject<
+    ObjectStruct,
+    Value<int64_t>,
+    SUnion<
+      std::string,
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
+    >>;
+  // clang-format on
+
+  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+    value.int_value = parser.get<0>();
+
+    auto variant = parser.get<1>();
+
+    if (variant.index() == 0) {
+      value.inner_value = std::get<0>(std::get<0>(variant));
+    } else {
+      value.inner_value = std::get<0>(std::get<1>(variant));
+    }
+    return true;
+  };
+
+  Parser<ObjectParser> parser(
+      {{"id", {"data", {"type", {{"1", "bool"}, {"2", "int"}}}}}, objectCb});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, parser.parser().get().int_value);
+  ASSERT_EQ(true, std::get<0>(parser.parser().get().inner_value));
+
+  std::string buf2(
+      R"(
+{
+  "id": 10,
+  "data": {
+    "type": "2",
+    "int": 100
+  }
+})");
+
+  ASSERT_NO_THROW(parser.parse(buf2));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, parser.parser().get().int_value);
+  ASSERT_EQ(100, std::get<1>(parser.parser().get().inner_value));
+}
+
 TEST(SCustomObject, SCustomObjectWithEmbeddedUnion) {
   std::string buf(
       R"(
@@ -1025,6 +1091,68 @@ TEST(SCustomObject, SCustomObjectWithArray) {
   ASSERT_EQ("elt1", parser.parser().get().array_value[0]);
   ASSERT_EQ("elt2", parser.parser().get().array_value[1]);
   ASSERT_EQ("elt3", parser.parser().get().array_value[2]);
+}
+
+TEST(SCustomObject, SCustomObjectWithEmbeddedSUnion) {
+  std::string buf(
+      R"(
+{
+  "id": 10,
+  "type": "1",
+  "bool": true
+})");
+
+  struct ObjectStruct {
+    int64_t int_value;
+    std::variant<bool, int64_t> inner_value;
+  };
+
+  // clang-format off
+  using ObjectParser = SObject<
+    ObjectStruct,
+    Value<int64_t>,
+    SUnion<
+      std::string,
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
+    >>;
+  // clang-format on
+
+  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+    value.int_value = parser.get<0>();
+
+    auto variant = parser.get<1>();
+
+    if (variant.index() == 0) {
+      value.inner_value = std::get<0>(std::get<0>(variant));
+    } else {
+      value.inner_value = std::get<0>(std::get<1>(variant));
+    }
+    return true;
+  };
+
+  Parser<ObjectParser> parser(
+      {{"id", {"type", {{"1", "bool"}, {"2", "int"}}}}, objectCb});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, parser.parser().get().int_value);
+  ASSERT_EQ(true, std::get<0>(parser.parser().get().inner_value));
+
+  std::string buf2(
+      R"(
+{
+  "id": 10,
+  "type": "2",
+  "int": 100
+})");
+
+  ASSERT_NO_THROW(parser.parse(buf2));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, parser.parser().get().int_value);
+  ASSERT_EQ(100, std::get<1>(parser.parser().get().inner_value));
 }
 
 TEST(SCustomObject, SCustomObjectWithSArray) {

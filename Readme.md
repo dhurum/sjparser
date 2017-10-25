@@ -187,7 +187,7 @@ Class obj(X);
 Class obj;
 ~~~
 
-Constructors of `SJParser::Object`, `SJParser::SObject`, `SJParser::Union`, `SJParser::Array` and `SJParser::SArray` take arguments of their nested types:
+Constructors of `SJParser::Object`, `SJParser::SObject`, `SJParser::Union`, `SJParser::SUnion`, `SJParser::Array` and `SJParser::SArray` take arguments of their nested types:
 
 ~~~cpp
 //Providing both fields
@@ -237,5 +237,5 @@ So, for your mandatory fields you can just use `get()` or `pop()`, and for optio
 
 For the `SJParser::Object` parsers there are two methods for accessing the fields parsers:
  - `parser<n>()` - Returns a refecence to the n-th field parser;
- - `get<n>()` - If the n-th field stores parsed value (is  a `SJParser::Value`, `SJParser::SObject` or `SJParser::SArray`), then a reference to a parsed value will be returned (or, if the entity was not present in the json - an exception will be thrown). Otherwise, a reference to the field parser will be returned;
- - `pop<n>()` - If the n-th field stores parsed value (is  a `SJParser::Value`, `SJParser::SObject` or `SJParser::SArray`), then an rvalue reference to a parsed value will be returned (or, if the entity was not present in the json - an exception will be thrown). Otherwise, this method is not defined;
+ - `get<n>()` - If the n-th field stores parsed value (is  a `SJParser::Value`, `SJParser::SObject`, `SJParser::SUnion` or `SJParser::SArray`), then a reference to a parsed value will be returned (or, if the entity was not present in the json - an exception will be thrown). Otherwise, a reference to the field parser will be returned;
+ - `pop<n>()` - If the n-th field stores parsed value (is  a `SJParser::Value`, `SJParser::SObject`, `SJParser::SUnion` or `SJParser::SArray`), then an rvalue reference to a parsed value will be returned (or, if the entity was not present in the json - an exception will be thrown). Otherwise, this method is not defined;

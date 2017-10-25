@@ -27,15 +27,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using namespace SJParser;
 
-TEST(EmbeddedUnion, Empty) {
+TEST(EmbeddedSUnion, Empty) {
   std::string buf(R"({})");
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       int64_t,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
   >>> parser({{"type", {{1, "bool"}, {2, "int"}}}});
   // clang-format on
 
@@ -46,15 +46,15 @@ TEST(EmbeddedUnion, Empty) {
   ASSERT_FALSE(parser.parser().parser<0>().isSet());
 }
 
-TEST(EmbeddedUnion, Null) {
+TEST(EmbeddedSUnion, Null) {
   std::string buf(R"(null)");
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       int64_t,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
   >>> parser({{"type", {{1, "bool"}, {2, "int"}}}});
   // clang-format on
 
@@ -65,18 +65,18 @@ TEST(EmbeddedUnion, Null) {
   ASSERT_FALSE(parser.parser().parser<0>().isSet());
 }
 
-TEST(EmbeddedUnion, Reset) {
+TEST(EmbeddedSUnion, Reset) {
   std::string buf(
       R"({"type": 1, "bool": true, "integer": 10})");
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       int64_t,
-      Object<
+      SObject<
         Value<bool>,
         Value<int64_t>>,
-      Object<
+      SObject<
         Value<bool>>
   >>> parser({{"type", {{1, {"bool", "integer"}}, {2, {"bool"}}}}});
   // clang-format on
@@ -84,12 +84,14 @@ TEST(EmbeddedUnion, Reset) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().parser<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<0>().parser<1>().isSet());
-  ASSERT_EQ(0, parser.parser().get<0>().currentMemberId());
+  auto variant = parser.parser().get<0>();
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
-  ASSERT_EQ(10, parser.parser().get<0>().get<0>().get<1>());
+  ASSERT_EQ(0, variant.index());
+
+  auto object = std::get<0>(variant);
+
+  ASSERT_EQ(true, std::get<0>(object));
+  ASSERT_EQ(10, std::get<1>(object));
 
   buf = R"(null)";
 
@@ -100,18 +102,18 @@ TEST(EmbeddedUnion, Reset) {
   ASSERT_FALSE(parser.parser().parser<0>().isSet());
 }
 
-TEST(EmbeddedUnion, AllValuesFields) {
+TEST(EmbeddedSUnion, AllValuesFields) {
   std::string buf(
       R"({"type": 1, "bool": true, "integer": 10})");
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       int64_t,
-      Object<
+      SObject<
         Value<bool>,
         Value<int64_t>>,
-      Object<
+      SObject<
         Value<double>,
         Value<std::string>>
   >>> parser({{"type", {{1, {"bool", "integer"}}, {2, {"double", "string"}}}}});
@@ -120,27 +122,35 @@ TEST(EmbeddedUnion, AllValuesFields) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().parser<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<0>().parser<1>().isSet());
-  ASSERT_EQ(0, parser.parser().get<0>().currentMemberId());
+  {
+    auto variant = parser.parser().get<0>();
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
-  ASSERT_EQ(10, parser.parser().get<0>().get<0>().get<1>());
+    ASSERT_EQ(0, variant.index());
+
+    auto object = std::get<0>(variant);
+
+    ASSERT_EQ(true, std::get<0>(object));
+    ASSERT_EQ(10, std::get<1>(object));
+  }
 
   buf = R"({"type": 2, "double": 11.5, "string": "value"})";
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<0>().parser<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<0>().parser<1>().isSet());
-  ASSERT_EQ(1, parser.parser().get<0>().currentMemberId());
+  {
+    auto variant = parser.parser().get<0>();
 
-  ASSERT_EQ(11.5, parser.parser().get<0>().get<1>().get<0>());
-  ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<1>());
+    ASSERT_EQ(1, variant.index());
+
+    auto object = std::get<1>(variant);
+
+    ASSERT_EQ(11.5, std::get<0>(object));
+    ASSERT_EQ("value", std::get<1>(object));
+  }
 }
 
-TEST(EmbeddedUnion, StringType) {
+TEST(EmbeddedSUnion, StringType) {
   std::string buf(
       R"(
 {
@@ -150,21 +160,23 @@ TEST(EmbeddedUnion, StringType) {
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       std::string,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
   >>> parser({{"type", {{"1", "bool"}, {"2", "int"}}}});
   // clang-format on
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().parser<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<0>().parser<1>().isSet());
-  ASSERT_EQ(0, parser.parser().get<0>().currentMemberId());
+  {
+    auto variant = parser.parser().get<0>();
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
+    ASSERT_EQ(0, variant.index());
+
+    ASSERT_EQ(true, std::get<0>(std::get<0>(variant)));
+  }
 
   buf = R"(
 {
@@ -175,14 +187,16 @@ TEST(EmbeddedUnion, StringType) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<0>().parser<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<0>().parser<1>().isSet());
-  ASSERT_EQ(1, parser.parser().get<0>().currentMemberId());
+  {
+    auto variant = parser.parser().get<0>();
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
+    ASSERT_EQ(1, variant.index());
+
+    ASSERT_EQ(100, std::get<0>(std::get<1>(variant)));
+  }
 }
 
-TEST(EmbeddedUnion, StdStringType) {
+TEST(EmbeddedSUnion, StdStringType) {
   std::string buf(
       R"(
 {
@@ -194,21 +208,23 @@ TEST(EmbeddedUnion, StdStringType) {
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       std::string,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
   >>> parser({{"type", {{types[0], "bool"}, {types[1], "int"}}}});
   // clang-format on
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_TRUE(parser.parser().get<0>().parser<0>().isSet());
-  ASSERT_FALSE(parser.parser().get<0>().parser<1>().isSet());
-  ASSERT_EQ(0, parser.parser().get<0>().currentMemberId());
+  {
+    auto variant = parser.parser().get<0>();
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
+    ASSERT_EQ(0, variant.index());
+
+    ASSERT_EQ(true, std::get<0>(std::get<0>(variant)));
+  }
 
   buf = R"(
 {
@@ -219,14 +235,16 @@ TEST(EmbeddedUnion, StdStringType) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_FALSE(parser.parser().get<0>().parser<0>().isSet());
-  ASSERT_TRUE(parser.parser().get<0>().parser<1>().isSet());
-  ASSERT_EQ(1, parser.parser().get<0>().currentMemberId());
+  {
+    auto variant = parser.parser().get<0>();
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
+    ASSERT_EQ(1, variant.index());
+
+    ASSERT_EQ(100, std::get<0>(std::get<1>(variant)));
+  }
 }
 
-TEST(EmbeddedUnion, IncorrectTypeType) {
+TEST(EmbeddedSUnion, IncorrectTypeType) {
   std::string buf(
       R"(
 {
@@ -236,10 +254,10 @@ TEST(EmbeddedUnion, IncorrectTypeType) {
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       int64_t,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
   >>> parser({{"type", {{1, "bool"}, {2, "int"}}}});
   // clang-format on
 
@@ -261,7 +279,7 @@ TEST(EmbeddedUnion, IncorrectTypeType) {
   }
 }
 
-TEST(EmbeddedUnion, IncorrectTypeValue) {
+TEST(EmbeddedSUnion, IncorrectTypeValue) {
   std::string buf(
       R"(
 {
@@ -273,8 +291,8 @@ TEST(EmbeddedUnion, IncorrectTypeValue) {
   Parser<Object<
     Union<
       int64_t,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
   >>> parser({{"type", {{1, "bool"}, {2, "int"}}}});
   // clang-format on
 
@@ -296,7 +314,7 @@ TEST(EmbeddedUnion, IncorrectTypeValue) {
   }
 }
 
-TEST(EmbeddedUnion, FieldsWithCallbacks) {
+TEST(EmbeddedSUnion, FieldsWithCallbacks) {
   std::string buf(
       R"(
 {
@@ -307,29 +325,29 @@ TEST(EmbeddedUnion, FieldsWithCallbacks) {
   bool bool_value = false;
   int64_t int_value;
 
-  auto boolCb = [&](Object<Value<bool>> &parser) {
-    bool_value = parser.get<0>();
+  auto boolCb = [&](const std::tuple<bool> &value) {
+    bool_value = std::get<0>(value);
     return true;
   };
 
-  auto intCb = [&](Object<Value<int64_t>> &parser) {
-    int_value = parser.get<0>();
+  auto intCb = [&](const std::tuple<int64_t> &value) {
+    int_value = std::get<0>(value);
     return true;
   };
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       int64_t,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
   >>> parser({{"type", {{1, {"bool", boolCb}}, {2, {"int", intCb}}}}});
   // clang-format on
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
+  ASSERT_EQ(true, std::get<0>(std::get<0>(parser.parser().get<0>())));
   ASSERT_EQ(true, bool_value);
 
   buf = R"(
@@ -341,11 +359,11 @@ TEST(EmbeddedUnion, FieldsWithCallbacks) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
+  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get<0>())));
   ASSERT_EQ(100, int_value);
 }
 
-TEST(EmbeddedUnion, FieldsWithCallbackError) {
+TEST(EmbeddedSUnion, FieldsWithCallbackError) {
   std::string buf(
       R"(
 {
@@ -353,16 +371,16 @@ TEST(EmbeddedUnion, FieldsWithCallbackError) {
   "bool": true
 })");
 
-  auto boolCb = [&](Object<Value<bool>> &) { return false; };
+  auto boolCb = [&](const std::tuple<bool> &) { return false; };
 
-  auto intCb = [&](Object<Value<int64_t>> &) { return false; };
+  auto intCb = [&](const std::tuple<int64_t> &) { return false; };
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       int64_t,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
   >>> parser({{"type", {{1, {"bool", boolCb}}, {2, {"int", intCb}}}}});
   // clang-format on
 
@@ -407,7 +425,7 @@ TEST(EmbeddedUnion, FieldsWithCallbackError) {
   }
 }
 
-TEST(EmbeddedUnion, UnionWithCallback) {
+TEST(EmbeddedSUnion, SUnionWithCallback) {
   std::string buf(
       R"(
 {
@@ -419,20 +437,21 @@ TEST(EmbeddedUnion, UnionWithCallback) {
   int64_t int_value;
 
   // clang-format off
-  using UnionParser = Union<
+  using UnionParser = SUnion<
                         int64_t,
-                        Object<Value<bool>>,
-                        Object<Value<int64_t>>>;
+                        SObject<Value<bool>>,
+                        SObject<Value<int64_t>>>;
   // clang-format on
 
-  auto unionCb = [&](UnionParser &parser) {
-    if (parser.currentMemberId() == 0) {
-      bool_value = parser.get<0>().get<0>();
-    } else {
-      int_value = parser.get<1>().get<0>();
-    }
-    return true;
-  };
+  auto unionCb =
+      [&](const std::variant<std::tuple<bool>, std::tuple<int64_t>> &value) {
+        if (value.index() == 0) {
+          bool_value = std::get<0>(std::get<0>(value));
+        } else {
+          int_value = std::get<0>(std::get<1>(value));
+        }
+        return true;
+      };
 
   Parser<Object<UnionParser>> parser(
       {{"type", {{{1, "bool"}, {2, "int"}}, unionCb}}});
@@ -440,7 +459,7 @@ TEST(EmbeddedUnion, UnionWithCallback) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
+  ASSERT_EQ(true, std::get<0>(std::get<0>(parser.parser().get<0>())));
   ASSERT_EQ(true, bool_value);
 
   buf = R"(
@@ -452,11 +471,11 @@ TEST(EmbeddedUnion, UnionWithCallback) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
+  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get<0>())));
   ASSERT_EQ(100, int_value);
 }
 
-TEST(EmbeddedUnion, UnionWithCallbackError) {
+TEST(EmbeddedSUnion, SUnionWithCallbackError) {
   std::string buf(R"(
 {
   "type": 1,
@@ -464,13 +483,16 @@ TEST(EmbeddedUnion, UnionWithCallbackError) {
 })");
 
   // clang-format off
-  using UnionParser = Union<
+  using UnionParser = SUnion<
                         int64_t,
-                        Object<Value<bool>>,
-                        Object<Value<int64_t>>>;
+                        SObject<Value<bool>>,
+                        SObject<Value<int64_t>>>;
   // clang-format on
 
-  auto unionCb = [&](UnionParser &) { return false; };
+  auto unionCb =
+      [&](const std::variant<std::tuple<bool>, std::tuple<int64_t>> &) {
+        return false;
+      };
 
   Parser<Object<UnionParser>> parser(
       {{"type", {{{1, "bool"}, {2, "int"}}, unionCb}}});
@@ -493,7 +515,7 @@ TEST(EmbeddedUnion, UnionWithCallbackError) {
   }
 }
 
-TEST(EmbeddedUnion, UnionWithArgsStruct) {
+TEST(EmbeddedSUnion, SUnionWithArgsStruct) {
   std::string buf(
       R"(
 {
@@ -502,10 +524,10 @@ TEST(EmbeddedUnion, UnionWithArgsStruct) {
 })");
 
   // clang-format off
-  using UnionParser = Union<
+  using UnionParser = SUnion<
                         int64_t,
-                        Object<Value<bool>>,
-                        Object<Value<int64_t>>>;
+                        SObject<Value<bool>>,
+                        SObject<Value<int64_t>>>;
   // clang-format on
 
   UnionParser::Args union_args({{{1, "bool"}, {2, "int"}}});
@@ -515,7 +537,7 @@ TEST(EmbeddedUnion, UnionWithArgsStruct) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>());
+  ASSERT_EQ(true, std::get<0>(std::get<0>(parser.parser().get<0>())));
 
   buf = R"(
 {
@@ -526,10 +548,10 @@ TEST(EmbeddedUnion, UnionWithArgsStruct) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
+  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get<0>())));
 }
 
-TEST(EmbeddedUnion, UnionWithUnexpectedObject) {
+TEST(EmbeddedSUnion, SUnionWithUnexpectedObject) {
   std::string buf(
       R"(
 {
@@ -539,10 +561,10 @@ TEST(EmbeddedUnion, UnionWithUnexpectedObject) {
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       int64_t,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
   >>> parser({{"type", {{1, "bool"}, {2, "int"}}}});
   // clang-format on
 
@@ -564,7 +586,7 @@ TEST(EmbeddedUnion, UnionWithUnexpectedObject) {
   }
 }
 
-TEST(EmbeddedUnion, UnionWithSCustomObject) {
+TEST(EmbeddedSUnion, SUnionWithSCustomObject) {
   std::string buf(
       R"(
 {
@@ -588,10 +610,10 @@ TEST(EmbeddedUnion, UnionWithSCustomObject) {
 
   // clang-format off
   Parser<Object<
-    Union<
+    SUnion<
       int64_t,
       InnerObjectParser,
-      Object<Value<int64_t>>
+      SObject<Value<int64_t>>
   >>> parser({{
       "type", {
       {
@@ -604,8 +626,12 @@ TEST(EmbeddedUnion, UnionWithSCustomObject) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().bool_field);
-  ASSERT_EQ("value", parser.parser().get<0>().get<0>().str_field);
+  {
+    auto value = std::get<0>(parser.parser().get<0>());
+
+    ASSERT_EQ(true, value.bool_field);
+    ASSERT_EQ("value", value.str_field);
+  }
 
   buf = R"(
 {
@@ -616,52 +642,10 @@ TEST(EmbeddedUnion, UnionWithSCustomObject) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
+  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get<0>())));
 }
 
-TEST(EmbeddedUnion, UnionWithSAutoObject) {
-  std::string buf(
-      R"(
-{
-  "type": 1,
-  "bool": true,
-  "string": "value"
-})");
-
-  // clang-format off
-  Parser<Object<
-    Union<
-      int64_t,
-      SObject<Value<bool>, Value<std::string>>,
-      Object<Value<int64_t>>
-  >>> parser({{
-      "type", {
-      {
-        1, {"bool", "string"}
-      }, {
-        2, "int"
-      }}}});
-  // clang-format on
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(true, std::get<0>(parser.parser().get<0>().get<0>()));
-  ASSERT_EQ("value", std::get<1>(parser.parser().get<0>().get<0>()));
-
-  buf = R"(
-{
-  "type": 2,
-  "int": 100
-})";
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(100, parser.parser().get<0>().get<1>().get<0>());
-}
-
-TEST(EmbeddedUnion, UnionWithEmbeddedUnion) {
+TEST(EmbeddedSUnion, SUnionWithEmbeddedSUnion) {
   std::string buf(
       R"(
 {
@@ -672,71 +656,14 @@ TEST(EmbeddedUnion, UnionWithEmbeddedUnion) {
 
   // clang-format off
   Parser<Object<
-    Union<
-      int64_t,
-      Union<
-        int64_t,
-        Object<Value<bool>>,
-        Object<Value<int64_t>>
-      >,
-      Object<Value<std::string>>
-  >>> parser({{
-      "type", {
-        {
-          1, {"subtype", {{1, "bool"}, {2, "int"}}}
-        }, {
-          2, "string"
-        }}}});
-  // clang-format on
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(true, parser.parser().get<0>().get<0>().get<0>().get<0>());
-
-  buf = R"(
-{
-  "type": 1,
-  "subtype": 2,
-  "int": 100
-})";
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(100, parser.parser().get<0>().get<0>().get<1>().get<0>());
-
-  buf = R"(
-{
-  "type": 2,
-  "string": "value"
-})";
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<0>());
-}
-
-TEST(EmbeddedUnion, UnionWithEmbeddedSUnion) {
-  std::string buf(
-      R"(
-{
-  "type": 1,
-  "subtype": 1,
-  "bool": true
-})");
-
-  // clang-format off
-  Parser<Object<
-    Union<
+    SUnion<
       int64_t,
       SUnion<
         int64_t,
         SObject<Value<bool>>,
         SObject<Value<int64_t>>
       >,
-      Object<Value<std::string>>
+      SObject<Value<std::string>>
   >>> parser({{
       "type", {
         {
@@ -749,7 +676,8 @@ TEST(EmbeddedUnion, UnionWithEmbeddedSUnion) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(true, std::get<0>(std::get<0>(parser.parser().get<0>().get<0>())));
+  ASSERT_EQ(true,
+            std::get<0>(std::get<0>(std::get<0>(parser.parser().get<0>()))));
 
   buf = R"(
 {
@@ -761,7 +689,8 @@ TEST(EmbeddedUnion, UnionWithEmbeddedSUnion) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get<0>().get<0>())));
+  ASSERT_EQ(100,
+            std::get<0>(std::get<1>(std::get<0>(parser.parser().get<0>()))));
 
   buf = R"(
 {
@@ -772,21 +701,22 @@ TEST(EmbeddedUnion, UnionWithEmbeddedSUnion) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ("value", parser.parser().get<0>().get<1>().get<0>());
+  ASSERT_EQ("value", std::get<0>(std::get<1>(parser.parser().get<0>())));
 }
 
-TEST(EmbeddedUnion, UnionWithUnexpectedMapStart) {
-  std::string buf(R"(
+TEST(EmbeddedSUnion, SUnionWithUnexpectedMapStart) {
+  std::string buf(
+      R"(
 {
   "type": 1,
   "bool": true
 })");
 
   // clang-format off
-  Parser<Union<
+  Parser<SUnion<
     int64_t,
-    Object<Value<bool>>,
-    Object<Value<int64_t>>
+    SObject<Value<bool>>,
+    SObject<Value<int64_t>>
   >> parser({{1, "bool"}, {2, "int"}});
   // clang-format on
 
@@ -809,12 +739,12 @@ TEST(EmbeddedUnion, UnionWithUnexpectedMapStart) {
   }
 }
 
-TEST(EmbeddedUnion, UnionWithUnexpectedMapKey) {
+TEST(EmbeddedSUnion, SUnionWithUnexpectedMapKey) {
   // clang-format off
-  Parser<Union<
+  Parser<SUnion<
     int64_t,
-    Object<Value<bool>>,
-    Object<Value<int64_t>>
+    SObject<Value<bool>>,
+    SObject<Value<int64_t>>
   >, TestParser> parser({{1, "bool"}, {2, "int"}});
   // clang-format on
 

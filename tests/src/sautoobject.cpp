@@ -69,7 +69,7 @@ TEST(SAutoObject, EmptyDefault) {
   ASSERT_EQ(1, std::get<1>(parser.parser().get()));
 }
 
-TEST(SAutoObject, EmptyWithCallback) {
+TEST(SAutoObject, EmptyDefaultWithCallback) {
   std::string buf(R"({})");
   bool callback_called = false;
 
@@ -719,6 +719,96 @@ TEST(SAutoObject, SAutoObjectWithDefaultSArray) {
   ASSERT_EQ(2, array.size());
   ASSERT_EQ("elt1", array[0]);
   ASSERT_EQ("elt2", array[1]);
+}
+
+TEST(SAutoObject, SAutoObjectWithStandaloneSUnion) {
+  std::string buf(
+      R"(
+{
+  "id": 10,
+  "data": {
+    "type": "1",
+    "bool": true
+  }
+})");
+
+  // clang-format off
+  using ObjectParser = SObject<
+    Value<int64_t>,
+    SUnion<
+      std::string,
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
+    >>;
+  // clang-format on
+
+  Parser<ObjectParser> parser(
+      {{"id", {"data", {"type", {{"1", "bool"}, {"2", "int"}}}}}});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, std::get<0>(parser.parser().get()));
+  ASSERT_EQ(true, std::get<0>(std::get<0>(std::get<1>(parser.parser().get()))));
+
+  std::string buf2(
+      R"(
+{
+  "id": 10,
+  "data": {
+    "type": "2",
+    "int": 100
+  }
+})");
+
+  ASSERT_NO_THROW(parser.parse(buf2));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, std::get<0>(parser.parser().get()));
+  ASSERT_EQ(100, std::get<0>(std::get<1>(std::get<1>(parser.parser().get()))));
+}
+
+TEST(SAutoObject, SAutoObjectWithEmbeddedSUnion) {
+  std::string buf(
+      R"(
+{
+  "id": 10,
+  "type": "1",
+  "bool": true
+})");
+
+  // clang-format off
+  using ObjectParser = SObject<
+    Value<int64_t>,
+    SUnion<
+      std::string,
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
+    >>;
+  // clang-format on
+
+  Parser<ObjectParser> parser(
+      {{"id", {"type", {{"1", "bool"}, {"2", "int"}}}}});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, std::get<0>(parser.parser().get()));
+  ASSERT_EQ(true, std::get<0>(std::get<0>(std::get<1>(parser.parser().get()))));
+
+  std::string buf2(
+      R"(
+{
+  "id": 10,
+  "type": "2",
+  "int": 100
+})");
+
+  ASSERT_NO_THROW(parser.parse(buf2));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, std::get<0>(parser.parser().get()));
+  ASSERT_EQ(100, std::get<0>(std::get<1>(std::get<1>(parser.parser().get()))));
 }
 
 TEST(SAutoObject, Move) {

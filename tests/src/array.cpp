@@ -725,6 +725,36 @@ TEST(Array, ArrayOfStandaloneUnions) {
   ASSERT_EQ(10, value_int);
 }
 
+TEST(Array, ArrayOfStandaloneSUnions) {
+  std::string buf(
+      R"([{"type": "str", "key": "value"}, {"type": "int", "key": 10}])");
+
+  std::string value_str = "";
+  int64_t value_int = 0;
+
+  using UnionParser =
+      SUnion<std::string, SObject<Value<std::string>>, SObject<Value<int64_t>>>;
+
+  auto unionCb = [&](const std::variant<std::tuple<std::string>,
+                                        std::tuple<int64_t>> &value) {
+    if (value.index() == 0) {
+      value_str = std::get<0>(std::get<0>(value));
+    } else {
+      value_int = std::get<0>(std::get<1>(value));
+    }
+    return true;
+  };
+
+  Parser<Array<UnionParser>> parser(
+      {"type", {{"str", "key"}, {"int", "key"}}, unionCb});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ("value", value_str);
+  ASSERT_EQ(10, value_int);
+}
+
 TEST(Array, ArrayOfEmbeddedUnions) {
   std::string buf(
       R"([{"id": 1, "type": "str", "key": "value"},
@@ -758,6 +788,53 @@ TEST(Array, ArrayOfEmbeddedUnions) {
         break;
       default:
         return false;
+    }
+    return true;
+  };
+
+  Parser<Array<ObjectParser>> parser(
+      {{"id", {"type", {{"str", "key"}, {"int", "key"}}}}, objectCb});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(2, ids.size());
+  ASSERT_EQ(1, ids[0]);
+  ASSERT_EQ(2, ids[1]);
+  ASSERT_EQ("value", value_str);
+  ASSERT_EQ(10, value_int);
+}
+
+TEST(Array, ArrayOfEmbeddedSUnions) {
+  std::string buf(
+      R"([{"id": 1, "type": "str", "key": "value"},
+          {"id": 2, "type": "int", "key": 10}])");
+
+  std::vector<int64_t> ids;
+  std::string value_str = "";
+  int64_t value_int = 0;
+
+  // clang-format off
+  using ObjectParser =
+      Object<
+        Value<int64_t>,
+        SUnion<
+          std::string,
+          SObject<Value<std::string>>,
+          SObject<Value<int64_t>>
+      >>;
+
+  // clang-format on
+
+  auto objectCb = [&](ObjectParser &parser) {
+    ids.push_back(parser.get<0>());
+
+    auto value = parser.get<1>();
+
+    if (value.index() == 0) {
+      value_str = std::get<0>(std::get<0>(value));
+    } else {
+      value_int = std::get<0>(std::get<1>(value));
     }
     return true;
   };

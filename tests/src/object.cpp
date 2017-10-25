@@ -755,6 +755,64 @@ TEST(Object, ObjectWithStandaloneUnion) {
   ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>());
 }
 
+TEST(Object, ObjectWithStandaloneSUnion) {
+  std::string buf(
+      R"(
+{
+  "id": 10,
+  "data": {
+    "type": "1",
+    "bool": true
+  }
+})");
+
+  // clang-format off
+  Parser<Object<
+    Value<int64_t>,
+    SUnion<
+      std::string,
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
+  >>> parser({"id", {"data", {"type", {{"1", "bool"}, {"2", "int"}}}}});
+  // clang-format on
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, parser.parser().get<0>());
+
+  {
+    auto variant = parser.parser().get<1>();
+
+    ASSERT_EQ(0, variant.index());
+
+    ASSERT_EQ(true, std::get<0>(std::get<0>(variant)));
+  }
+
+  std::string buf2(
+      R"(
+{
+  "id": 10,
+  "data": {
+    "type": "2",
+    "int": 100
+  }
+})");
+
+  ASSERT_NO_THROW(parser.parse(buf2));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, parser.parser().get<0>());
+
+  {
+    auto variant = parser.parser().get<1>();
+
+    ASSERT_EQ(1, variant.index());
+
+    ASSERT_EQ(100, std::get<0>(std::get<1>(variant)));
+  }
+}
+
 TEST(Object, ObjectWithEmbeddedUnion) {
   std::string buf(
       R"(
@@ -801,6 +859,60 @@ TEST(Object, ObjectWithEmbeddedUnion) {
 
   ASSERT_EQ(10, parser.parser().get<0>());
   ASSERT_EQ(100, parser.parser().get<1>().get<1>().get<0>());
+}
+
+TEST(Object, ObjectWithEmbeddedSUnion) {
+  std::string buf(
+      R"(
+{
+  "id": 10,
+  "type": "1",
+  "bool": true
+})");
+
+  // clang-format off
+  Parser<Object<
+    Value<int64_t>,
+    SUnion<
+      std::string,
+      SObject<Value<bool>>,
+      SObject<Value<int64_t>>
+  >>> parser({"id", {"type", {{"1", "bool"}, {"2", "int"}}}});
+  // clang-format on
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, parser.parser().get<0>());
+
+  {
+    auto variant = parser.parser().get<1>();
+
+    ASSERT_EQ(0, variant.index());
+
+    ASSERT_EQ(true, std::get<0>(std::get<0>(variant)));
+  }
+
+  std::string buf2(
+      R"(
+{
+  "id": 10,
+  "type": "2",
+  "int": 100
+})");
+
+  ASSERT_NO_THROW(parser.parse(buf2));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, parser.parser().get<0>());
+
+  {
+    auto variant = parser.parser().get<1>();
+
+    ASSERT_EQ(1, variant.index());
+
+    ASSERT_EQ(100, std::get<0>(std::get<1>(variant)));
+  }
 }
 
 TEST(Object, ObjectWithArray) {

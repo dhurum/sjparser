@@ -577,3 +577,61 @@ TEST(SArray, SArrayOfSArrays) {
   ASSERT_EQ(false, parser.parser().get()[1][0]);
   ASSERT_EQ(false, parser.parser().get()[1][1]);
 }
+
+TEST(SArray, SArrayOfStandaloneSUnions) {
+  std::string buf(
+      R"([{"type": "str", "key": "value"}, {"type": "int", "key": 10}])");
+
+  using UnionParser =
+      SUnion<std::string, SObject<Value<std::string>>, SObject<Value<int64_t>>>;
+
+  Parser<SArray<UnionParser>> parser(
+      {"type", {{"str", "key"}, {"int", "key"}}});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ("value", std::get<0>(std::get<0>(parser.parser().get()[0])));
+  ASSERT_EQ(10, std::get<0>(std::get<1>(parser.parser().get()[1])));
+}
+
+TEST(SArray, SArrayOfEmbeddedSUnions) {
+  std::string buf(
+      R"([{"id": 1, "type": "str", "key": "value"},
+          {"id": 2, "type": "int", "key": 10}])");
+
+  using ObjectParser =
+      SObject<Value<int64_t>, SUnion<std::string, SObject<Value<std::string>>,
+                                     SObject<Value<int64_t>>>>;
+
+  Parser<SArray<ObjectParser>> parser(
+      {{"id", {"type", {{"str", "key"}, {"int", "key"}}}}});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ(1, std::get<0>(parser.parser().get()[0]));
+  ASSERT_EQ(2, std::get<0>(parser.parser().get()[1]));
+  ASSERT_EQ("value",
+            std::get<0>(std::get<0>(std::get<1>(parser.parser().get()[0]))));
+  ASSERT_EQ(10,
+            std::get<0>(std::get<1>(std::get<1>(parser.parser().get()[1]))));
+}
+
+TEST(SArray, Move) {
+  std::string buf(R"(["value1", "value2"])");
+
+  Parser<SArray<Value<std::string>>> parser;
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  auto value = parser.parser().pop();
+  ASSERT_FALSE(parser.parser().isSet());
+
+  ASSERT_EQ(2, value.size());
+  ASSERT_EQ("value1", value[0]);
+  ASSERT_EQ("value2", value[1]);
+}
