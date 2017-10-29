@@ -795,7 +795,14 @@ template <typename Field1, typename Field2> struct MoveStruct {
   Field2 field2;
   static bool copy_used;
 
-  MoveStruct() {}
+  MoveStruct() {
+    if constexpr (std::is_integral_v<Field1> || std::is_floating_point_v<Field1>) {
+      field1 = 0;
+    }
+    if constexpr (std::is_integral_v<Field2> || std::is_floating_point_v<Field2>) {
+      field2 = 0;
+    }
+  }
 
   MoveStruct(const MoveStruct<Field1, Field2> &other) {
     field1 = std::move(other.field1);
@@ -823,11 +830,12 @@ TEST(StandaloneSUnion, Move) {
   std::string buf(
       R"({"type": 1, "bool": true, "integer": 10})");
 
-  using ObjectParser1 =
-      SObject<MoveStruct<bool, int64_t>, Value<bool>, Value<int64_t>>;
+  using ObjectStruct1 = MoveStruct<bool, int64_t>;
+  using ObjectParser1 = SObject<ObjectStruct1, Value<bool>, Value<int64_t>>;
 
-  using ObjectParser2 = SObject<MoveStruct<double, std::string>, Value<double>,
-                                Value<std::string>>;
+  using ObjectStruct2 = MoveStruct<double, std::string>;
+  using ObjectParser2 =
+      SObject<ObjectStruct2, Value<double>, Value<std::string>>;
 
   auto objectCb1 = [&](ObjectParser1 &parser, auto &value) {
     value.field1 = parser.get<0>();
@@ -856,13 +864,13 @@ TEST(StandaloneSUnion, Move) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  MoveStruct<bool, int64_t>::copy_used = false;
+  ObjectStruct1::copy_used = false;
 
   {
     auto variant = parser.parser().pop();
     ASSERT_FALSE(parser.parser().isSet());
 
-    ASSERT_FALSE((MoveStruct<bool, int64_t>::copy_used));
+    ASSERT_FALSE((ObjectStruct1::copy_used));
 
     ASSERT_EQ(0, variant.index());
 
@@ -877,13 +885,13 @@ TEST(StandaloneSUnion, Move) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  MoveStruct<double, std::string>::copy_used = false;
+  ObjectStruct2::copy_used = false;
 
   {
     auto variant = parser.parser().pop();
     ASSERT_FALSE(parser.parser().isSet());
 
-    ASSERT_FALSE((MoveStruct<double, std::string>::copy_used));
+    ASSERT_FALSE((ObjectStruct2::copy_used));
 
     ASSERT_EQ(1, variant.index());
 
