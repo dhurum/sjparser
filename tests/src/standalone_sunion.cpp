@@ -796,10 +796,12 @@ template <typename Field1, typename Field2> struct MoveStruct {
   static bool copy_used;
 
   MoveStruct() {
-    if constexpr (std::is_integral_v<Field1> || std::is_floating_point_v<Field1>) {
+    if constexpr (std::is_integral_v<
+                      Field1> || std::is_floating_point_v<Field1>) {
       field1 = 0;
     }
-    if constexpr (std::is_integral_v<Field2> || std::is_floating_point_v<Field2>) {
+    if constexpr (std::is_integral_v<
+                      Field2> || std::is_floating_point_v<Field2>) {
       field2 = 0;
     }
   }

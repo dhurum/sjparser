@@ -32,6 +32,12 @@ namespace SJParser {
  */
 class ParsingError : public std::exception {
  public:
+  /** @brief ParsingError constructor.
+   *
+   * @param [in] sjparser_error Sets sjparser error.
+   *
+   * @param [in] parser_error Sets underlying parser error.
+   */
   ParsingError(std::string sjparser_error, std::string parser_error = "");
 
   /** @brief Error getter.

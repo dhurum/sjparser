@@ -745,7 +745,7 @@ class Union
 /** @brief %Union parser, that stores the result in a variant of field parser
  * types.
  *
- * Parses an object from @ref Union_Ts "Ts" list based on a value of the type
+ * Parses an object from @ref SUnion_Ts "Ts" list based on a value of the type
  * field value.
  *
  * You can use it stand-alone (in this case the first field of an object must
@@ -758,7 +758,7 @@ class Union
  * std::string.
  *
  * @tparam Ts A list of object parsers.
- * @anchor Union_Ts
+ * @anchor SUnion_Ts
  */
 
 template <typename TypeFieldT, typename... Ts>
