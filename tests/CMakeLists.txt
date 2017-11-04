@@ -1,8 +1,6 @@
-set(TARGET sjparser_tests)
-
 find_package(GTest REQUIRED)
 
-add_executable(${TARGET}
+add_executable(sjparser_tests
   src/value.cpp
   src/array.cpp
   src/sarray.cpp
@@ -18,10 +16,10 @@ add_executable(${TARGET}
   src/dispatcher.cpp
 )
 
-setup_compilation_options(${TARGET})
-target_link_libraries(${TARGET} PUBLIC sjparser GTest::GTest GTest::Main)
+setup_compilation_options(sjparser_tests)
+target_link_libraries(sjparser_tests PUBLIC sjparser GTest::GTest GTest::Main)
 
 include(format)
-add_format_target(${TARGET})
+add_format_target(sjparser_tests)
 
-add_test(sjparser ${TARGET})
+add_test(sjparser sjparser_tests)
