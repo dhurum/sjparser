@@ -88,7 +88,8 @@ For building sjparser you will need:
 - c++ compiler with c++17 support;
 
 ### CMake variables:
-- `SJPARSER_WITH_TESTS` - Build tests if the config is not Debug or Coverage;
+- `SJPARSER_WITH_TESTS` - Build tests if the config is not Debug;
+- `SJPARSER_WITH_COVERAGE` - Add coverage target (only in Debug config);
 - `SJPARSER_BUILD_SHARED_LIBRARY` - Build shared library even in case of submodule build;
 
 ### Release build
@@ -103,7 +104,7 @@ make
 If you want to build tests for the release build you can use this command:
 
 ~~~bash
-cmake ../ -DCMAKE_BUILD_TYPE=Release -DSJPARSER_WITH_TESTS=True
+cmake ../ -DCMAKE_BUILD_TYPE=Release -DSJPARSER_WITH_TESTS=On
 ~~~
 
 ### Installation
@@ -137,7 +138,7 @@ make documentation
 The documentation will be available in `documentation/html`.
 
 
-### Coverage build
+### Coverage
 
 For the coverage you will need:
 
@@ -145,7 +146,7 @@ For the coverage you will need:
 - `lcov` with `genhtml`;
 
 ~~~bash
-cmake ../ -DCMAKE_BUILD_TYPE=Coverage
+cmake ../ -DCMAKE_BUILD_TYPE=Debug -DSJPARSER_WITH_COVERAGE=On
 make
 ~~~
 

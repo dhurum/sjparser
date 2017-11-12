@@ -43,13 +43,13 @@ install:
 
 script:
   - mkdir build && cd build
-  - cmake ../ -DCMAKE_BUILD_TYPE=Release -DSJPARSER_WITH_TESTS=True && make && make test && make check
+  - cmake ../ -DCMAKE_BUILD_TYPE=Release -DSJPARSER_WITH_TESTS=On && make && make test && make check
   - make documentation && mkdir to_deploy && mv documentation to_deploy
 
 after_success:
   # code coverage
   - mkdir coverage_build && pushd coverage_build
-  - cmake ../../ -DCMAKE_BUILD_TYPE=Coverage && make
+  - cmake ../../ -DCMAKE_BUILD_TYPE=Debug -D-DSJPARSER_WITH_COVERAGE=On && make && make coverage
   - GITHUB_TOKEN= coveralls --no-gcov --lcov-file coverage/sjparser.clean.info
   - popd
 

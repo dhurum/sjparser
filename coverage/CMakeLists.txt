@@ -27,7 +27,7 @@ add_custom_command(OUTPUT ${BASE_INFO_FILE} ${TEST_INFO_FILE}
   DEPENDS sjparser_tests
 )
 
-add_custom_target(coverage ALL
+add_custom_target(coverage
   COMMAND ${LCOV_BIN} --add-tracefile ${BASE_INFO_FILE} --add-tracefile
   ${TEST_INFO_FILE} --output sjparser.info
   COMMAND ${LCOV_BIN} --remove sjparser.info '*/tests/*' '/usr/*' --output-file
