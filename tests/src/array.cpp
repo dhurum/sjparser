@@ -773,7 +773,6 @@ TEST(Array, ArrayOfEmbeddedUnions) {
           Object<Value<std::string>>,
           Object<Value<int64_t>>
       >>;
-
   // clang-format on
 
   auto objectCb = [&](ObjectParser &parser) {

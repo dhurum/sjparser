@@ -14,6 +14,7 @@ add_executable(sjparser_tests
   src/parsing_error.cpp
   src/yajl_parser.cpp
   src/dispatcher.cpp
+  src/map.cpp
 )
 
 setup_compilation_options(sjparser_tests)

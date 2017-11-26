@@ -93,11 +93,11 @@ template <typename T> class Value : public TokenParser {
   Type &&pop();
 
  private:
-  Type _value;
-  Args _on_finish;
-
   void on(TokenType<Type> value) override;
   void finish() override;
+
+  Type _value;
+  Args _on_finish;
 };
 
 /** @brief %Object parser.
@@ -382,13 +382,13 @@ class SCustomObject : public Object<Ts...> {
   Type &&pop();
 
  private:
-  T _value;
   using TokenParser::_set;
   using TokenParser::checkSet;
 
   void finish() override;
   void reset() override;
 
+  Type _value;
   std::function<bool(SCustomObject<T, Ts...> &, T &)> _on_finish;
 };
 
@@ -532,9 +532,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
 
 /** @cond Internal class, needed for SObject */
 
-template <bool auto_type, typename... Ts> struct SObjectDispatcher {};
-
-template <typename... Ts> struct SObjectDispatcher<false, Ts...> {
+template <bool auto_type, typename... Ts> struct SObjectDispatcher {
   using Type = SCustomObject<Ts...>;
 };
 
@@ -911,6 +909,129 @@ class SUnion : public Union<TypeFieldT, Ts...> {
   std::function<bool(const Type &)> _on_finish;
 };
 
+/** @brief %Map parser.
+ *
+ * Parses an object where each field is of type @ref Map_T "T", and field
+ * name represents map key.
+ *
+ * @tparam T Underlying parser type.
+ * @anchor Map_T
+ */
+
+template <typename T> class Map : public TokenParser {
+ public:
+  /** Arguments for the underlying parser */
+  using ChildArgs = typename T::Args;
+
+  /** @cond Underlying parser type */
+  using ParserType = T;
+  /** @endcond */
+
+  /** Child arguments for the underlying type */
+  template <typename U = Map<T>>
+  using GrandChildArgs = typename U::ParserType::ChildArgs;
+
+  /** @brief Struct with arguments for the Map @ref Map() "constructor". */
+  struct Args {
+    /** @param [in] args (optional) Sets #args.
+     *
+     * @param[in] on_key (optional) Sets #on_key.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
+    Args(const ChildArgs &args = {},
+         const std::function<bool(const std::string &, T &)> &on_key = nullptr,
+         const std::function<bool(Map<T> &)> &on_finish = nullptr);
+
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
+    Args(const ChildArgs &args, const std::function<bool(Map<T> &)> &on_finish);
+
+    /** @param[in] on_key Sets #on_key.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
+    Args(const std::function<bool(const std::string &, T &)> &on_key,
+         const std::function<bool(Map<T> &)> &on_finish = nullptr);
+
+    /** @param[in] on_finish Sets #on_finish.
+     */
+    Args(const std::function<bool(Map<T> &)> &on_finish);
+
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] on_key (optional) Sets #on_key.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
+    template <typename U = Map<T>>
+    Args(const GrandChildArgs<U> &args,
+         const std::function<bool(const std::string &, T &)> &on_key = nullptr,
+         const std::function<bool(Map<T> &)> &on_finish = nullptr);
+
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] on_finish Sets #on_finish.
+     */
+    template <typename U = Map<T>>
+    Args(const GrandChildArgs<U> &args,
+         const std::function<bool(Map<T> &)> &on_finish);
+
+    /** Arguments for the underlying parser */
+    ChildArgs args;
+
+    /** Callback, that will be called after each key's value is parsed.
+     *
+     * The callback will be called with a field name and a reference to the
+     * child parser as arguments.
+     *
+     * If the callback returns false, parsing will be stopped with an error.
+     */
+    std::function<bool(const std::string &, T &)> on_key;
+
+    /** Callback, that will be called after an object is parsed.
+     *
+     * The callback will be called with a reference to the parser as an
+     * argument.
+     * This reference is mostly useless, it's main purpose it to help the
+     * compiler.
+     *
+     * If the callback returns false, parsing will be stopped with an error.
+     */
+    std::function<bool(Map<T> &)> on_finish;
+  };
+
+  /** @brief Map constructor.
+   *
+   * @param [in] args Args stucture.
+   * If you do not specify @ref Args::on_finish "on_finish" and
+   * @ref Args::on_key "on_key" callbacks, you can pass a
+   * @ref Args::args "underlying parser arguments" directly into the
+   * constructor.
+   */
+  Map(const Args &args);
+  Map(const Map &) = delete;
+
+  /** @cond Internal */
+  void setDispatcher(Dispatcher *dispatcher) noexcept override;
+  /** @endcond */
+
+ private:
+  void on(MapStartT /*unused*/) override;
+  void on(MapKeyT key) override;
+  void on(MapEndT /*unused*/) override;
+
+  void childParsed() override;
+  void finish() override;
+
+  T _parser;
+  std::string _current_key;
+  std::function<bool(const std::string &, T &)> _on_key;
+  std::function<bool(Map<T> &)> _on_finish;
+};
+
 /** @brief %Array parser.
  *
  * @tparam T Underlying parser type.
@@ -977,9 +1098,9 @@ template <typename T> class Array : public ArrayParser {
   /** @endcond */
 
  private:
-  std::function<bool(Array<T> &)> _on_finish;
-
   void finish() override;
+
+  std::function<bool(Array<T> &)> _on_finish;
 };
 
 /** @brief %Array parser, that stores the result in an std::vector of
@@ -1087,14 +1208,15 @@ template <typename T> class SArray : public Array<T> {
   Type &&pop();
 
  private:
-  std::vector<EltType> _values;
-  std::function<bool(const Type &)> _on_finish;
   using TokenParser::_set;
   using TokenParser::checkSet;
 
   void childParsed() override;
   void finish() override;
   void reset() override;
+
+  std::vector<EltType> _values;
+  std::function<bool(const Type &)> _on_finish;
 };
 
 /** @brief Main parser.

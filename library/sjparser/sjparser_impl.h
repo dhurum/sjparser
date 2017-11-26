@@ -329,6 +329,74 @@ SUnion<TypeFieldT, Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
 }
 
 template <typename T>
+Map<T>::Args::Args(const ChildArgs &args,
+                   const std::function<bool(const std::string &, T &)> &on_key,
+                   const std::function<bool(Map<T> &)> &on_finish)
+    : args(args), on_key(on_key), on_finish(on_finish) {}
+
+template <typename T>
+Map<T>::Args::Args(const ChildArgs &args,
+                   const std::function<bool(Map<T> &)> &on_finish)
+    : args(args), on_key(nullptr), on_finish(on_finish) {}
+
+template <typename T>
+Map<T>::Args::Args(const std::function<bool(const std::string &, T &)> &on_key,
+                   const std::function<bool(Map<T> &)> &on_finish)
+    : args({}), on_key(on_key), on_finish(on_finish) {}
+
+template <typename T>
+Map<T>::Args::Args(const std::function<bool(Map<T> &)> &on_finish)
+    : args({}), on_key(nullptr), on_finish(on_finish) {}
+
+template <typename T>
+template <typename U>
+Map<T>::Args::Args(const GrandChildArgs<U> &args,
+                   const std::function<bool(const std::string &, T &)> &on_key,
+                   const std::function<bool(Map<T> &)> &on_finish)
+    : args(args), on_key(on_key), on_finish(on_finish) {}
+
+template <typename T>
+template <typename U>
+Map<T>::Args::Args(const GrandChildArgs<U> &args,
+                   const std::function<bool(Map<T> &)> &on_finish)
+    : args(args), on_key(nullptr), on_finish(on_finish) {}
+
+template <typename T>
+Map<T>::Map(const Args &args)
+    : _parser(args.args), _on_key(args.on_key), _on_finish(args.on_finish) {}
+
+template <typename T>
+void Map<T>::setDispatcher(Dispatcher *dispatcher) noexcept {
+  TokenParser::setDispatcher(dispatcher);
+  _parser.setDispatcher(dispatcher);
+}
+
+template <typename T> void Map<T>::on(MapStartT /*unused*/) {
+  reset();
+}
+
+template <typename T> void Map<T>::on(MapKeyT key) {
+  _dispatcher->pushParser(&_parser);
+  _current_key = key.key;
+}
+
+template <typename T> void Map<T>::on(MapEndT /*unused*/) {
+  endParsing();
+}
+
+template <typename T> void Map<T>::childParsed() {
+  if (_on_key && !_on_key(_current_key, _parser)) {
+    throw std::runtime_error("Key callback returned false");
+  }
+}
+
+template <typename T> void Map<T>::finish() {
+  if (_on_finish && !_on_finish(*this)) {
+    throw std::runtime_error("Callback returned false");
+  }
+}
+
+template <typename T>
 Array<T>::Args::Args(const ChildArgs &args,
                      const std::function<bool(Array<T> &)> &on_finish)
     : args(args), on_finish(on_finish) {}
