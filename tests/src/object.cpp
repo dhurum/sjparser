@@ -980,6 +980,40 @@ TEST(Object, ObjectWithSArray) {
   ASSERT_EQ("elt3", parser.parser().get<2>()[2]);
 }
 
+TEST(Object, ObjectWithMap) {
+  std::string buf(
+      R"(
+{
+  "string": "value",
+  "integer": 10,
+  "map": {
+    "1": 10,
+    "2": 20
+  }
+})");
+
+  std::map<std::string, int64_t> values;
+
+  using MapParser = Map<Value<int64_t>>;
+
+  auto mapKeyCb = [&](const std::string &key, MapParser::ParserType &parser) {
+    values[key] = parser.get();
+    return true;
+  };
+
+  Parser<Object<Value<std::string>, Value<int64_t>, MapParser>> parser(
+      {"string", "integer", {"map", {mapKeyCb}}});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get<0>());
+  ASSERT_EQ(10, parser.parser().get<1>());
+  ASSERT_EQ(2, values.size());
+  ASSERT_EQ(10, values["1"]);
+  ASSERT_EQ(20, values["2"]);
+}
+
 TEST(Object, Move) {
   std::string buf(
       R"(

@@ -884,6 +884,39 @@ TEST(Array, ArrayOfArrays) {
   ASSERT_EQ(false, values[1][1]);
 }
 
+TEST(Array, ArrayOfMaps) {
+  std::string buf(R"([{"1": 10, "2": 20}, {"1": 30, "2": 40}])");
+  std::vector<std::map<std::string, int64_t>> values;
+  std::map<std::string, int64_t> tmp_values;
+
+  using MapParser = Map<Value<int64_t>>;
+
+  auto mapKeyCb = [&](const std::string &key, MapParser::ParserType &parser) {
+    tmp_values[key] = parser.get();
+    return true;
+  };
+
+  auto mapFinishCb = [&](MapParser&) {
+    values.push_back(tmp_values);
+    tmp_values.clear();
+    return true;
+  };
+
+  Parser<Array<MapParser>> parser({mapKeyCb, mapFinishCb});
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(2, values.size());
+  ASSERT_EQ(2, values[0].size());
+  ASSERT_EQ(10, values[0]["1"]);
+  ASSERT_EQ(20, values[0]["2"]);
+
+  ASSERT_EQ(2, values[1].size());
+  ASSERT_EQ(30, values[1]["1"]);
+  ASSERT_EQ(40, values[1]["2"]);
+}
+
 TEST(Array, ArrayOfSArrays) {
   std::string buf(R"([[true, true], [false, false]])");
   std::vector<std::vector<bool>> values;
