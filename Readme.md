@@ -147,7 +147,7 @@ For the coverage you will need:
 
 ~~~bash
 cmake ../ -DCMAKE_BUILD_TYPE=Debug -DSJPARSER_WITH_COVERAGE=On
-make
+make coverage
 ~~~
 
 The coverage report will be available in `coverage/report`.
