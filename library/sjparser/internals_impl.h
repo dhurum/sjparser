@@ -54,12 +54,6 @@ KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
 
 template <typename TypeFieldT, typename... Ts>
 template <typename T>
-KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
-    const TypeFieldT &field)
-    : field(field) {}
-
-template <typename TypeFieldT, typename... Ts>
-template <typename T>
 template <typename U>
 KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
     const char *field,

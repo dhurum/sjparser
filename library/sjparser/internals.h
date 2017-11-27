@@ -105,10 +105,9 @@ class KeyValueParser : public TokenParser {
   template <typename T> struct FieldArgs {
     using Args = typename T::Args;
 
-    FieldArgs(const TypeFieldT &field, const Args &value);
+    FieldArgs(const TypeFieldT &field, const Args &value = {});
     template <typename U = T>
     FieldArgs(const TypeFieldT &field, const typename U::ChildArgs &value);
-    FieldArgs(const TypeFieldT &field);
     template <typename U = TypeFieldT>
     FieldArgs(
         const char *field,
