@@ -22,6 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include <gtest/gtest.h>
+#include <map>
 #include "sjparser/sjparser.h"
 
 using namespace SJParser;
@@ -896,7 +897,7 @@ TEST(Array, ArrayOfMaps) {
     return true;
   };
 
-  auto mapFinishCb = [&](MapParser&) {
+  auto mapFinishCb = [&](MapParser &) {
     values.push_back(tmp_values);
     tmp_values.clear();
     return true;
