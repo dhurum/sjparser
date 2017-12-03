@@ -793,6 +793,7 @@ WARN_LOGFILE           =
 INPUT                  = @SJPARSER_SOURCE_DIR@/sjparser/sjparser.h \
                          @SJPARSER_SOURCE_DIR@/sjparser/yajl_parser.h \
                          @SJPARSER_SOURCE_DIR@/sjparser/parsing_error.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/options.h \
                          @CUT_README@
 
 # This tag can be used to specify the character encoding of the source files

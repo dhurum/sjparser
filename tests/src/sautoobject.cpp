@@ -147,6 +147,51 @@ TEST(SAutoObject, AllValuesFields) {
   ASSERT_EQ("value", std::get<3>(parser.parser().get()));
 }
 
+TEST(SAutoObject, UnexpectedField) {
+  std::string buf(R"({"error": true, "bool": true, "string": "value"})");
+
+  // clang-format off
+  Parser<SObject<
+    Value<bool>,
+    Value<std::string>
+  >> parser({"bool", "string"});
+  // clang-format on
+
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Unexpected field error", e.sjparserError());
+
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+                                {"error": true, "bool": true, "string"
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(SAutoObject, IgnoredUnexpectedField) {
+  std::string buf(R"({"error": true, "bool": true, "string": "value"})");
+
+  // clang-format off
+  Parser<SObject<
+    Value<bool>,
+    Value<std::string>
+  >> parser({{"bool", "string"}, {Reaction::Ignore}});
+  // clang-format on
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
+  ASSERT_EQ("value", std::get<1>(parser.parser().get()));
+}
+
 TEST(SAutoObject, Default) {
   std::string buf(
       R"({"bool": true, "double": 11.5})");
@@ -168,6 +213,23 @@ TEST(SAutoObject, Default) {
   ASSERT_EQ(10, std::get<1>(parser.parser().get()));
   ASSERT_EQ(11.5, std::get<2>(parser.parser().get()));
   ASSERT_EQ("value", std::get<3>(parser.parser().get()));
+}
+
+TEST(SAutoObject, DefaultWithIgnoredUnexpectedField) {
+  std::string buf(R"({"error": true, "bool": true})");
+
+  // clang-format off
+  Parser<SObject<
+    Value<bool>,
+    Value<std::string>
+  >> parser({{"bool", "string"}, {"false", "value"}, {Reaction::Ignore}});
+  // clang-format on
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
+  ASSERT_EQ("value", std::get<1>(parser.parser().get()));
 }
 
 TEST(SAutoObject, FieldsWithCallbacks) {

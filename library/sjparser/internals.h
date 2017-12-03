@@ -25,11 +25,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <deque>
 #include <functional>
+#include <list>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include "options.h"
 
 namespace SJParser {
 
@@ -84,6 +86,29 @@ class TokenParser {
   inline void unexpectedToken(const std::string &type);
 };
 
+class Ignore : public TokenParser {
+ public:
+  void reset() override;
+
+  // Protected because we need to inherit from this class in order to unit test
+  // it
+ protected:
+  enum class Structure { Object, Array };
+  std::list<Structure> _structure;
+
+  void onValue();
+  void on(bool /*value*/) override;
+  void on(int64_t /*value*/) override;
+  void on(double /*value*/) override;
+  void on(std::string_view /*value*/) override;
+  void on(MapStartT /*unused*/) override;
+  void on(MapKeyT /*key*/) override;
+  void on(MapEndT /*unused*/) override;
+  void on(ArrayStartT /*unused*/) override;
+  void on(ArrayEndT /*unused*/) override;
+  void finish() override;
+};
+
 // std::string can be constructed from {"x", "y"}, so this wrapper is used
 // instead
 class FieldName {
@@ -124,7 +149,9 @@ class KeyValueParser : public TokenParser {
   };
   using ChildArgs = std::tuple<FieldArgs<Ts>...>;
 
-  KeyValueParser(const ChildArgs &args);
+  using Options = ObjectOptions;
+
+  KeyValueParser(const ChildArgs &args, const Options &options = {});
 
   void setDispatcher(Dispatcher *dispatcher) noexcept override;
   void reset() override;
@@ -192,6 +219,8 @@ class KeyValueParser : public TokenParser {
   std::array<TokenParser *, sizeof...(Ts)> _fields_array;
   std::unordered_map<TypeFieldT, TokenParser *> _fields_map;
   Field<0, ChildArgs, Ts...> _fields;
+  Ignore _ignore_parser;
+  Options _options;
 };
 
 class ArrayParser : public TokenParser {

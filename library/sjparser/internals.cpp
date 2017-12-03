@@ -190,6 +190,72 @@ void Dispatcher::reset() {
   _parsers.push_back(_root_parser);
 }
 
+void Ignore::reset() {
+  TokenParser::reset();
+
+  _structure.clear();
+}
+
+void Ignore::onValue() {
+  if (_structure.empty()) {
+    endParsing();
+  }
+}
+
+void Ignore::on(bool /*value*/) {
+  onValue();
+}
+
+void Ignore::on(int64_t /*value*/) {
+  onValue();
+}
+
+void Ignore::on(double /*value*/) {
+  onValue();
+}
+
+void Ignore::on(std::string_view /*value*/) {
+  onValue();
+}
+
+void Ignore::on(MapStartT /*unused*/) {
+  _structure.push_back(Structure::Object);
+}
+
+void Ignore::on(MapKeyT /*key*/) {
+  if (_structure.empty() || (_structure.back() != Structure::Object)) {
+    unexpectedToken("map key");
+  }
+}
+
+void Ignore::on(MapEndT /*unused*/) {
+  if (_structure.empty() || (_structure.back() != Structure::Object)) {
+    unexpectedToken("map end");
+  }
+  _structure.pop_back();
+
+  if (_structure.empty()) {
+    endParsing();
+  }
+}
+
+void Ignore::on(ArrayStartT /*unused*/) {
+  _structure.push_back(Structure::Array);
+}
+
+void Ignore::on(ArrayEndT /*unused*/) {
+  if (_structure.empty() || (_structure.back() != Structure::Array)) {
+    unexpectedToken("array end");
+  }
+  _structure.pop_back();
+
+  if (_structure.empty()) {
+    endParsing();
+  }
+}
+
+void Ignore::finish() {}
+
 std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
                                      const FieldName &name) {
   return stream << name.str();

@@ -51,13 +51,18 @@ template <typename T> T &&Value<T>::pop() {
 }
 
 template <typename... Ts>
+Object<Ts...>::Args::Args(const ChildArgs &args, const Options &options,
+                          const std::function<bool(Object<Ts...> &)> &on_finish)
+    : args(args), options(options), on_finish(on_finish) {}
+
+template <typename... Ts>
 Object<Ts...>::Args::Args(const ChildArgs &args,
                           const std::function<bool(Object<Ts...> &)> &on_finish)
     : args(args), on_finish(on_finish) {}
 
 template <typename... Ts>
 Object<Ts...>::Object(const Args &args)
-    : KVParser(args.args), _on_finish(args.on_finish) {}
+    : KVParser(args.args, args.options), _on_finish(args.on_finish) {}
 
 template <typename... Ts> void Object<Ts...>::on(MapKeyT key) {
   KVParser::onField(key.key);
@@ -71,13 +76,19 @@ template <typename... Ts> void Object<Ts...>::finish() {
 
 template <typename T, typename... Ts>
 SCustomObject<T, Ts...>::Args::Args(
+    const ChildArgs &args, const Options &options,
+    const std::function<bool(SCustomObject<T, Ts...> &, T &)> &on_finish)
+    : args(args), options(options), on_finish(on_finish) {}
+
+template <typename T, typename... Ts>
+SCustomObject<T, Ts...>::Args::Args(
     const ChildArgs &args,
     const std::function<bool(SCustomObject<T, Ts...> &, T &)> &on_finish)
     : args(args), on_finish(on_finish) {}
 
 template <typename T, typename... Ts>
 SCustomObject<T, Ts...>::SCustomObject(const Args &args)
-    : Object<Ts...>(args.args), _on_finish(args.on_finish) {}
+    : Object<Ts...>({args.args, args.options}), _on_finish(args.on_finish) {}
 
 template <typename T, typename... Ts>
 const typename SCustomObject<T, Ts...>::Type &SCustomObject<T, Ts...>::get()
@@ -106,9 +117,27 @@ template <typename T, typename... Ts> void SCustomObject<T, Ts...>::reset() {
 
 template <typename... Ts>
 SAutoObject<Ts...>::Args::Args(
+    const ChildArgs &args, const Type &default_value, const Options &options,
+    const std::function<bool(const Type &)> &on_finish)
+    : args(args),
+      default_value(default_value),
+      options(options),
+      on_finish(on_finish) {}
+
+template <typename... Ts>
+SAutoObject<Ts...>::Args::Args(
     const ChildArgs &args, const Type &default_value,
     const std::function<bool(const Type &)> &on_finish)
     : args(args), default_value(default_value), on_finish(on_finish) {}
+
+template <typename... Ts>
+SAutoObject<Ts...>::Args::Args(
+    const ChildArgs &args, const Options &options,
+    const std::function<bool(const Type &)> &on_finish)
+    : args(args),
+      allow_default_value(false),
+      options(options),
+      on_finish(on_finish) {}
 
 template <typename... Ts>
 SAutoObject<Ts...>::Args::Args(
@@ -117,7 +146,7 @@ SAutoObject<Ts...>::Args::Args(
 
 template <typename... Ts>
 SAutoObject<Ts...>::SAutoObject(const Args &args)
-    : Object<Ts...>(args.args),
+    : Object<Ts...>({args.args, args.options}),
       _default_value(args.default_value),
       _allow_default_value(args.allow_default_value),
       _on_finish(args.on_finish) {}

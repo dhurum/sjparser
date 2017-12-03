@@ -15,6 +15,7 @@ set_property(TARGET sjparser PROPERTY SJPARSER_HEADERS
   sjparser/internals_impl.h
   sjparser/parsing_error.h
   sjparser/yajl_parser.h
+  sjparser/options.h
 )
 set_target_properties(sjparser PROPERTIES OUTPUT_NAME sjparser_static)
 

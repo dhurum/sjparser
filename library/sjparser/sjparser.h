@@ -116,9 +116,21 @@ class Object : public KeyValueParser<FieldName, Ts...> {
   /** A std::tuple with arguments for field parsers. */
   using ChildArgs = typename KVParser::ChildArgs;
 
+  /** Type alias for the parser options. */
+  using Options = ObjectOptions;
+
   /** @brief Struct with arguments for the Object @ref Object() "constructor".
    */
   struct Args {
+    /** @param [in] args Sets #args.
+     *
+     * @param [in] options Sets #options.
+     *
+     * @param [in] on_finish (optional) Sets #on_finish.
+     */
+    Args(const ChildArgs &args, const Options &options,
+         const std::function<bool(Object<Ts...> &)> &on_finish = nullptr);
+
     /** @param [in] args Sets #args.
      *
      * @param [in] on_finish (optional) Sets #on_finish.
@@ -144,6 +156,9 @@ class Object : public KeyValueParser<FieldName, Ts...> {
      * while field2 does receive something.
      */
     ChildArgs args;
+
+    /** #SJParser::ObjectOptions struct with parser options. */
+    Options options;
 
     /** Callback, that will be called after an object is parsed.
      *
@@ -247,13 +262,26 @@ class SCustomObject : public Object<Ts...> {
  public:
   /** A std::tuple with arguments for field parsers. */
   using ChildArgs = typename Object<Ts...>::ChildArgs;
+
   /** Stored value type */
   using Type = T;
+
+  /** Type alias for the parser options. */
+  using Options = typename Object<Ts...>::Options;
 
   /** @brief Struct with arguments for the SCustomObject
    * @ref SCustomObject() "constructor".
    */
   struct Args {
+    /** @param [in] args Sets #args.
+     *
+     * @param [in] options Sets #options.
+     *
+     * @param[in] on_finish Sets #on_finish.
+     */
+    Args(const ChildArgs &args, const Options &options,
+         const std::function<bool(SCustomObject<Type, Ts...> &, Type &)>
+             &on_finish);
     /** @param [in] args Sets #args.
      *
      * @param[in] on_finish Sets #on_finish.
@@ -273,6 +301,9 @@ class SCustomObject : public Object<Ts...> {
      * while field2 does receive something.
      */
     ChildArgs args;
+
+    /** #SJParser::ObjectOptions struct with parser options. */
+    Options options;
 
     /** Callback, that will be called after an object is parsed.
      *
@@ -406,8 +437,12 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
  public:
   /** A std::tuple with arguments for field parsers. */
   using ChildArgs = typename Object<Ts...>::ChildArgs;
+
   /** Stored value type */
   using Type = std::tuple<typename Ts::Type...>;
+
+  /** Type alias for the parser options. */
+  using Options = typename Object<Ts...>::Options;
 
   /** @brief Struct with arguments for the SAutoObject
    * @ref SAutoObject() "constructor".
@@ -417,9 +452,30 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
      *
      * @param[in] default_value Default for the parser value.
      *
+     * @param [in] options Sets #options.
+     *
      * @param[in] on_finish (optional) Sets #on_finish.
      */
     Args(const ChildArgs &args, const Type &default_value,
+         const Options &options,
+         const std::function<bool(const Type &)> &on_finish = nullptr);
+
+    /** @param [in] args Sets #args.
+     *
+     * @param[in] default_value Default for the parser value.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
+    Args(const ChildArgs &args, const Type &default_value,
+         const std::function<bool(const Type &)> &on_finish = nullptr);
+
+    /** @param [in] args Sets #args.
+     *
+     * @param [in] options Sets #options.
+     *
+     * @param[in] on_finish (optional) Sets #on_finish.
+     */
+    Args(const ChildArgs &args, const Options &options,
          const std::function<bool(const Type &)> &on_finish = nullptr);
 
     /** @param [in] args Sets #args.
@@ -446,6 +502,9 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
 
     /** @internal Internal flag, shows if default value was set. */
     bool allow_default_value = true;
+
+    /** #SJParser::ObjectOptions struct with parser options. */
+    Options options;
 
     /** Callback, that will be called after an object is parsed.
      *

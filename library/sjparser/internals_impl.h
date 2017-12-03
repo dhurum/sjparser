@@ -69,8 +69,9 @@ KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
     : field(field) {}
 
 template <typename TypeFieldT, typename... Ts>
-KeyValueParser<TypeFieldT, Ts...>::KeyValueParser(const ChildArgs &args)
-    : _fields(_fields_array, _fields_map, args) {}
+KeyValueParser<TypeFieldT, Ts...>::KeyValueParser(const ChildArgs &args,
+                                                  const Options &options)
+    : _fields(_fields_array, _fields_map, args), _options(options) {}
 
 template <typename TypeFieldT, typename... Ts>
 void KeyValueParser<TypeFieldT, Ts...>::setDispatcher(
@@ -79,6 +80,8 @@ void KeyValueParser<TypeFieldT, Ts...>::setDispatcher(
   for (auto &field : _fields_map) {
     field.second->setDispatcher(dispatcher);
   }
+
+  _ignore_parser.setDispatcher(dispatcher);
 }
 
 template <typename TypeFieldT, typename... Ts>
@@ -88,6 +91,8 @@ void KeyValueParser<TypeFieldT, Ts...>::reset() {
   for (auto &field : _fields_map) {
     field.second->reset();
   }
+
+  _ignore_parser.reset();
 }
 
 template <typename TypeFieldT, typename... Ts>
@@ -102,14 +107,19 @@ void KeyValueParser<TypeFieldT, Ts...>::on(MapEndT /*unused*/) {
 
 template <typename TypeFieldT, typename... Ts>
 void KeyValueParser<TypeFieldT, Ts...>::onField(const TypeFieldT &field) {
-  try {
-    auto &parser = _fields_map.at(field);
-    _dispatcher->pushParser(parser);
-  } catch (...) {
+  if (auto parser_it = _fields_map.find(field);
+      parser_it != _fields_map.end()) {
+    _dispatcher->pushParser(parser_it->second);
+    return;
+  }
+
+  if (_options.unknown_fields == Reaction::Error) {
     std::stringstream error;
     error << "Unexpected field " << field;
     throw std::runtime_error(error.str());
   }
+
+  _dispatcher->pushParser(&_ignore_parser);
 }
 
 template <typename TypeFieldT, typename... Ts>
