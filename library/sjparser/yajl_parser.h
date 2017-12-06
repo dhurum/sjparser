@@ -97,7 +97,9 @@ class YajlParser {
   void finish();
 
  protected:
+  /** @cond INTERNAL Token parser setter */
   void setTokenParser(TokenParser *parser);
+  /** @endcond */
 
  private:
   void resetYajlHandle();

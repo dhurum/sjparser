@@ -108,7 +108,7 @@ template <typename T> class Value : public TokenParser {
 template <typename... Ts>
 class Object : public KeyValueParser<FieldName, Ts...> {
  protected:
-  /** @cond Internal typedef */
+  /** @cond INTERNAL Internal typedef */
   using KVParser = KeyValueParser<FieldName, Ts...>;
   /** @endcond */
 
@@ -500,8 +500,9 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
     /** Default for the parser value. */
     Type default_value;
 
-    /** @internal Internal flag, shows if default value was set. */
+    /** @cond INTERNAL Internal flag, shows if default value was set. */
     bool allow_default_value = true;
+    /** @endcond */
 
     /** #SJParser::ObjectOptions struct with parser options. */
     Options options;
@@ -589,7 +590,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
   std::function<bool(const Type &)> _on_finish;
 };
 
-/** @cond Internal class, needed for SObject */
+/** @cond INTERNAL Internal class, needed for SObject */
 
 template <bool auto_type, typename... Ts> struct SObjectDispatcher {
   using Type = SCustomObject<Ts...>;
@@ -615,7 +616,7 @@ template <typename T, typename... Ts>
 using SObject = typename SObjectDispatcher<std::is_base_of_v<TokenParser, T>, T,
                                            Ts...>::Type;
 
-/** @cond Internal class, needed for Union */
+/** @cond INTERNAL Internal class, needed for Union */
 
 template <typename T> struct UnionFieldType { using Type = T; };
 
@@ -645,7 +646,7 @@ template <typename TypeFieldT, typename... Ts>
 class Union
     : public KeyValueParser<typename UnionFieldType<TypeFieldT>::Type, Ts...> {
  protected:
-  /** @cond Internal typedef */
+  /** @cond INTERNAL Internal typedef */
   using KVParser =
       KeyValueParser<typename UnionFieldType<TypeFieldT>::Type, Ts...>;
   /** @endcond */
@@ -885,8 +886,9 @@ class SUnion : public Union<TypeFieldT, Ts...> {
     /** Default for the parser value. */
     Type default_value;
 
-    /** @internal Internal flag, shows if default value was set. */
+    /** @cond INTERNAL Internal flag, shows if default value was set. */
     bool allow_default_value = true;
+    /** @endcond */
 
     /** Callback, that will be called after an sunion object is parsed.
      *
@@ -982,7 +984,7 @@ template <typename T> class Map : public TokenParser {
   /** Arguments for the underlying parser */
   using ChildArgs = typename T::Args;
 
-  /** @cond Underlying parser type */
+  /** @cond INTERNAL Underlying parser type */
   using ParserType = T;
   /** @endcond */
 
@@ -1073,7 +1075,7 @@ template <typename T> class Map : public TokenParser {
   Map(const Args &args);
   Map(const Map &) = delete;
 
-  /** @cond Internal */
+  /** @cond INTERNAL Internal */
   void setDispatcher(Dispatcher *dispatcher) noexcept override;
   /** @endcond */
 
@@ -1101,7 +1103,7 @@ template <typename T> class Array : public ArrayParser {
   /** Arguments for the underlying parser */
   using ChildArgs = typename T::Args;
 
-  /** @cond Underlying parser type */
+  /** @cond INTERNAL Underlying parser type */
   using ParserType = T;
   /** @endcond */
 
@@ -1152,7 +1154,7 @@ template <typename T> class Array : public ArrayParser {
   Array(const Array &) = delete;
 
  protected:
-  /** @cond Internal */
+  /** @cond INTERNAL Elements parser */
   T _parser;
   /** @endcond */
 
@@ -1183,7 +1185,7 @@ template <typename T> class SArray : public Array<T> {
   /** Finish callback type */
   using CallbackType = std::function<bool(const Type &)>;
 
-  /** @cond Underlying parser type */
+  /** @cond INTERNAL Underlying parser type */
   using ParserType = T;
   /** @endcond */
 
