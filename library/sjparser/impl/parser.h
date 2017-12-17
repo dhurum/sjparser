@@ -23,12 +23,29 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+namespace SJParser {
+
+template <typename T, typename Impl>
+Parser<T, Impl>::Parser(const typename T::Args &args) : _parser(args) {
+  this->setTokenParser(&_parser);
+}
+
+template <typename T, typename Impl>
+template <typename U>
+Parser<T, Impl>::Parser(const typename U::ChildArgs &args)
+    : Parser(typename T::Args(args)) {}
+
+template <typename T, typename Impl>
+template <typename U>
+Parser<T, Impl>::Parser(const typename U::template GrandChildArgs<U> &args)
+    : Parser(typename T::Args(args)) {}
+
+template <typename T, typename Impl>
+template <typename U>
+Parser<T, Impl>::Parser(const typename U::CallbackType &callback)
+    : Parser(typename T::Args(callback)) {}
+
+template <typename T, typename Impl> T &Parser<T, Impl>::parser() {
+  return _parser;
+}
+}  // namespace SJParser

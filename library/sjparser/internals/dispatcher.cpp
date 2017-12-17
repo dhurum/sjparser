@@ -21,14 +21,38 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
+#include "dispatcher.h"
+#include "token_parser.h"
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+namespace SJParser {
+
+Dispatcher::Dispatcher(TokenParser *parser) {
+  _root_parser = parser;
+  _parsers.push_back(parser);
+  parser->setDispatcher(this);
+}
+
+void Dispatcher::pushParser(TokenParser *parser) {
+  _parsers.push_back(parser);
+}
+
+void Dispatcher::popParser() {
+  if (_parsers.empty()) {
+    throw std::runtime_error("Can not pop parser, parsers stack is empty");
+  }
+  _parsers.pop_back();
+
+  if (!_parsers.empty()) {
+    _parsers.back()->childParsed();
+  }
+}
+
+bool Dispatcher::emptyParsersStack() {
+  return _parsers.empty();
+}
+
+void Dispatcher::reset() {
+  _parsers.clear();
+  _parsers.push_back(_root_parser);
+}
+}  // namespace SJParser

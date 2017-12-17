@@ -23,12 +23,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+namespace SJParser {
+
+bool TokenParser::isSet() const noexcept {
+  return _set;
+}
+
+void TokenParser::checkSet() const {
+  if (!isSet()) {
+    throw std::runtime_error("Can't get value, parser is unset");
+  }
+}
+
+void TokenParser::unexpectedToken(const std::string &type) {
+  throw std::runtime_error("Unexpected token " + type);
+}
+}  // namespace SJParser

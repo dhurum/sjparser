@@ -23,12 +23,42 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+#include "s_auto_object.h"
+#include "s_custom_object.h"
+
+namespace SJParser {
+
+/** @cond INTERNAL Internal class, needed for SObject */
+
+template <bool auto_type, typename... Ts> struct SObjectDispatcher {
+  using Type = SCustomObject<Ts...>;
+};
+
+template <typename... Ts> struct SObjectDispatcher<true, Ts...> {
+  using Type = SAutoObject<Ts...>;
+};
+
+/** @endcond */
+
+#ifdef DOXYGEN_ONLY
+/** @brief SCustomObject and SAutoObject dispatcher
+ *
+ * Will point to SCustomObject or SAutoObject based on the template parameters.
+ * You should use it instead of using those types directly.
+ */
+
+template <typename... Ts> class SObject;
+#endif
+
+template <typename T, typename... Ts>
+using SObject = typename SObjectDispatcher<std::is_base_of_v<TokenParser, T>, T,
+                                           Ts...>::Type;
+
+/** @cond INTERNAL Internal class, needed for Union */
+
+template <typename T> struct UnionFieldType { using Type = T; };
+
+template <> struct UnionFieldType<std::string> { using Type = FieldName; };
+
+/** @endcond */
+}  // namespace SJParser

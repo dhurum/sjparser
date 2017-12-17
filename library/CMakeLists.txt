@@ -4,18 +4,51 @@ if(NOT YAJL_LIB)
 endif()
 
 add_library(sjparser STATIC
-  sjparser/internals.cpp
   sjparser/parsing_error.cpp
   sjparser/yajl_parser.cpp
+
+  sjparser/internals/token_parser.cpp
+  sjparser/internals/dispatcher.cpp
+  sjparser/internals/ignore.cpp
+  sjparser/internals/key_value_parser.cpp
+  sjparser/internals/array_parser.cpp
 )
 set_property(TARGET sjparser PROPERTY SJPARSER_HEADERS
   sjparser/sjparser.h
-  sjparser/sjparser_impl.h
-  sjparser/internals.h
-  sjparser/internals_impl.h
   sjparser/parsing_error.h
   sjparser/yajl_parser.h
   sjparser/options.h
+
+  sjparser/value.h
+  sjparser/impl/value.h
+  sjparser/object.h
+  sjparser/impl/object.h
+  sjparser/s_custom_object.h
+  sjparser/impl/s_custom_object.h
+  sjparser/s_auto_object.h
+  sjparser/impl/s_auto_object.h
+  sjparser/s_object.h
+  sjparser/union.h
+  sjparser/impl/union.h
+  sjparser/s_union.h
+  sjparser/impl/s_union.h
+  sjparser/map.h
+  sjparser/impl/map.h
+  sjparser/array.h
+  sjparser/impl/array.h
+  sjparser/s_array.h
+  sjparser/impl/s_array.h
+  sjparser/parser.h
+  sjparser/impl/parser.h
+
+  sjparser/internals/token_parser.h
+  sjparser/internals/impl/token_parser.h
+  sjparser/internals/dispatcher.h
+  sjparser/internals/impl/dispatcher.h
+  sjparser/internals/ignore.h
+  sjparser/internals/key_value_parser.h
+  sjparser/internals/impl/key_value_parser.h
+  sjparser/internals/array_parser.h
 )
 set_target_properties(sjparser PROPERTIES OUTPUT_NAME sjparser_static)
 
@@ -54,8 +87,7 @@ if(STANDALONE_BUILD)
     EXPORT sjparser-targets
     DESTINATION lib/sjparser
   )
-  get_target_property(HEADERS sjparser SJPARSER_HEADERS)
-  install(FILES ${HEADERS} DESTINATION include/sjparser)
+  install(DIRECTORY sjparser DESTINATION include FILES_MATCHING PATTERN "*.h")
 
   set(PACKAGE_LOCATION lib/cmake/sjparser)
   install(FILES sjparser-config.cmake DESTINATION ${PACKAGE_LOCATION})

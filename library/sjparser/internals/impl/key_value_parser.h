@@ -25,20 +25,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-bool TokenParser::isSet() const noexcept {
-  return _set;
-}
-
-void TokenParser::checkSet() const {
-  if (!isSet()) {
-    throw std::runtime_error("Can't get value, parser is unset");
-  }
-}
-
-void TokenParser::unexpectedToken(const std::string &type) {
-  throw std::runtime_error("Unexpected token " + type);
-}
-
 template <typename TypeFieldT, typename... Ts>
 template <typename T>
 KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
@@ -164,13 +150,6 @@ KeyValueParser<TypeFieldT, Ts...>::Field<n, Args, T, TDs...>::Field(
       _field(std::get<n>(args).value) {
   fields_array[n] = &_field;
   fields_map[std::get<n>(args).field] = &_field;
-}
-
-template <typename T> void Dispatcher::on(T value) {
-  if (_parsers.empty()) {
-    throw std::runtime_error("Parsers stack is empty");
-  }
-  _parsers.back()->on(value);
 }
 
 std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,

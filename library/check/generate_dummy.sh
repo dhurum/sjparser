@@ -1,11 +1,10 @@
 #!/bin/bash
 
-dir=$1
-output=$2
+output=$1
 
 shift
 shift
 
 for file in $@; do
-  echo "#include \"${dir}/${file}\"" >> $output
+  echo "#include \"${file}\"" >> $output
 done

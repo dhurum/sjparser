@@ -21,14 +21,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
+#include "key_value_parser.h"
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+namespace SJParser {
+
+std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
+                                     const FieldName &name) {
+  return stream << name.str();
+}
+
+FieldName::FieldName(std::string str) : _str(std::move(str)) {}
+
+FieldName::FieldName(std::string_view str) : _str(str) {}
+
+FieldName::FieldName(const char *str) : _str(str) {}
+
+FieldName::operator const std::string &() const {
+  return _str;
+}
+
+bool FieldName::operator==(const FieldName &other) const {
+  return _str == other._str;
+}
+
+const std::string &FieldName::str() const {
+  return _str;
+}
+}  // namespace SJParser

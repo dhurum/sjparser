@@ -23,12 +23,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+#include "token_parser.h"
+
+#include <list>
+
+namespace SJParser {
+
+class Ignore : public TokenParser {
+ public:
+  void reset() override;
+
+  // Protected because we need to inherit from this class in order to unit test
+  // it
+ protected:
+  enum class Structure { Object, Array };
+  std::list<Structure> _structure{};
+
+  void onValue();
+  void on(bool /*value*/) override;
+  void on(int64_t /*value*/) override;
+  void on(double /*value*/) override;
+  void on(std::string_view /*value*/) override;
+  void on(MapStartT /*unused*/) override;
+  void on(MapKeyT /*key*/) override;
+  void on(MapEndT /*unused*/) override;
+  void on(ArrayStartT /*unused*/) override;
+  void on(ArrayEndT /*unused*/) override;
+  void finish() override;
+};
+}  // namespace SJParser

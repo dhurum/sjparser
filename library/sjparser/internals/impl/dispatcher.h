@@ -23,12 +23,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+namespace SJParser {
+
+template <typename T> void Dispatcher::on(T value) {
+  if (_parsers.empty()) {
+    throw std::runtime_error("Parsers stack is empty");
+  }
+  _parsers.back()->on(value);
+}
+}  // namespace SJParser

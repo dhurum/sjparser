@@ -23,12 +23,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+namespace SJParser {
+
+template <typename T>
+Value<T>::Value(const Args &on_finish) : _on_finish(on_finish) {}
+
+template <typename T> void Value<T>::on(TokenType<T> value) {
+  _value = value;
+  endParsing();
+}
+
+template <typename T> void Value<T>::finish() {
+  if (_on_finish && !_on_finish(_value)) {
+    throw std::runtime_error("Callback returned false");
+  }
+}
+
+template <typename T> const T &Value<T>::get() const {
+  checkSet();
+  return _value;
+}
+
+template <typename T> T &&Value<T>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_value);
+}
+}  // namespace SJParser

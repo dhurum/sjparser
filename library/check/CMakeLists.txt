@@ -8,13 +8,14 @@ endif()
 set(DUMMY ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp)
 
 add_custom_command(OUTPUT ${DUMMY}
-  COMMAND ./generate_dummy.sh $<TARGET_PROPERTY:sjparser,SOURCE_DIR> ${DUMMY}
+  COMMAND ./generate_dummy.sh ${DUMMY}
   $<TARGET_PROPERTY:sjparser,SJPARSER_HEADERS>
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   COMMAND_EXPAND_LISTS
 )
 
 add_executable(dummy EXCLUDE_FROM_ALL ${DUMMY})
+target_link_libraries(dummy PRIVATE sjparser)
 setup_compilation_options(dummy)
 
 set(CHECKS

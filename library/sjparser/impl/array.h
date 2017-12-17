@@ -23,12 +23,28 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+namespace SJParser {
+
+template <typename T>
+Array<T>::Args::Args(const ChildArgs &args,
+                     const std::function<bool(Array<T> &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename T>
+template <typename U>
+Array<T>::Args::Args(const GrandChildArgs<U> &args,
+                     const std::function<bool(Array<T> &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename T>
+Array<T>::Array(const Args &args)
+    : _parser(args.args), _on_finish(args.on_finish) {
+  _parser_ptr = &_parser;
+}
+
+template <typename T> void Array<T>::finish() {
+  if (_on_finish && !_on_finish(*this)) {
+    throw std::runtime_error("Callback returned false");
+  }
+}
+}  // namespace SJParser

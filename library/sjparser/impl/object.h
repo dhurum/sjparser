@@ -23,12 +23,29 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+namespace SJParser {
+
+template <typename... Ts>
+Object<Ts...>::Args::Args(const ChildArgs &args, const Options &options,
+                          const std::function<bool(Object<Ts...> &)> &on_finish)
+    : args(args), options(options), on_finish(on_finish) {}
+
+template <typename... Ts>
+Object<Ts...>::Args::Args(const ChildArgs &args,
+                          const std::function<bool(Object<Ts...> &)> &on_finish)
+    : args(args), on_finish(on_finish) {}
+
+template <typename... Ts>
+Object<Ts...>::Object(const Args &args)
+    : KVParser(args.args, args.options), _on_finish(args.on_finish) {}
+
+template <typename... Ts> void Object<Ts...>::on(MapKeyT key) {
+  KVParser::onField(key.key);
+}
+
+template <typename... Ts> void Object<Ts...>::finish() {
+  if (_on_finish && !_on_finish(*this)) {
+    throw std::runtime_error("Callback returned false");
+  }
+}
+}  // namespace SJParser

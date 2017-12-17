@@ -23,16 +23,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "internals/dispatcher.h"
+#include "parsing_error.h"
+
 #include <yajl/yajl_parse.h>
 #include <memory>
 #include <string>
-#include "internals.h"
-#include "parsing_error.h"
 
 namespace SJParser {
-
-class Dispatcher;
-class TokenParser;
 
 /** @brief YAJL parser adapter.
  *

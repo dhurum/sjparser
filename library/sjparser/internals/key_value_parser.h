@@ -23,91 +23,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include <deque>
-#include <functional>
-#include <list>
-#include <memory>
+#include "dispatcher.h"
+#include "ignore.h"
+#include "sjparser/options.h"
+#include "token_parser.h"
+
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include "options.h"
 
 namespace SJParser {
-
-struct NullT {};
-struct MapStartT {};
-struct MapKeyT {
-  std::string_view key;
-};
-struct MapEndT {};
-struct ArrayStartT {};
-struct ArrayEndT {};
-
-template <typename T> struct TokenTypeResolver { using Type = T; };
-
-template <> struct TokenTypeResolver<std::string> {
-  using Type = std::string_view;
-};
-
-template <typename T> using TokenType = typename TokenTypeResolver<T>::Type;
-
-class Dispatcher;
-
-class TokenParser {
- public:
-  virtual void setDispatcher(Dispatcher *dispatcher) noexcept;
-  inline bool isSet() const noexcept;
-  virtual void reset();
-  void endParsing();
-  virtual void finish() = 0;
-
-  virtual void on(NullT /*unused*/);
-  virtual void on(bool /*value*/);
-  virtual void on(int64_t /*value*/);
-  virtual void on(double /*value*/);
-  virtual void on(std::string_view /*value*/);
-  virtual void on(MapStartT /*unused*/);
-  virtual void on(MapKeyT /*key*/);
-  virtual void on(MapEndT /*unused*/);
-  virtual void on(ArrayStartT /*unused*/);
-  virtual void on(ArrayEndT /*unused*/);
-
-  virtual void childParsed();
-
-  virtual ~TokenParser() = default;
-
- protected:
-  Dispatcher *_dispatcher = nullptr;
-  bool _set = false;
-
-  inline void checkSet() const;
-
-  inline void unexpectedToken(const std::string &type);
-};
-
-class Ignore : public TokenParser {
- public:
-  void reset() override;
-
-  // Protected because we need to inherit from this class in order to unit test
-  // it
- protected:
-  enum class Structure { Object, Array };
-  std::list<Structure> _structure;
-
-  void onValue();
-  void on(bool /*value*/) override;
-  void on(int64_t /*value*/) override;
-  void on(double /*value*/) override;
-  void on(std::string_view /*value*/) override;
-  void on(MapStartT /*unused*/) override;
-  void on(MapKeyT /*key*/) override;
-  void on(MapEndT /*unused*/) override;
-  void on(ArrayStartT /*unused*/) override;
-  void on(ArrayEndT /*unused*/) override;
-  void finish() override;
-};
 
 // std::string can be constructed from {"x", "y"}, so this wrapper is used
 // instead
@@ -222,43 +148,6 @@ class KeyValueParser : public TokenParser {
   Ignore _ignore_parser;
   Options _options;
 };
-
-class ArrayParser : public TokenParser {
- public:
-  void reset() override;
-
-  void on(NullT /*unused*/) override;
-  void on(bool value) override;
-  void on(int64_t value) override;
-  void on(double value) override;
-  void on(std::string_view value) override;
-  void on(MapStartT /*unused*/) override;
-  void on(ArrayStartT /*unused*/) override;
-  void on(ArrayEndT /*unused*/) override;
-
- protected:
-  TokenParser *_parser_ptr;
-
- private:
-  bool _started = false;
-};
-
-class Dispatcher {
- public:
-  Dispatcher(TokenParser *parser);
-  void pushParser(TokenParser *parser);
-  void popParser();
-  bool emptyParsersStack();
-  void reset();
-
-  template <typename T> void on(T value);
-
- protected:
-  std::deque<TokenParser *> _parsers;
-  TokenParser *_root_parser = nullptr;
-  std::function<void()> _on_completion;
-  std::string _error;
-};
 }  // namespace SJParser
 
-#include "internals_impl.h"
+#include "impl/key_value_parser.h"

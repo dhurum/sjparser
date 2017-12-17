@@ -21,14 +21,73 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
+#include "ignore.h"
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+namespace SJParser {
+
+void Ignore::reset() {
+  TokenParser::reset();
+
+  _structure.clear();
+}
+
+void Ignore::onValue() {
+  if (_structure.empty()) {
+    endParsing();
+  }
+}
+
+void Ignore::on(bool /*value*/) {
+  onValue();
+}
+
+void Ignore::on(int64_t /*value*/) {
+  onValue();
+}
+
+void Ignore::on(double /*value*/) {
+  onValue();
+}
+
+void Ignore::on(std::string_view /*value*/) {
+  onValue();
+}
+
+void Ignore::on(MapStartT /*unused*/) {
+  _structure.push_back(Structure::Object);
+}
+
+void Ignore::on(MapKeyT /*key*/) {
+  if (_structure.empty() || (_structure.back() != Structure::Object)) {
+    unexpectedToken("map key");
+  }
+}
+
+void Ignore::on(MapEndT /*unused*/) {
+  if (_structure.empty() || (_structure.back() != Structure::Object)) {
+    unexpectedToken("map end");
+  }
+  _structure.pop_back();
+
+  if (_structure.empty()) {
+    endParsing();
+  }
+}
+
+void Ignore::on(ArrayStartT /*unused*/) {
+  _structure.push_back(Structure::Array);
+}
+
+void Ignore::on(ArrayEndT /*unused*/) {
+  if (_structure.empty() || (_structure.back() != Structure::Array)) {
+    unexpectedToken("array end");
+  }
+  _structure.pop_back();
+
+  if (_structure.empty()) {
+    endParsing();
+  }
+}
+
+void Ignore::finish() {}
+}  // namespace SJParser

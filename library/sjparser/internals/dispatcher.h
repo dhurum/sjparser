@@ -23,12 +23,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "array.h"
-#include "map.h"
-#include "object.h"
-#include "parser.h"
-#include "s_array.h"
-#include "s_object.h"
-#include "s_union.h"
-#include "union.h"
-#include "value.h"
+#include "token_parser.h"
+
+#include <deque>
+#include <functional>
+#include <string>
+
+namespace SJParser {
+
+class Dispatcher {
+ public:
+  Dispatcher(TokenParser *parser);
+  void pushParser(TokenParser *parser);
+  void popParser();
+  bool emptyParsersStack();
+  void reset();
+
+  template <typename T> void on(T value);
+
+ protected:
+  std::deque<TokenParser *> _parsers;
+  TokenParser *_root_parser = nullptr;
+  std::function<void()> _on_completion;
+  std::string _error;
+};
+}  // namespace SJParser
+
+#include "impl/dispatcher.h"
