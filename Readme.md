@@ -21,7 +21,6 @@ This is an event-driven parser on steroids - you specify the expected json struc
 
 Also you can check the [Concepts](#concepts).
 
-[//]: # (end nodoc)
 ## Example
 
 ~~~cpp
@@ -103,7 +102,6 @@ int main() {
 
 For more examples, please see [tests](https://github.com/dhurum/sjparser/blob/master/tests).
 
-[//]: # (start nodoc)
 ## Building
 
 For building sjparser you will need:
