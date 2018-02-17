@@ -24,21 +24,41 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 namespace SJParser {
-
-/** Reaction Enum with error reaction options */
-enum class Reaction {
-  /** Throw an exception */
-  Error,
-  /** Ignore the error */
-  Ignore
-};
-
-/** @brief Option for object parsers
+/** @brief Member of object or union parsers specification.
  *
- * Additional options for Object, SAutoObject and SCustomObject
+ * This structure holds a specification of individual member for object and
+ * union parsers.
+ *
+ * @tparam NameType Type of member name
+ *
+ * @tparam ParserType Type of member parser
  */
-struct ObjectOptions {
-  /** How to react to a member, not specified in the arguments */
-  Reaction unknown_member = Reaction::Error;
+template <typename NameType, typename ParserType> struct Member {
+  /** Member name */
+  NameType name;
+  /** Member parser */
+  ParserType parser;
+
+  /** @brief Constructor
+   *
+   * @param [in] name Member name
+   *
+   * @param [in] parser Member parser, can be an lvalue reference or an rvalue.
+   */
+  Member(NameType name, ParserType &&parser);
 };
+
+template <typename ParserType>
+Member(const char *, ParserType &&)->Member<std::string, ParserType>;
+
+template <typename ParserType>
+Member(int, ParserType &&)->Member<int64_t, ParserType>;
+
+template <typename ParserType>
+Member(float, ParserType &&)->Member<double, ParserType>;
+
+template <typename NameType, typename ParserType>
+Member(NameType, ParserType &&)->Member<NameType, ParserType>;
 }  // namespace SJParser
+
+#include "impl/member.h"

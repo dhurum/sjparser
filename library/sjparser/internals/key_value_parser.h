@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "dispatcher.h"
 #include "ignore.h"
+#include "sjparser/member.h"
 #include "sjparser/options.h"
 #include "token_parser.h"
 
@@ -35,49 +36,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-// std::string can be constructed from {"x", "y"}, so this wrapper is used
-// instead
-class FieldName {
- public:
-  FieldName(std::string str);
-  FieldName(std::string_view str);
-  FieldName(const char *str);
-  operator const std::string &() const;
-  bool operator==(const FieldName &other) const;
-  const std::string &str() const;
-
- private:
-  std::string _str;
-};
-
-template <typename TypeFieldT, typename... Ts>
+template <typename NameType, typename... Ts>
 class KeyValueParser : public TokenParser {
  public:
-  template <typename T> struct FieldArgs {
-    using Args = typename T::Args;
+  using InternalNameType = TokenType<NameType>;
 
-    FieldArgs(const TypeFieldT &field, const Args &value = {});
-    template <typename U = T>
-    FieldArgs(const TypeFieldT &field, const typename U::ChildArgs &value);
-    template <typename U = TypeFieldT>
-    FieldArgs(
-        const char *field,
-        typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/
-        = 0);
-    template <typename U = TypeFieldT>
-    FieldArgs(
-        const std::string &field,
-        typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/
-        = 0);
-
-    TypeFieldT field;
-    Args value;
-  };
-  using ChildArgs = std::tuple<FieldArgs<Ts>...>;
-
-  using Options = ObjectOptions;
-
-  KeyValueParser(const ChildArgs &args, const Options &options = {});
+  KeyValueParser(std::tuple<Member<NameType, Ts>...> members,
+                 ObjectOptions options = {});
+  KeyValueParser(KeyValueParser &&other) noexcept;
 
   void setDispatcher(Dispatcher *dispatcher) noexcept override;
   void reset() override;
@@ -85,7 +51,7 @@ class KeyValueParser : public TokenParser {
   void on(MapStartT /*unused*/) override;
   void on(MapEndT /*unused*/) override;
 
-  void onField(const TypeFieldT &field);
+  void onMember(InternalNameType member);
 
   template <size_t n, typename T, typename... TDs> struct NthTypes {
    private:
@@ -101,9 +67,9 @@ class KeyValueParser : public TokenParser {
   };
 
   template <typename T, typename... TDs> struct NthTypes<0, T, TDs...> {
-    using ParserType = T;
+    using ParserType = std::decay_t<T>;
 
-    template <typename U = T> using ValueType = typename U::Type;
+    template <typename U = ParserType> using ValueType = typename U::Type;
 
    private:
     using HasValueType = uint8_t;
@@ -114,9 +80,13 @@ class KeyValueParser : public TokenParser {
 
    public:
     enum {
-      has_value_type = sizeof(valueTypeTest<T>(nullptr)) == sizeof(HasValueType)
+      has_value_type =
+          sizeof(valueTypeTest<ParserType>(nullptr)) == sizeof(HasValueType)
     };
   };
+
+  template <size_t n>
+  using ParserType = typename NthTypes<n, Ts...>::ParserType;
 
   // Returns NthTypes<n, Ts...>::template ValueType<> if it is available,
   // otherwise NthTypes<n, Ts...>::ParserType
@@ -127,26 +97,39 @@ class KeyValueParser : public TokenParser {
   template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 
  protected:
-  template <size_t, typename Args, typename...> struct Field {
-    Field(std::array<TokenParser *, sizeof...(Ts)> & /*fields_array*/,
-          std::unordered_map<TypeFieldT, TokenParser *> & /*fields_map*/,
-          const Args & /*args*/) {}
+  template <size_t, typename...> struct MemberParser {
+    MemberParser(
+        std::array<TokenParser *, sizeof...(Ts)> & /*parsers_array*/,
+        std::unordered_map<InternalNameType, TokenParser *> & /*parsers_map*/,
+        std::tuple<Member<NameType, Ts>...> & /*members*/) {}
+
+    MemberParser(
+        std::array<TokenParser *, sizeof...(Ts)> & /*parsers_array*/,
+        std::unordered_map<InternalNameType, TokenParser *> & /*parsers_map*/,
+        MemberParser && /*other*/) {}
   };
 
-  template <size_t n, typename Args, typename T, typename... TDs>
-  struct Field<n, Args, T, TDs...> : private Field<n + 1, Args, TDs...> {
-    Field(std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-          std::unordered_map<TypeFieldT, TokenParser *> &fields_map,
-          const Args &args);
+  template <size_t n, typename T, typename... TDs>
+  struct MemberParser<n, T, TDs...> : private MemberParser<n + 1, TDs...> {
+    MemberParser(
+        std::array<TokenParser *, sizeof...(Ts)> &parsers_array,
+        std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
+        std::tuple<Member<NameType, Ts>...> &members);
 
-    T _field;
+    MemberParser(
+        std::array<TokenParser *, sizeof...(Ts)> &parsers_array,
+        std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
+        MemberParser &&other);
+
+    T parser;
+    NameType name;
   };
 
-  std::array<TokenParser *, sizeof...(Ts)> _fields_array;
-  std::unordered_map<TypeFieldT, TokenParser *> _fields_map;
-  Field<0, ChildArgs, Ts...> _fields;
+  std::array<TokenParser *, sizeof...(Ts)> _parsers_array;
+  std::unordered_map<InternalNameType, TokenParser *> _parsers_map;
+  MemberParser<0, Ts...> _member_parsers;
   Ignore _ignore_parser;
-  Options _options;
+  ObjectOptions _options;
 };
 }  // namespace SJParser
 

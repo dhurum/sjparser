@@ -27,16 +27,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using namespace SJParser;
 
-class IgnoreTest : public Ignore {
- public:
-  using Args = bool;
-  IgnoreTest(const Args & /*unused*/) {}
-};
-
 TEST(Ignore, Boolean) {
   std::string buf(R"(true)");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -49,7 +43,7 @@ TEST(Ignore, Boolean) {
 TEST(Ignore, Integer) {
   std::string buf(R"(10)");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -62,7 +56,7 @@ TEST(Ignore, Integer) {
 TEST(Ignore, Double) {
   std::string buf(R"(1.3)");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -75,7 +69,7 @@ TEST(Ignore, Double) {
 TEST(Ignore, String) {
   std::string buf(R"("value")");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -88,7 +82,7 @@ TEST(Ignore, String) {
 TEST(Ignore, Null) {
   std::string buf(R"(null)");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -101,7 +95,7 @@ TEST(Ignore, Null) {
 TEST(Ignore, Reset) {
   std::string buf(R"(true)");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -120,7 +114,7 @@ TEST(Ignore, Object) {
   std::string buf(
       R"({"bool": true, "string": "value"})");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -145,7 +139,7 @@ TEST(Ignore, ObjectofObjects) {
   }
 })");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -166,7 +160,7 @@ TEST(Ignore, ObjectWithArray) {
   ]
 })");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -177,7 +171,7 @@ TEST(Ignore, ObjectWithArray) {
 TEST(Ignore, Array) {
   std::string buf(R"(["value1", "value2"])");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -189,7 +183,7 @@ TEST(Ignore, ArrayOfObjects) {
   std::string buf(
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -200,7 +194,7 @@ TEST(Ignore, ArrayOfObjects) {
 TEST(Ignore, ArrayOfSArrays) {
   std::string buf(R"([[true, true], [false, false]])");
 
-  Parser<IgnoreTest> parser;
+  Parser parser{Ignore{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -209,7 +203,7 @@ TEST(Ignore, ArrayOfSArrays) {
 }
 
 TEST(Ignore, UnexpectedMapKey) {
-  Parser<IgnoreTest, TestParser> parser;
+  Parser parser{Ignore{}, TypeHolder<TestParser>{}};
 
   auto test = [](TestParser *parser) {
     parser->dispatcher->on(MapKeyT{"test"});
@@ -226,7 +220,7 @@ TEST(Ignore, UnexpectedMapKey) {
 }
 
 TEST(Ignore, UnexpectedMapEnd) {
-  Parser<IgnoreTest, TestParser> parser;
+  Parser parser{Ignore{}, TypeHolder<TestParser>{}};
 
   auto test = [](TestParser *parser) { parser->dispatcher->on(MapEndT()); };
 
@@ -241,7 +235,7 @@ TEST(Ignore, UnexpectedMapEnd) {
 }
 
 TEST(Ignore, UnexpectedArrayEnd) {
-  Parser<IgnoreTest, TestParser> parser;
+  Parser parser{Ignore{}, TypeHolder<TestParser>{}};
 
   auto test = [](TestParser *parser) { parser->dispatcher->on(ArrayEndT()); };
 

@@ -30,7 +30,7 @@ using namespace SJParser;
 TEST(Value, Boolean) {
   std::string buf(R"(true)");
 
-  Parser<Value<bool>> parser;
+  Parser parser{Value<bool>{}};
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -48,7 +48,7 @@ TEST(Value, Boolean) {
 TEST(Value, Integer) {
   std::string buf(R"(10)");
 
-  Parser<Value<int64_t>> parser;
+  Parser parser{Value<int64_t>{}};
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -66,7 +66,7 @@ TEST(Value, Integer) {
 TEST(Value, Double) {
   std::string buf(R"(1.3)");
 
-  Parser<Value<double>> parser;
+  Parser parser{Value<double>{}};
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -84,7 +84,7 @@ TEST(Value, Double) {
 TEST(Value, String) {
   std::string buf(R"("value")");
 
-  Parser<Value<std::string>> parser;
+  Parser parser{Value<std::string>{}};
 
   ASSERT_FALSE(parser.parser().isSet());
 
@@ -102,7 +102,7 @@ TEST(Value, String) {
 TEST(Value, Null) {
   std::string buf(R"(null)");
 
-  Parser<Value<bool>> parser;
+  Parser parser{Value<bool>{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -113,7 +113,7 @@ TEST(Value, Null) {
 TEST(Value, Reset) {
   std::string buf(R"(true)");
 
-  Parser<Value<bool>> parser;
+  Parser parser{Value<bool>{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -132,7 +132,7 @@ TEST(Value, Reset) {
 TEST(Value, UnexpectedBoolean) {
   std::string buf(R"(true)");
 
-  Parser<Value<std::string>> parser;
+  Parser parser{Value<std::string>{}};
 
   try {
     parser.parse(buf);
@@ -155,7 +155,7 @@ TEST(Value, UnexpectedBoolean) {
 TEST(Value, UnexpectedString) {
   std::string buf(R"("error")");
 
-  Parser<Value<bool>> parser;
+  Parser parser{Value<bool>{}};
 
   try {
     parser.parse(buf);
@@ -178,7 +178,7 @@ TEST(Value, UnexpectedString) {
 TEST(Value, UnexpectedInteger) {
   std::string buf(R"(10)");
 
-  Parser<Value<bool>> parser;
+  Parser parser{Value<bool>{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   try {
@@ -202,7 +202,7 @@ TEST(Value, UnexpectedInteger) {
 TEST(Value, UnexpectedDouble) {
   std::string buf(R"(10.5)");
 
-  Parser<Value<bool>> parser;
+  Parser parser{Value<bool>{}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   try {
@@ -226,7 +226,7 @@ TEST(Value, UnexpectedDouble) {
 TEST(Value, UnexpectedMapStart) {
   std::string buf(R"({)");
 
-  Parser<Value<bool>> parser;
+  Parser parser{Value<bool>{}};
 
   try {
     parser.parse(buf);
@@ -247,7 +247,7 @@ TEST(Value, UnexpectedMapStart) {
 }
 
 TEST(Value, UnexpectedMapKey) {
-  Parser<Value<bool>, TestParser> parser;
+  Parser parser{Value<bool>{}, TypeHolder<TestParser>{}};
 
   auto test = [](TestParser *parser) {
     parser->dispatcher->on(MapKeyT{"test"});
@@ -264,7 +264,7 @@ TEST(Value, UnexpectedMapKey) {
 }
 
 TEST(Value, UnexpectedMapEnd) {
-  Parser<Value<bool>, TestParser> parser;
+  Parser parser{Value<bool>{}, TypeHolder<TestParser>{}};
 
   auto test = [](TestParser *parser) { parser->dispatcher->on(MapEndT()); };
 
@@ -281,7 +281,7 @@ TEST(Value, UnexpectedMapEnd) {
 TEST(Value, UnexpectedArrayStart) {
   std::string buf(R"([)");
 
-  Parser<Value<bool>> parser;
+  Parser parser{Value<bool>{}};
 
   try {
     parser.parse(buf);
@@ -302,7 +302,7 @@ TEST(Value, UnexpectedArrayStart) {
 }
 
 TEST(Value, UnexpectedArrayEnd) {
-  Parser<Value<bool>, TestParser> parser;
+  Parser parser{Value<bool>{}, TypeHolder<TestParser>{}};
 
   auto test = [](TestParser *parser) { parser->dispatcher->on(ArrayEndT()); };
 
@@ -317,7 +317,7 @@ TEST(Value, UnexpectedArrayEnd) {
 }
 
 TEST(Value, UnsetValue) {
-  Parser<Value<bool>> parser;
+  Parser parser{Value<bool>{}};
 
   ASSERT_FALSE(parser.parser().isSet());
   try {
@@ -339,7 +339,7 @@ TEST(Value, ValueWithCallback) {
     return true;
   };
 
-  Parser<Value<std::string>> parser(elementCb);
+  Parser parser{Value<std::string>{elementCb}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -354,7 +354,9 @@ TEST(Value, ValueWithCallbackError) {
 
   auto elementCb = [&](const std::string &) { return false; };
 
-  Parser<Value<std::string>> parser(elementCb);
+  Parser parser{Value<std::string>{}};
+
+  parser.parser().setFinishCallback(elementCb);
 
   try {
     parser.parse(buf);

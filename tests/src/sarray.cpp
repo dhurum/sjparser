@@ -29,7 +29,7 @@ using namespace SJParser;
 TEST(SArray, Empty) {
   std::string buf(R"([])");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -42,7 +42,7 @@ TEST(SArray, Empty) {
 TEST(SArray, Null) {
   std::string buf(R"(null)");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -53,7 +53,7 @@ TEST(SArray, Null) {
 TEST(SArray, Reset) {
   std::string buf(R"([true])");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -72,7 +72,7 @@ TEST(SArray, Reset) {
 TEST(SArray, SArrayOfBooleans) {
   std::string buf(R"([true, false])");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -87,7 +87,7 @@ TEST(SArray, SArrayOfBooleans) {
 TEST(SArray, SArrayOfIntegers) {
   std::string buf(R"([10, 11])");
 
-  Parser<SArray<Value<int64_t>>> parser;
+  Parser parser{SArray{Value<int64_t>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -102,7 +102,7 @@ TEST(SArray, SArrayOfIntegers) {
 TEST(SArray, SArrayOfDoubles) {
   std::string buf(R"([10.5, 11.2])");
 
-  Parser<SArray<Value<double>>> parser;
+  Parser parser{SArray{Value<double>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -117,7 +117,7 @@ TEST(SArray, SArrayOfDoubles) {
 TEST(SArray, SArrayOfStrings) {
   std::string buf(R"(["value1", "value2"])");
 
-  Parser<SArray<Value<std::string>>> parser;
+  Parser parser{SArray{Value<std::string>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -132,7 +132,7 @@ TEST(SArray, SArrayOfStrings) {
 TEST(SArray, SArrayWithNull) {
   std::string buf(R"([null])");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -145,7 +145,7 @@ TEST(SArray, SArrayWithNull) {
 TEST(SArray, SArrayWithNullAndValuse) {
   std::string buf(R"([null, true, null, false])");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -160,7 +160,7 @@ TEST(SArray, SArrayWithNullAndValuse) {
 TEST(SArray, UnexpectedBoolean) {
   std::string buf(R"(true)");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   try {
     parser.parse(buf);
@@ -183,7 +183,7 @@ TEST(SArray, UnexpectedBoolean) {
 TEST(SArray, UnexpectedInteger) {
   std::string buf(R"(10)");
 
-  Parser<SArray<Value<int64_t>>> parser;
+  Parser parser{SArray{Value<int64_t>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   try {
@@ -207,7 +207,7 @@ TEST(SArray, UnexpectedInteger) {
 TEST(SArray, UnexpectedDouble) {
   std::string buf(R"(10.5)");
 
-  Parser<SArray<Value<double>>> parser;
+  Parser parser{SArray{Value<double>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   try {
@@ -231,7 +231,7 @@ TEST(SArray, UnexpectedDouble) {
 TEST(SArray, UnexpectedString) {
   std::string buf(R"("value")");
 
-  Parser<SArray<Value<std::string>>> parser;
+  Parser parser{SArray{Value<std::string>{}}};
 
   try {
     parser.parse(buf);
@@ -254,7 +254,7 @@ TEST(SArray, UnexpectedString) {
 TEST(SArray, SArrayWithUnexpectedBoolean) {
   std::string buf(R"([true])");
 
-  Parser<SArray<Value<std::string>>> parser;
+  Parser parser{SArray{Value<std::string>{}}};
 
   try {
     parser.parse(buf);
@@ -277,7 +277,7 @@ TEST(SArray, SArrayWithUnexpectedBoolean) {
 TEST(SArray, SArrayWithUnexpectedInteger) {
   std::string buf(R"([10])");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   try {
     parser.parse(buf);
@@ -300,7 +300,7 @@ TEST(SArray, SArrayWithUnexpectedInteger) {
 TEST(SArray, SArrayWithUnexpectedDouble) {
   std::string buf(R"([10.5])");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   try {
     parser.parse(buf);
@@ -323,7 +323,7 @@ TEST(SArray, SArrayWithUnexpectedDouble) {
 TEST(SArray, SArrayWithUnexpectedString) {
   std::string buf(R"(["value"])");
 
-  Parser<SArray<Value<bool>>> parser;
+  Parser parser{SArray{Value<bool>{}}};
 
   try {
     parser.parse(buf);
@@ -348,7 +348,7 @@ TEST(SArray, SArrayWithElementCallbackError) {
 
   auto elementCb = [&](const bool &) { return false; };
 
-  Parser<SArray<Value<bool>>> parser(elementCb);
+  Parser parser{SArray{Value<bool>{elementCb}}};
 
   try {
     parser.parse(buf);
@@ -377,7 +377,7 @@ TEST(SArray, SArrayWithCallback) {
     return true;
   };
 
-  Parser<SArray<Value<bool>>> parser(arrayCb);
+  Parser parser{SArray{Value<bool>{}, arrayCb}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -398,7 +398,9 @@ TEST(SArray, SArrayWithCallbackError) {
 
   auto arrayCb = [&](const std::vector<bool> &) { return false; };
 
-  Parser<SArray<Value<bool>>> parser(arrayCb);
+  Parser parser{SArray{Value<bool>{}}};
+
+  parser.parser().setFinishCallback(arrayCb);
 
   try {
     parser.parse(buf);
@@ -418,119 +420,44 @@ TEST(SArray, SArrayWithCallbackError) {
   }
 }
 
-TEST(SArray, SArrayWithArgsStruct) {
-  std::string buf(R"([true, false])");
-  std::vector<bool> values;
-
-  auto elementCb = [&](const bool &value) {
-    values.push_back(value);
-    return true;
-  };
-
-  using SArrayParser = SArray<Value<bool>>;
-
-  SArrayParser::Args array_args = {elementCb};
-
-  Parser<SArrayParser> parser(array_args);
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ(true, parser.parser().get()[0]);
-  ASSERT_EQ(false, parser.parser().get()[1]);
-
-  ASSERT_EQ(2, values.size());
-  ASSERT_EQ(true, values[0]);
-  ASSERT_EQ(false, values[1]);
-
-  ASSERT_TRUE(parser.parser().isSet());
-}
-
-TEST(SArray, UnexpectedSObject) {
-  std::string buf(
-      R"({"key": "value"})");
-
-  Parser<SArray<SObject<Value<std::string>>>> parser("key");
-
-  try {
-    parser.parse(buf);
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected token map start", e.sjparserError());
-
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-                                       {"key": "value"}
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
-TEST(SArray, SArrayWithUnexpectedSObject) {
-  std::string buf(
-      R"([{"key2": "value"}])");
-
-  Parser<SArray<SObject<Value<std::string>>>> parser("key");
-
-  try {
-    parser.parse(buf);
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected field key2", e.sjparserError());
-
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-                                [{"key2": "value"}]
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
 TEST(SArray, SArrayOfSCustomObjects) {
   std::string buf(
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
 
   struct ObjectStruct {
-    std::string field1;
-    int64_t field2;
+    std::string member1;
+    int64_t member2;
   };
 
-  using ObjectParser =
-      SObject<ObjectStruct, Value<std::string>, Value<int64_t>>;
+  Parser parser{
+      SArray{SCustomObject{TypeHolder<ObjectStruct>{},
+                           std::tuple{Member{"key", Value<std::string>{}},
+                                      Member{"key2", Value<int64_t>{}}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType::ParserType &parser,
+                      ObjectStruct &value) {
     value = {parser.pop<0>(), parser.pop<1>()};
     return true;
   };
 
-  Parser<SArray<ObjectParser>> parser({{"key", "key2"}, objectCb});
+  parser.parser().parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ("value", parser.parser().get()[0].field1);
-  ASSERT_EQ(10, parser.parser().get()[0].field2);
-  ASSERT_EQ("value2", parser.parser().get()[1].field1);
-  ASSERT_EQ(20, parser.parser().get()[1].field2);
+  ASSERT_EQ("value", parser.parser().get()[0].member1);
+  ASSERT_EQ(10, parser.parser().get()[0].member2);
+  ASSERT_EQ("value2", parser.parser().get()[1].member1);
+  ASSERT_EQ(20, parser.parser().get()[1].member2);
 }
 
 TEST(SArray, SArrayOfSAutoObjects) {
   std::string buf(
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
 
-  using ObjectParser = SObject<Value<std::string>, Value<int64_t>>;
-
-  Parser<SArray<ObjectParser>> parser({"key", "key2"});
+  Parser parser{SArray{SAutoObject{std::tuple{
+      Member{"key", Value<std::string>{}}, Member{"key2", Value<int64_t>{}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -546,9 +473,10 @@ TEST(SArray, SArrayOfSAutoObjectsWithDefaultValues) {
   std::string buf(
       R"([{"key": "value"}, {"key2": 20}])");
 
-  using ObjectParser = SObject<Value<std::string>, Value<int64_t>>;
-
-  Parser<SArray<ObjectParser>> parser({{"key", "key2"}, {"test", 10}});
+  Parser parser{
+      SArray{SAutoObject{std::tuple{Member{"key", Value<std::string>{}},
+                                    Member{"key2", Value<int64_t>{}}},
+                         {"test", 10}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -563,7 +491,7 @@ TEST(SArray, SArrayOfSAutoObjectsWithDefaultValues) {
 TEST(SArray, SArrayOfSArrays) {
   std::string buf(R"([[true, true], [false, false]])");
 
-  Parser<SArray<SArray<Value<bool>>>> parser;
+  Parser parser{SArray{SArray{Value<bool>{}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -582,11 +510,12 @@ TEST(SArray, SArrayOfStandaloneSUnions) {
   std::string buf(
       R"([{"type": "str", "key": "value"}, {"type": "int", "key": 10}])");
 
-  using UnionParser =
-      SUnion<std::string, SObject<Value<std::string>>, SObject<Value<int64_t>>>;
-
-  Parser<SArray<UnionParser>> parser(
-      {"type", {{"str", "key"}, {"int", "key"}}});
+  Parser parser{SArray{SUnion{
+      TypeHolder<std::string>{}, "type",
+      std::tuple{Member{"str", SAutoObject{std::tuple{
+                                   Member{"key", Value<std::string>{}}}}},
+                 Member{"int", SAutoObject{std::tuple{
+                                   Member{"key", Value<int64_t>{}}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -601,12 +530,15 @@ TEST(SArray, SArrayOfEmbeddedSUnions) {
       R"([{"id": 1, "type": "str", "key": "value"},
           {"id": 2, "type": "int", "key": 10}])");
 
-  using ObjectParser =
-      SObject<Value<int64_t>, SUnion<std::string, SObject<Value<std::string>>,
-                                     SObject<Value<int64_t>>>>;
-
-  Parser<SArray<ObjectParser>> parser(
-      {{"id", {"type", {{"str", "key"}, {"int", "key"}}}}});
+  Parser parser{SArray{SAutoObject{std::tuple{
+      Member{"id", Value<int64_t>{}},
+      Member{"type",
+             SUnion{TypeHolder<std::string>{},
+                    std::tuple{
+                        Member{"str", SAutoObject{std::tuple{Member{
+                                          "key", Value<std::string>{}}}}},
+                        Member{"int", SAutoObject{std::tuple{Member{
+                                          "key", Value<int64_t>{}}}}}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -623,7 +555,7 @@ TEST(SArray, SArrayOfEmbeddedSUnions) {
 TEST(SArray, Move) {
   std::string buf(R"(["value1", "value2"])");
 
-  Parser<SArray<Value<std::string>>> parser;
+  Parser parser{SArray{Value<std::string>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -634,4 +566,23 @@ TEST(SArray, Move) {
   ASSERT_EQ(2, value.size());
   ASSERT_EQ("value1", value[0]);
   ASSERT_EQ("value2", value[1]);
+}
+
+TEST(SArray, SArrayWithParserReference) {
+  std::string buf(R"([[13, 15, 16]])");
+
+  SArray inner_sarray{Value<int64_t>{}};
+
+  Parser parser{SArray{inner_sarray}};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(1, parser.parser().get().size());
+  ASSERT_EQ(3, parser.parser().get()[0].size());
+  ASSERT_EQ(13, parser.parser().get()[0][0]);
+  ASSERT_EQ(15, parser.parser().get()[0][1]);
+  ASSERT_EQ(16, parser.parser().get()[0][2]);
+
+  ASSERT_EQ(&(parser.parser().parser()), &inner_sarray);
 }

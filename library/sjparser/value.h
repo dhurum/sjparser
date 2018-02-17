@@ -31,8 +31,7 @@ namespace SJParser {
 
 /** @brief Plain value parser.
  *
- * @tparam T JSON value type, can be std::string, int64_t, bool or double
- */
+ * @tparam T JSON value type, can be std::string, int64_t, bool or double */
 
 template <typename T> class Value : public TokenParser {
  public:
@@ -40,20 +39,31 @@ template <typename T> class Value : public TokenParser {
    */
   using Type = T;
 
-  /** Constructor argument type. */
-  using Args = std::function<bool(const Type &)>;
+  /** Finish callback type. */
+  using Callback = std::function<bool(const Type &)>;
 
   /** @brief Constructor.
    *
    * @param [in] on_finish (optional) Callback, that will be called after a
    * value is parsed.
-   *
    * The callback will be called with a const reference to a parsed value as an
    * argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  Value(Callback on_finish = nullptr);
+
+  /** Move constructor. */
+  Value(Value &&other) noexcept;
+
+  /** @brief Finish callback setter.
+   *
+   * @param [in] on_finish Callback, that will be called after a
+   * value is parsed.
+   * The callback will be called with a const reference to a parsed value as an
    *
    * If the callback returns false, parsing will be stopped with an error.
    */
-  Value(const Args &on_finish = nullptr);
+  void setFinishCallback(Callback on_finish);
 
 #ifdef DOXYGEN_ONLY
   /** @brief Check if the parser has a value.
@@ -88,7 +98,7 @@ template <typename T> class Value : public TokenParser {
   void finish() override;
 
   Type _value;
-  Args _on_finish;
+  Callback _on_finish;
 };
 }  // namespace SJParser
 

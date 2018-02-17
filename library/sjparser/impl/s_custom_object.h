@@ -25,43 +25,59 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-template <typename T, typename... Ts>
-SCustomObject<T, Ts...>::Args::Args(
-    const ChildArgs &args, const Options &options,
-    const std::function<bool(SCustomObject<T, Ts...> &, T &)> &on_finish)
-    : args(args), options(options), on_finish(on_finish) {}
+template <typename TypeT, typename... Ts>
+template <typename CallbackT>
+SCustomObject<TypeT, Ts...>::SCustomObject(
+    TypeHolder<TypeT> /*type*/, std::tuple<Member<std::string, Ts>...> members,
+    CallbackT on_finish,
+    std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
+    : Object<Ts...>(std::move(members), {}), _on_finish(std::move(on_finish)) {}
 
-template <typename T, typename... Ts>
-SCustomObject<T, Ts...>::Args::Args(
-    const ChildArgs &args,
-    const std::function<bool(SCustomObject<T, Ts...> &, T &)> &on_finish)
-    : args(args), on_finish(on_finish) {}
+template <typename TypeT, typename... Ts>
+template <typename CallbackT>
+SCustomObject<TypeT, Ts...>::SCustomObject(
+    TypeHolder<TypeT> /*type*/, std::tuple<Member<std::string, Ts>...> members,
+    ObjectOptions options, CallbackT on_finish)
+    : Object<Ts...>(std::move(members), options),
+      _on_finish(std::move(on_finish)) {
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
 
-template <typename T, typename... Ts>
-SCustomObject<T, Ts...>::SCustomObject(const Args &args)
-    : Object<Ts...>({args.args, args.options}), _on_finish(args.on_finish) {}
+template <typename TypeT, typename... Ts>
+SCustomObject<TypeT, Ts...>::SCustomObject(SCustomObject &&other) noexcept
+    : Object<Ts...>(std::move(other)),
+      _on_finish(std::move(other._on_finish)) {}
 
-template <typename T, typename... Ts>
-const typename SCustomObject<T, Ts...>::Type &SCustomObject<T, Ts...>::get()
-    const {
+template <typename TypeT, typename... Ts>
+void SCustomObject<TypeT, Ts...>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
+
+template <typename TypeT, typename... Ts>
+const typename SCustomObject<TypeT, Ts...>::Type &
+SCustomObject<TypeT, Ts...>::get() const {
   checkSet();
   return _value;
 }
 
-template <typename T, typename... Ts>
-typename SCustomObject<T, Ts...>::Type &&SCustomObject<T, Ts...>::pop() {
+template <typename TypeT, typename... Ts>
+typename SCustomObject<TypeT, Ts...>::Type &&
+SCustomObject<TypeT, Ts...>::pop() {
   checkSet();
   _set = false;
   return std::move(_value);
 }
 
-template <typename T, typename... Ts> void SCustomObject<T, Ts...>::finish() {
+template <typename TypeT, typename... Ts>
+void SCustomObject<TypeT, Ts...>::finish() {
   if (!_on_finish(*this, _value)) {
     throw std::runtime_error("Callback returned false");
   }
 }
 
-template <typename T, typename... Ts> void SCustomObject<T, Ts...>::reset() {
+template <typename TypeT, typename... Ts>
+void SCustomObject<TypeT, Ts...>::reset() {
   Object<Ts...>::KVParser::reset();
   _value = Type();
 }

@@ -23,8 +23,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "internals/token_parser.h"
 #include "internals/dispatcher.h"
+#include "internals/token_parser.h"
 
 #include <functional>
 
@@ -32,108 +32,87 @@ namespace SJParser {
 
 /** @brief %Map parser.
  *
- * Parses an object where each field is of type @ref Map_T "T", and field
+ * Parses an object where each member value has type @ref Map_T "T", and member
  * name represents map key.
  *
- * @tparam T Underlying parser type.
+ * @tparam T Element's value parser type.
  * @anchor Map_T
  */
 
 template <typename T> class Map : public TokenParser {
  public:
-  /** Arguments for the underlying parser */
-  using ChildArgs = typename T::Args;
+  /** Element's value parser type. */
+  using ParserType = std::decay_t<T>;
 
-  /** @cond INTERNAL Underlying parser type */
-  using ParserType = T;
-  /** @endcond */
+  /** Element callback type. */
+  using ElementCallback =
+      std::function<bool(const std::string &, ParserType &)>;
 
-  /** Child arguments for the underlying type */
-  template <typename U = Map<T>>
-  using GrandChildArgs = typename U::ParserType::ChildArgs;
+  /** Finish callback type. */
+  using Callback = std::function<bool(Map<T> &)>;
 
-  /** @brief Struct with arguments for the Map @ref Map() "constructor". */
-  struct Args {
-    /** @param [in] args (optional) Sets #args.
-     *
-     * @param[in] on_key (optional) Sets #on_key.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args = {},
-         const std::function<bool(const std::string &, T &)> &on_key = nullptr,
-         const std::function<bool(Map<T> &)> &on_finish = nullptr);
-
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args, const std::function<bool(Map<T> &)> &on_finish);
-
-    /** @param[in] on_key Sets #on_key.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const std::function<bool(const std::string &, T &)> &on_key,
-         const std::function<bool(Map<T> &)> &on_finish = nullptr);
-
-    /** @param[in] on_finish Sets #on_finish.
-     */
-    Args(const std::function<bool(Map<T> &)> &on_finish);
-
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] on_key (optional) Sets #on_key.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    template <typename U = Map<T>>
-    Args(const GrandChildArgs<U> &args,
-         const std::function<bool(const std::string &, T &)> &on_key = nullptr,
-         const std::function<bool(Map<T> &)> &on_finish = nullptr);
-
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] on_finish Sets #on_finish.
-     */
-    template <typename U = Map<T>>
-    Args(const GrandChildArgs<U> &args,
-         const std::function<bool(Map<T> &)> &on_finish);
-
-    /** Arguments for the underlying parser */
-    ChildArgs args;
-
-    /** Callback, that will be called after each key's value is parsed.
-     *
-     * The callback will be called with a field name and a reference to the
-     * child parser as arguments.
-     *
-     * If the callback returns false, parsing will be stopped with an error.
-     */
-    std::function<bool(const std::string &, T &)> on_key;
-
-    /** Callback, that will be called after an object is parsed.
-     *
-     * The callback will be called with a reference to the parser as an
-     * argument.
-     * This reference is mostly useless, it's main purpose it to help the
-     * compiler.
-     *
-     * If the callback returns false, parsing will be stopped with an error.
-     */
-    std::function<bool(Map<T> &)> on_finish;
-  };
-
-  /** @brief Map constructor.
+  /** @brief Constructor.
    *
-   * @param [in] args Args stucture.
-   * If you do not specify @ref Args::on_finish "on_finish" and
-   * @ref Args::on_key "on_key" callbacks, you can pass a
-   * @ref Args::args "underlying parser arguments" directly into the
-   * constructor.
+   * @param [in] parser %Parser for map elements values, can be an lvalue
+   * reference or an rvalue.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * map is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
    */
-  Map(const Args &args);
-  Map(const Map &) = delete;
+  template <typename CallbackT = std::nullptr_t>
+  Map(T &&parser, CallbackT on_finish = nullptr,
+      std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
+          * /*unused*/
+      = 0);
+
+  /** @brief Constructor.
+   *
+   * @param [in] parser %Parser for map elements values, can be an lvalue
+   * reference or an rvalue.
+   *
+   * @param [in] on_element Callback, that will be called after an element of
+   * the map is parsed.
+   * The callback will be called with a map key and a reference to the parser as
+   * arguments.
+   * If the callback returns false, parsing will be stopped with an error.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * array is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  template <typename ElementCallbackT, typename CallbackT = std::nullptr_t>
+  Map(T &&parser, ElementCallbackT on_element, CallbackT on_finish = nullptr);
+
+  /** Move constructor. */
+  Map(Map &&other) noexcept;
+
+  /** @brief Element callback setter.
+   *
+   * @param [in] on_element Callback, that will be called after an element of
+   * the map is parsed.
+   * The callback will be called with a map key and a reference to the parser as
+   * arguments.
+   * If the callback returns false, parsing will be stopped with an error.
+   * */
+  void setElementCallback(ElementCallback on_element);
+
+  /** @brief Finish callback setter.
+   *
+   * @param [in] on_finish Callback, that will be called after the
+   * map is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  void setFinishCallback(Callback on_finish);
+
+  /** @brief Elements value parser getter.
+   *
+   * @return Reference to the elements parser.
+   */
+  T &parser();
 
   /** @cond INTERNAL Internal */
   void setDispatcher(Dispatcher *dispatcher) noexcept override;
@@ -149,9 +128,15 @@ template <typename T> class Map : public TokenParser {
 
   T _parser;
   std::string _current_key;
-  std::function<bool(const std::string &, T &)> _on_key;
+  std::function<bool(const std::string &, T &)> _on_element;
   std::function<bool(Map<T> &)> _on_finish;
 };
+
+template <template <typename> typename U, typename T> Map(U<T> &&)->Map<U<T>>;
+
+template <template <typename> typename U, typename T> Map(U<T> &)->Map<U<T> &>;
+
+template <typename T> Map(T &&)->Map<T>;
 }  // namespace SJParser
 
 #include "impl/map.h"

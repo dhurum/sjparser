@@ -21,24 +21,25 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
+#include <gtest/gtest.h>
+#include "sjparser/sjparser.h"
 
-namespace SJParser {
+using namespace SJParser;
 
-/** Reaction Enum with error reaction options */
-enum class Reaction {
-  /** Throw an exception */
-  Error,
-  /** Ignore the error */
-  Ignore
-};
+TEST(Parser, ParserWithParserReference) {
+  std::string buf(R"([13, 15, 16])");
 
-/** @brief Option for object parsers
- *
- * Additional options for Object, SAutoObject and SCustomObject
- */
-struct ObjectOptions {
-  /** How to react to a member, not specified in the arguments */
-  Reaction unknown_member = Reaction::Error;
-};
-}  // namespace SJParser
+  SArray sarray{Value<int64_t>{}};
+
+  Parser parser{sarray};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(3, sarray.get().size());
+  ASSERT_EQ(13, sarray.get()[0]);
+  ASSERT_EQ(15, sarray.get()[1]);
+  ASSERT_EQ(16, sarray.get()[2]);
+
+  ASSERT_EQ(&(parser.parser()), &sarray);
+}

@@ -28,9 +28,7 @@ namespace SJParser {
 
 class TestParser {
  public:
-  void run(std::function<void(TestParser*)> test) {
-    test(this);
-  }
+  void run(std::function<void(TestParser *)> test) { test(this); }
   void setTokenParser(TokenParser *parser) {
     dispatcher = std::make_unique<Dispatcher>(parser);
   }

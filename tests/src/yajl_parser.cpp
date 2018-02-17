@@ -34,7 +34,7 @@ TEST(YajlParser, OnUnknownException) {
     return true;
   };
 
-  Parser<Value<std::string>> parser(elementCb);
+  Parser parser{Value<std::string>{elementCb}};
 
   try {
     parser.parse(buf);
@@ -58,14 +58,12 @@ class TestParser : public TokenParser {
   void finish() override {}
   void on(NullT /*unused*/) {}
   struct Args {};
-
-  TestParser(Args /*unused*/) {}
 };
 
 TEST(YajlParser, NoneEmtyParsersStackOnFinish) {
   std::string buf(R"(null)");
 
-  Parser<TestParser> parser;
+  Parser parser{TestParser{}};
   parser.parse(buf);
 
   try {

@@ -31,74 +31,66 @@ namespace SJParser {
 
 /** @brief %Array parser.
  *
- * @tparam T Underlying parser type.
+ * @tparam T Elements parser type.
  */
 
 template <typename T> class Array : public ArrayParser {
  public:
-  /** Arguments for the underlying parser */
-  using ChildArgs = typename T::Args;
+  /** Elements parser type. */
+  using ParserType = std::decay_t<T>;
 
-  /** @cond INTERNAL Underlying parser type */
-  using ParserType = T;
-  /** @endcond */
+  /** Finish callback type. */
+  using Callback = std::function<bool(Array<T> &)>;
 
-  /** Child arguments for the underlying type */
-  template <typename U = Array<T>>
-  using GrandChildArgs = typename U::ParserType::ChildArgs;
-
-  /** @brief Struct with arguments for the Array @ref Array() "constructor". */
-  struct Args {
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args,
-         const std::function<bool(Array<T> &)> &on_finish = nullptr);
-
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    template <typename U = Array<T>>
-    Args(const GrandChildArgs<U> &args,
-         const std::function<bool(Array<T> &)> &on_finish = nullptr);
-
-    /** Arguments for the underlying parser */
-    ChildArgs args;
-
-    /** Callback, that will be called after an object is parsed.
-     *
-     * The callback will be called with a reference to the parser as an
-     * argument.
-     * This reference is mostly useless, it's main purpose it to help the
-     * compiler.
-     *
-     * If the callback returns false, parsing will be stopped with an error.
-     */
-    std::function<bool(Array<T> &)> on_finish;
-  };
-
-  /** @brief Array constructor.
+  /** @brief Constructor.
    *
-   * @param [in] args Args stucture.
-   * If you do not specify @ref Args::on_finish "on_finish" callback, you can
-   * pass a @ref Args::args "underlying parser arguments" directly into the
-   * constructor.
+   * @param [in] parser %Parser for array elements, can be an lvalue reference
+   * or an rvalue.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * array is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
    */
-  Array(const Args &args);
-  Array(const Array &) = delete;
+  template <typename CallbackT = std::nullptr_t>
+  Array(T &&parser, CallbackT on_finish = nullptr);
+
+  /** Move constructor. */
+  Array(Array &&other) noexcept;
+
+  /** @brief Finish callback setter.
+   *
+   * @param [in] on_finish Callback, that will be called after the
+   * array is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  void setFinishCallback(Callback on_finish);
+
+  /** @brief Elements parser getter.
+   *
+   * @return Reference to the elements parser.
+   */
+  T &parser();
 
  protected:
-  /** @cond INTERNAL Elements parser */
+  /** @cond INTERNAL Elements parser. */
   T _parser;
   /** @endcond */
 
  private:
   void finish() override;
 
-  std::function<bool(Array<T> &)> _on_finish;
+  Callback _on_finish;
 };
+
+template <template <typename> typename U, typename T>
+Array(U<T> &&)->Array<U<T>>;
+
+template <template <typename> typename U, typename T>
+Array(U<T> &)->Array<U<T> &>;
+
+template <typename T> Array(T &&)->Array<T>;
 }  // namespace SJParser
 
 #include "impl/array.h"

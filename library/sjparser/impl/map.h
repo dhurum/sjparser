@@ -27,41 +27,43 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace SJParser {
 
 template <typename T>
-Map<T>::Args::Args(const ChildArgs &args,
-                   const std::function<bool(const std::string &, T &)> &on_key,
-                   const std::function<bool(Map<T> &)> &on_finish)
-    : args(args), on_key(on_key), on_finish(on_finish) {}
+template <typename CallbackT>
+Map<T>::Map(
+    T &&parser, CallbackT on_finish,
+    std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
+    : _parser(std::forward<T>(parser)), _on_finish(std::move(on_finish)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in Map");
+}
 
 template <typename T>
-Map<T>::Args::Args(const ChildArgs &args,
-                   const std::function<bool(Map<T> &)> &on_finish)
-    : args(args), on_key(nullptr), on_finish(on_finish) {}
+template <typename ElementCallbackT, typename CallbackT>
+Map<T>::Map(T &&parser, ElementCallbackT on_element, CallbackT on_finish)
+    : _parser(std::forward<T>(parser)),
+      _on_element(std::move(on_element)),
+      _on_finish(std::move(on_finish)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in Map");
+}
 
 template <typename T>
-Map<T>::Args::Args(const std::function<bool(const std::string &, T &)> &on_key,
-                   const std::function<bool(Map<T> &)> &on_finish)
-    : args({}), on_key(on_key), on_finish(on_finish) {}
+Map<T>::Map(Map &&other) noexcept
+    : _parser(std::forward<T>(other._parser)),
+      _on_element(std::move(other._on_element)),
+      _on_finish(std::move(other._on_finish)) {}
 
 template <typename T>
-Map<T>::Args::Args(const std::function<bool(Map<T> &)> &on_finish)
-    : args({}), on_key(nullptr), on_finish(on_finish) {}
+void Map<T>::setElementCallback(ElementCallback on_element) {
+  _on_element = on_element;
+}
 
-template <typename T>
-template <typename U>
-Map<T>::Args::Args(const GrandChildArgs<U> &args,
-                   const std::function<bool(const std::string &, T &)> &on_key,
-                   const std::function<bool(Map<T> &)> &on_finish)
-    : args(args), on_key(on_key), on_finish(on_finish) {}
+template <typename T> void Map<T>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
 
-template <typename T>
-template <typename U>
-Map<T>::Args::Args(const GrandChildArgs<U> &args,
-                   const std::function<bool(Map<T> &)> &on_finish)
-    : args(args), on_key(nullptr), on_finish(on_finish) {}
-
-template <typename T>
-Map<T>::Map(const Args &args)
-    : _parser(args.args), _on_key(args.on_key), _on_finish(args.on_finish) {}
+template <typename T> T &Map<T>::parser() {
+  return _parser;
+}
 
 template <typename T>
 void Map<T>::setDispatcher(Dispatcher *dispatcher) noexcept {
@@ -83,8 +85,8 @@ template <typename T> void Map<T>::on(MapEndT /*unused*/) {
 }
 
 template <typename T> void Map<T>::childParsed() {
-  if (_on_key && !_on_key(_current_key, _parser)) {
-    throw std::runtime_error("Key callback returned false");
+  if (_on_element && !_on_element(_current_key, _parser)) {
+    throw std::runtime_error("Element callback returned false");
   }
 }
 

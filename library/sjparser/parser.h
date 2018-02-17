@@ -23,46 +23,36 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "type_holder.h"
 #include "yajl_parser.h"
 
 namespace SJParser {
 
 /** @brief Main parser.
  *
- * @tparam T Root parser (Value, Object, SObject, Union, Array, SArray)
+ * @tparam T Root parser (Value, Object, SAutoObject, SCustomObject Union,
+ * SUnion, Array, SArray)
  * @anchor Parser_T
  *
- * @tparam Impl Underlying parser implementation, the default one is YajlParser,
- * a YAJL parser adapter. This class inherits from the implementation, so please
- * refer to it's documentation for API details.
+ * @tparam ImplHolder Underlying parser implementation, the default one is
+ * YajlParser, a YAJL parser adapter. This class inherits from the
+ * implementation, so please refer to it's documentation for API details.
  */
 
-template <typename T, typename Impl = YajlParser> class Parser : public Impl {
+template <typename T, typename ImplHolder = TypeHolder<YajlParser>>
+class Parser : public ImplHolder::Type {
  public:
-  /** @brief Parser constructor.
-   *
-   * @param [in] args Takes same arguments as the @ref Parser_T "T" does.
-   */
-  Parser(const typename T::Args &args = {});
+  /** Root parser type. */
+  using ParserType = std::decay_t<T>;
 
-  /** @brief Parser constructor.
+  /** @brief Constructor.
    *
-   * @param [in] args Takes same arguments as the @ref Parser_T "T" does.
-   */
-  template <typename U = T> Parser(const typename U::ChildArgs &args);
-
-  /** @brief Parser constructor.
+   * @param [in] parser Root parser, can be an lvalue reference or an rvalue.
    *
-   * @param [in] args Takes same arguments as the @ref Parser_T "T" does.
+   * @param [in] implementation Implementation class, please use a TypeHolder
+   * wrapper for it.
    */
-  template <typename U = T>
-  Parser(const typename U::template GrandChildArgs<U> &args);
-
-  /** @brief Parser constructor.
-   *
-   * @param [in] callback Takes same arguments as the @ref Parser_T "T" does.
-   */
-  template <typename U = T> Parser(const typename U::CallbackType &callback);
+  Parser(T &&parser, ImplHolder implementation = TypeHolder<YajlParser>{});
 
   /** @brief Root parser getter.
    *
@@ -73,6 +63,8 @@ template <typename T, typename Impl = YajlParser> class Parser : public Impl {
  private:
   T _parser;
 };
+
+template <typename T> Parser(T &&)->Parser<T>;
 }  // namespace SJParser
 
 #include "impl/parser.h"

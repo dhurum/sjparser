@@ -435,7 +435,7 @@ LOOKUP_CACHE_SIZE      = 0
 # normally produced when WARNINGS is set to YES.
 # The default value is: NO.
 
-EXTRACT_ALL            = NO
+EXTRACT_ALL            = YES
 
 # If the EXTRACT_PRIVATE tag is set to YES, all private members of a class will
 # be included in the documentation.
@@ -790,21 +790,22 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = @SJPARSER_SOURCE_DIR@/sjparser/sjparser.h \
-                         @SJPARSER_SOURCE_DIR@/sjparser/yajl_parser.h \
+INPUT                  = @SJPARSER_SOURCE_DIR@/sjparser/s_custom_object.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/sjparser.h \
                          @SJPARSER_SOURCE_DIR@/sjparser/parsing_error.h \
-                         @SJPARSER_SOURCE_DIR@/sjparser/options.h \
                          @SJPARSER_SOURCE_DIR@/sjparser/value.h \
                          @SJPARSER_SOURCE_DIR@/sjparser/object.h \
-                         @SJPARSER_SOURCE_DIR@/sjparser/s_custom_object.h \
-                         @SJPARSER_SOURCE_DIR@/sjparser/s_auto_object.h \
-                         @SJPARSER_SOURCE_DIR@/sjparser/s_object.h \
-                         @SJPARSER_SOURCE_DIR@/sjparser/union.h \
-                         @SJPARSER_SOURCE_DIR@/sjparser/s_union.h \
-                         @SJPARSER_SOURCE_DIR@/sjparser/map.h \
-                         @SJPARSER_SOURCE_DIR@/sjparser/array.h \
                          @SJPARSER_SOURCE_DIR@/sjparser/s_array.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/map.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/type_holder.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/array.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/yajl_parser.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/s_auto_object.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/s_union.h \
                          @SJPARSER_SOURCE_DIR@/sjparser/parser.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/union.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/member.h \
+                         @SJPARSER_SOURCE_DIR@/sjparser/options.h \
                          @CUT_README@
 
 # This tag can be used to specify the character encoding of the source files

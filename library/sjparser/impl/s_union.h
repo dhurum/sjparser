@@ -25,53 +25,71 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-template <typename TypeFieldT, typename... Ts>
-SUnion<TypeFieldT, Ts...>::Args::Args(
-    const ChildArgs &args, const std::function<bool(const Type &)> &on_finish)
-    : args(args), allow_default_value(false), on_finish(on_finish) {}
+template <typename TypeMemberT, typename... Ts>
+template <typename CallbackT>
+SUnion<TypeMemberT, Ts...>::SUnion(
+    TypeHolder<TypeMemberT> type,
+    std::tuple<Member<TypeMemberT, Ts>...> members, CallbackT on_finish)
+    : Union<TypeMemberT, Ts...>(type, std::move(members)),
+      _allow_default_value(false),
+      _on_finish(std::move(on_finish)) {}
 
-template <typename TypeFieldT, typename... Ts>
-SUnion<TypeFieldT, Ts...>::Args::Args(
-    const FieldName &type_field, const ChildArgs &args,
-    const std::function<bool(const Type &)> &on_finish)
-    : type_field(type_field),
-      args(args),
-      allow_default_value(false),
-      on_finish(on_finish) {}
+template <typename TypeMemberT, typename... Ts>
+template <typename CallbackT>
+SUnion<TypeMemberT, Ts...>::SUnion(
+    TypeHolder<TypeMemberT> type, std::string type_member,
+    std::tuple<Member<TypeMemberT, Ts>...> members, CallbackT on_finish,
+    std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
+    : Union<TypeMemberT, Ts...>(type, std::move(type_member),
+                                std::move(members)),
+      _allow_default_value(false),
+      _on_finish(std::move(on_finish)) {}
 
-template <typename TypeFieldT, typename... Ts>
-SUnion<TypeFieldT, Ts...>::Args::Args(
-    const FieldName &type_field, const ChildArgs &args,
-    const Type &default_value,
-    const std::function<bool(const Type &)> &on_finish)
-    : type_field(type_field),
-      args(args),
-      default_value(default_value),
-      on_finish(on_finish) {}
+template <typename TypeMemberT, typename... Ts>
+template <typename CallbackT>
+SUnion<TypeMemberT, Ts...>::SUnion(
+    TypeHolder<TypeMemberT> type, std::string type_member,
+    std::tuple<Member<TypeMemberT, Ts>...> members, Type default_value,
+    CallbackT on_finish)
+    : Union<TypeMemberT, Ts...>(type, std::move(type_member),
+                                std::move(members)),
+      _default_value(std::move(default_value)),
+      _allow_default_value(true),
+      _value(_default_value),
+      _on_finish(std::move(on_finish)) {
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
 
-template <typename TypeFieldT, typename... Ts>
-SUnion<TypeFieldT, Ts...>::SUnion(const Args &args)
-    : Union<TypeFieldT, Ts...>({args.type_field, args.args}),
-      _default_value(args.default_value),
-      _allow_default_value(args.allow_default_value),
-      _on_finish(args.on_finish) {}
+template <typename TypeMemberT, typename... Ts>
+SUnion<TypeMemberT, Ts...>::SUnion(SUnion &&other) noexcept
+    : Union<TypeMemberT, Ts...>(std::move(other)),
+      _default_value(std::move(other._default_value)),
+      _allow_default_value(other._allow_default_value),
+      _value(_default_value),
+      _on_finish(std::move(other._on_finish)) {}
 
-template <typename TypeFieldT, typename... Ts>
-const typename SUnion<TypeFieldT, Ts...>::Type &SUnion<TypeFieldT, Ts...>::get()
-    const {
+template <typename TypeMemberT, typename... Ts>
+void SUnion<TypeMemberT, Ts...>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
+
+template <typename TypeMemberT, typename... Ts>
+const typename SUnion<TypeMemberT, Ts...>::Type &
+SUnion<TypeMemberT, Ts...>::get() const {
   checkSet();
   return _value;
 }
 
-template <typename TypeFieldT, typename... Ts>
-typename SUnion<TypeFieldT, Ts...>::Type &&SUnion<TypeFieldT, Ts...>::pop() {
+template <typename TypeMemberT, typename... Ts>
+typename SUnion<TypeMemberT, Ts...>::Type &&SUnion<TypeMemberT, Ts...>::pop() {
   checkSet();
   _set = false;
   return std::move(_value);
 }
 
-template <typename TypeFieldT, typename... Ts>
-void SUnion<TypeFieldT, Ts...>::finish() {
+template <typename TypeMemberT, typename... Ts>
+void SUnion<TypeMemberT, Ts...>::finish() {
   try {
     ValueSetter<0, Ts...>(_value, *this);
   } catch (std::exception &e) {
@@ -87,23 +105,24 @@ void SUnion<TypeFieldT, Ts...>::finish() {
   }
 }
 
-template <typename TypeFieldT, typename... Ts>
-void SUnion<TypeFieldT, Ts...>::reset() {
-  Union<TypeFieldT, Ts...>::KVParser::reset();
+template <typename TypeMemberT, typename... Ts>
+void SUnion<TypeMemberT, Ts...>::reset() {
+  Union<TypeMemberT, Ts...>::KVParser::reset();
   _value = _default_value;
 }
 
-template <typename TypeFieldT, typename... Ts>
+template <typename TypeMemberT, typename... Ts>
 template <size_t n, typename T, typename... TDs>
-SUnion<TypeFieldT, Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
-    Type &value, SUnion<TypeFieldT, Ts...> &parser)
+SUnion<TypeMemberT, Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
+    Type &value, SUnion<TypeMemberT, Ts...> &parser)
     : ValueSetter<n + 1, TDs...>(value, parser) {
   if (parser.currentMemberId() != n) {
     return;
   }
 
-  if (auto &field_parser = parser.template parser<n>(); field_parser.isSet()) {
-    value = field_parser.pop();
+  if (auto &member_parser = parser.template parser<n>();
+      member_parser.isSet()) {
+    value = member_parser.pop();
   } else if (!parser._allow_default_value) {
     throw std::runtime_error("Empty storage union without a default value");
   }

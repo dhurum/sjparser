@@ -26,7 +26,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace SJParser {
 
 template <typename T>
-Value<T>::Value(const Args &on_finish) : _on_finish(on_finish) {}
+Value<T>::Value(Callback on_finish) : _on_finish(std::move(on_finish)) {
+  // Formatting disabled because of a bug in clang-format
+  // clang-format off
+  static_assert(
+      std::is_same_v<T, int64_t>
+      || std::is_same_v<T, bool>
+      || std::is_same_v<T, double>
+      || std::is_same_v<T, std::string>,
+      "Invalid type used in Value, only int64_t, bool, double or std::string"
+      " are allowed");
+  // clang-format on
+}
+
+template <typename T>
+Value<T>::Value(Value &&other) noexcept
+    : _on_finish(std::move(other._on_finish)) {}
+
+template <typename T> void Value<T>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
 
 template <typename T> void Value<T>::on(TokenType<T> value) {
   _value = value;

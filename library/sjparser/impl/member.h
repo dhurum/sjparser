@@ -21,30 +21,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "key_value_parser.h"
+#pragma once
 
 namespace SJParser {
 
-std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
-                                     const FieldName &name) {
-  return stream << name.str();
-}
-
-FieldName::FieldName(std::string str) : _str(std::move(str)) {}
-
-FieldName::FieldName(std::string_view str) : _str(str) {}
-
-FieldName::FieldName(const char *str) : _str(str) {}
-
-FieldName::operator const std::string &() const {
-  return _str;
-}
-
-bool FieldName::operator==(const FieldName &other) const {
-  return _str == other._str;
-}
-
-const std::string &FieldName::str() const {
-  return _str;
+template <typename NameType, typename ParserType>
+Member<NameType, ParserType>::Member(NameType name, ParserType &&parser)
+    : name(std::move(name)), parser(std::forward<ParserType>(parser)) {
+  static_assert(std::is_base_of_v<TokenParser, std::decay_t<ParserType>>,
+                "Invalid parser used in Member");
 }
 }  // namespace SJParser

@@ -33,7 +33,7 @@ function(setup_compilation_options TARGET)
     -Wall
     -Wextra
     -Wpedantic
-    $<$<CONFIG:Debug>:-g3>
+    $<$<CONFIG:Debug>:-O0 -g3>
   )
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND SJPARSER_WITH_COVERAGE)

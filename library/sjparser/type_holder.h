@@ -23,42 +23,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "s_auto_object.h"
-#include "s_custom_object.h"
+#include "yajl_parser.h"
 
 namespace SJParser {
 
-/** @cond INTERNAL Internal class, needed for SObject */
-
-template <bool auto_type, typename... Ts> struct SObjectDispatcher {
-  using Type = SCustomObject<Ts...>;
-};
-
-template <typename... Ts> struct SObjectDispatcher<true, Ts...> {
-  using Type = SAutoObject<Ts...>;
-};
-
-/** @endcond */
-
-#ifdef DOXYGEN_ONLY
-/** @brief SCustomObject and SAutoObject dispatcher
+/** @brief Helper for storing types
  *
- * Will point to SCustomObject or SAutoObject based on the template parameters.
- * You should use it instead of using those types directly.
+ * This structure allows you to store a type and pass it as an argument.
+ *
+ * @tparam T Stored type
  */
-
-template <typename... Ts> class SObject;
-#endif
-
-template <typename T, typename... Ts>
-using SObject = typename SObjectDispatcher<std::is_base_of_v<TokenParser, T>, T,
-                                           Ts...>::Type;
-
-/** @cond INTERNAL Internal class, needed for Union */
-
-template <typename T> struct UnionFieldType { using Type = T; };
-
-template <> struct UnionFieldType<std::string> { using Type = FieldName; };
-
-/** @endcond */
+template <typename T> struct TypeHolder {
+  /** Stored type */
+  using Type = T;
+};
 }  // namespace SJParser

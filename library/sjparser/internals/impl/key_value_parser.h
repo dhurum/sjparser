@@ -25,95 +25,73 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-template <typename TypeFieldT, typename... Ts>
-template <typename T>
-KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
-    const TypeFieldT &field, const Args &value)
-    : field(field), value(value) {}
+template <typename NameType, typename... Ts>
+KeyValueParser<NameType, Ts...>::KeyValueParser(
+    std::tuple<Member<NameType, Ts>...> members, ObjectOptions options)
+    : _member_parsers(_parsers_array, _parsers_map, members),
+      _options(options) {}
 
-template <typename TypeFieldT, typename... Ts>
-template <typename T>
-template <typename U>
-KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
-    const TypeFieldT &field, const typename U::ChildArgs &value)
-    : field(field), value(value) {}
+template <typename NameType, typename... Ts>
+KeyValueParser<NameType, Ts...>::KeyValueParser(KeyValueParser &&other) noexcept
+    : _member_parsers(_parsers_array, _parsers_map,
+                      std::move(other._member_parsers)),
+      _options(other._options) {}
 
-template <typename TypeFieldT, typename... Ts>
-template <typename T>
-template <typename U>
-KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
-    const char *field,
-    typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/)
-    : field(field) {}
-
-template <typename TypeFieldT, typename... Ts>
-template <typename T>
-template <typename U>
-KeyValueParser<TypeFieldT, Ts...>::FieldArgs<T>::FieldArgs(
-    const std::string &field,
-    typename std::enable_if_t<std::is_same_v<U, FieldName>> * /*unused*/)
-    : field(field) {}
-
-template <typename TypeFieldT, typename... Ts>
-KeyValueParser<TypeFieldT, Ts...>::KeyValueParser(const ChildArgs &args,
-                                                  const Options &options)
-    : _fields(_fields_array, _fields_map, args), _options(options) {}
-
-template <typename TypeFieldT, typename... Ts>
-void KeyValueParser<TypeFieldT, Ts...>::setDispatcher(
+template <typename NameType, typename... Ts>
+void KeyValueParser<NameType, Ts...>::setDispatcher(
     Dispatcher *dispatcher) noexcept {
   TokenParser::setDispatcher(dispatcher);
-  for (auto &field : _fields_map) {
-    field.second->setDispatcher(dispatcher);
+  for (auto &member : _parsers_map) {
+    member.second->setDispatcher(dispatcher);
   }
 
   _ignore_parser.setDispatcher(dispatcher);
 }
 
-template <typename TypeFieldT, typename... Ts>
-void KeyValueParser<TypeFieldT, Ts...>::reset() {
+template <typename NameType, typename... Ts>
+void KeyValueParser<NameType, Ts...>::reset() {
   TokenParser::reset();
 
-  for (auto &field : _fields_map) {
-    field.second->reset();
+  for (auto &member : _parsers_map) {
+    member.second->reset();
   }
 
   _ignore_parser.reset();
 }
 
-template <typename TypeFieldT, typename... Ts>
-void KeyValueParser<TypeFieldT, Ts...>::on(MapStartT /*unused*/) {
+template <typename NameType, typename... Ts>
+void KeyValueParser<NameType, Ts...>::on(MapStartT /*unused*/) {
   reset();
 }
 
-template <typename TypeFieldT, typename... Ts>
-void KeyValueParser<TypeFieldT, Ts...>::on(MapEndT /*unused*/) {
+template <typename NameType, typename... Ts>
+void KeyValueParser<NameType, Ts...>::on(MapEndT /*unused*/) {
   endParsing();
 }
 
-template <typename TypeFieldT, typename... Ts>
-void KeyValueParser<TypeFieldT, Ts...>::onField(const TypeFieldT &field) {
-  if (auto parser_it = _fields_map.find(field);
-      parser_it != _fields_map.end()) {
+template <typename NameType, typename... Ts>
+void KeyValueParser<NameType, Ts...>::onMember(TokenType<NameType> member) {
+  if (auto parser_it = _parsers_map.find(member);
+      parser_it != _parsers_map.end()) {
     _dispatcher->pushParser(parser_it->second);
     return;
   }
 
-  if (_options.unknown_fields == Reaction::Error) {
+  if (_options.unknown_member == Reaction::Error) {
     std::stringstream error;
-    error << "Unexpected field " << field;
+    error << "Unexpected member " << member;
     throw std::runtime_error(error.str());
   }
 
   _dispatcher->pushParser(&_ignore_parser);
 }
 
-template <typename TypeFieldT, typename... Ts>
+template <typename NameType, typename... Ts>
 template <size_t n>
-auto &KeyValueParser<TypeFieldT, Ts...>::get() {
+auto &KeyValueParser<NameType, Ts...>::get() {
   const auto parser =
       reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
-          _fields_array[n]);
+          _parsers_array[n]);
 
   if constexpr (NthTypes<n, Ts...>::has_value_type) {
     return parser->get();
@@ -122,44 +100,55 @@ auto &KeyValueParser<TypeFieldT, Ts...>::get() {
   }
 }
 
-template <typename TypeFieldT, typename... Ts>
+template <typename NameType, typename... Ts>
 template <size_t n>
-typename KeyValueParser<TypeFieldT,
-                        Ts...>::template NthTypes<n, Ts...>::ParserType &
-KeyValueParser<TypeFieldT, Ts...>::parser() {
+typename KeyValueParser<NameType, Ts...>::template NthTypes<n,
+                                                            Ts...>::ParserType &
+KeyValueParser<NameType, Ts...>::parser() {
   return *reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
-      _fields_array[n]);
+      _parsers_array[n]);
 }
 
-template <typename TypeFieldT, typename... Ts>
+template <typename NameType, typename... Ts>
 template <size_t n>
-typename KeyValueParser<TypeFieldT, Ts...>::template NthTypes<
+typename KeyValueParser<NameType, Ts...>::template NthTypes<
     n, Ts...>::template ValueType<>
-    &&KeyValueParser<TypeFieldT, Ts...>::pop() {
+    &&KeyValueParser<NameType, Ts...>::pop() {
   return reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
-             _fields_array[n])
+             _parsers_array[n])
       ->pop();
 }
 
-template <typename TypeFieldT, typename... Ts>
-template <size_t n, typename Args, typename T, typename... TDs>
-KeyValueParser<TypeFieldT, Ts...>::Field<n, Args, T, TDs...>::Field(
-    std::array<TokenParser *, sizeof...(Ts)> &fields_array,
-    std::unordered_map<TypeFieldT, TokenParser *> &fields_map, const Args &args)
-    : Field<n + 1, Args, TDs...>(fields_array, fields_map, args),
-      _field(std::get<n>(args).value) {
-  fields_array[n] = &_field;
-  fields_map[std::get<n>(args).field] = &_field;
+template <typename NameType, typename... Ts>
+template <size_t n, typename T, typename... TDs>
+KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::MemberParser(
+    std::array<TokenParser *, sizeof...(Ts)> &parsers_array,
+    std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
+    std::tuple<Member<NameType, Ts>...> &members)
+    : MemberParser<n + 1, TDs...>(parsers_array, parsers_map, members),
+      parser(std::forward<T>(std::get<n>(members).parser)),
+      name(std::move(std::get<n>(members).name)) {
+  parsers_array[n] = &parser;
+
+  auto[_, inserted] = parsers_map.insert({name, &parser});
+  std::ignore = _;
+  if (!inserted) {
+    std::stringstream error;
+    error << "Member " << name << " appears more, than once";
+    throw std::runtime_error(error.str());
+  }
 }
 
-std::basic_ostream<char> &operator<<(std::basic_ostream<char> &stream,
-                                     const FieldName &name);
+template <typename NameType, typename... Ts>
+template <size_t n, typename T, typename... TDs>
+KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::MemberParser(
+    std::array<TokenParser *, sizeof...(Ts)> &parsers_array,
+    std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
+    MemberParser &&other)
+    : MemberParser<n + 1, TDs...>(parsers_array, parsers_map, std::move(other)),
+      parser(std::forward<T>(other.parser)),
+      name(std::move(other.name)) {
+  parsers_array[n] = &parser;
+  parsers_map[name] = &parser;
+}
 }  // namespace SJParser
-
-namespace std {
-template <> struct hash<SJParser::FieldName> {
-  std::size_t operator()(const SJParser::FieldName &key) const {
-    return hash<std::string>()(key.str());
-  }
-};
-}  // namespace std

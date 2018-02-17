@@ -49,7 +49,7 @@ script:
 after_success:
   # code coverage
   - mkdir coverage_build && pushd coverage_build
-  - cmake ../../ -DCMAKE_BUILD_TYPE=Debug -D-DSJPARSER_WITH_COVERAGE=On && make && make coverage
+  - cmake ../../ -DCMAKE_BUILD_TYPE=Debug -DSJPARSER_WITH_COVERAGE=On && make && make coverage
   - GITHUB_TOKEN= coveralls --no-gcov --lcov-file coverage/sjparser.clean.info
   - popd
 

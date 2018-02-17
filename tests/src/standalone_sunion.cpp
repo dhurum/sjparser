@@ -29,13 +29,12 @@ using namespace SJParser;
 TEST(StandaloneSUnion, Empty) {
   std::string buf(R"({})");
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{1, "bool"}, {2, "int"}}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   try {
     parser.parse(buf);
@@ -59,20 +58,12 @@ TEST(StandaloneSUnion, Empty) {
 TEST(StandaloneSUnion, EmptyDefault) {
   std::string buf(R"({})");
 
-  // clang-format off
-  using ObjectParser = SObject<Value<int64_t>>;
-  using UnionParser = SUnion<
-                        int64_t,
-                        SObject<Value<bool>>,
-                        ObjectParser>;
-  // clang-format on
-
-  UnionParser::Type default_value = ObjectParser::Type(100);
-
-  // clang-format off
-  Parser<UnionParser> parser(
-      {"type", {{1, "bool"}, {2, "int"}}, default_value});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2, SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}},
+      std::tuple<int64_t>{100}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -86,32 +77,28 @@ TEST(StandaloneSUnion, EmptyDefault) {
 TEST(StandaloneSUnion, EmptyDefaultWithCallback) {
   std::string buf(R"({})");
 
-  // clang-format off
-  using ObjectParser = SObject<Value<int64_t>>;
-  using UnionParser = SUnion<
-                        int64_t,
-                        SObject<Value<bool>>,
-                        ObjectParser>;
-  // clang-format on
   bool callback_called = false;
 
-  auto unionCb = [&](const UnionParser::Type &) {
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2, SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}},
+      std::tuple<int64_t>{100}}};
+
+  auto unionCb = [&](const decltype(parser)::ParserType::Type &) {
     callback_called = true;
     return true;
   };
 
-  UnionParser::Type default_value = ObjectParser::Type(100);
-
-  // clang-format off
-  Parser<UnionParser> parser(
-      {"type", {{1, "bool"}, {2, "int"}}, default_value, unionCb});
-  // clang-format on
+  parser.parser().setFinishCallback(unionCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
 
+  ASSERT_TRUE(callback_called);
   ASSERT_EQ(1, parser.parser().get().index());
   ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get())));
 }
@@ -119,13 +106,12 @@ TEST(StandaloneSUnion, EmptyDefaultWithCallback) {
 TEST(StandaloneSUnion, Null) {
   std::string buf(R"(null)");
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{1, "bool"}, {2, "int"}}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -137,16 +123,13 @@ TEST(StandaloneSUnion, Reset) {
   std::string buf(
       R"({"type": 1, "bool": true, "integer": 10})");
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<
-      Value<bool>,
-      Value<int64_t>>,
-    SObject<
-      Value<bool>>
-  >> parser({"type", {{1, {"bool", "integer"}}, {2, {"bool"}}}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1,
+                 SAutoObject{std::tuple{Member{"bool", Value<bool>{}},
+                                        Member{"integer", Value<int64_t>{}}}}},
+          Member{2, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -168,21 +151,18 @@ TEST(StandaloneSUnion, Reset) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
-TEST(StandaloneSUnion, AllValuesFields) {
+TEST(StandaloneSUnion, AllValuesMembers) {
   std::string buf(
       R"({"type": 1, "bool": true, "integer": 10})");
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<
-      Value<bool>,
-      Value<int64_t>>,
-    SObject<
-      Value<double>,
-      Value<std::string>>
-  >> parser({"type", {{1, {"bool", "integer"}}, {2, {"double", "string"}}}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{Member{1, SAutoObject{std::tuple{
+                               Member{"bool", Value<bool>{}},
+                               Member{"integer", Value<int64_t>{}}}}},
+                 Member{2, SAutoObject{std::tuple{
+                               Member{"double", Value<double>{}},
+                               Member{"string", Value<std::string>{}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -223,60 +203,12 @@ TEST(StandaloneSUnion, StringType) {
   "bool": true
 })");
 
-  // clang-format off
-  Parser<SUnion<
-    std::string,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{"1", "bool"}, {"2", "int"}}});
-  // clang-format on
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  {
-    auto variant = parser.parser().get();
-
-    ASSERT_EQ(0, variant.index());
-
-    ASSERT_EQ(true, std::get<0>(std::get<0>(variant)));
-  }
-
-  buf = R"(
-{
-  "type": "2",
-  "int": 100
-})";
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  {
-    auto variant = parser.parser().get();
-
-    ASSERT_EQ(1, variant.index());
-
-    ASSERT_EQ(100, std::get<0>(std::get<1>(variant)));
-  }
-}
-
-TEST(StandaloneSUnion, StdStringType) {
-  std::string buf(
-      R"(
-{
-  "type": "1",
-  "bool": true
-})");
-
-  std::string types[2] = {"1", "2"};
-
-  // clang-format off
-  Parser<SUnion<
-    std::string,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{types[0], "bool"}, {types[1], "int"}}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<std::string>{}, "type",
+      std::tuple{
+          Member{"1", SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{"2",
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -315,13 +247,12 @@ TEST(StandaloneSUnion, IncorrectTypeType) {
   "bool": true
 })");
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{1, "bool"}, {2, "int"}}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   try {
     parser.parse(buf);
@@ -349,13 +280,12 @@ TEST(StandaloneSUnion, IncorrectTypeValue) {
   "bool": true
 })");
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{1, "bool"}, {2, "int"}}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   try {
     parser.parse(buf);
@@ -363,7 +293,7 @@ TEST(StandaloneSUnion, IncorrectTypeValue) {
   } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
-    ASSERT_EQ("Unexpected field 3", e.sjparserError());
+    ASSERT_EQ("Unexpected member 3", e.sjparserError());
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
                            {   "type": 3,   "bool": true }
@@ -375,7 +305,7 @@ TEST(StandaloneSUnion, IncorrectTypeValue) {
   }
 }
 
-TEST(StandaloneSUnion, IncorrectTypeField) {
+TEST(StandaloneSUnion, IncorrectTypeMember) {
   std::string buf(
       R"(
 {
@@ -383,13 +313,12 @@ TEST(StandaloneSUnion, IncorrectTypeField) {
   "bool": true
 })");
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{1, "bool"}, {2, "int"}}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   try {
     parser.parse(buf);
@@ -397,7 +326,7 @@ TEST(StandaloneSUnion, IncorrectTypeField) {
   } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
-    ASSERT_EQ("Unexpected field error", e.sjparserError());
+    ASSERT_EQ("Unexpected member error", e.sjparserError());
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
                              {   "error": 1,   "bool": true }
@@ -409,55 +338,7 @@ TEST(StandaloneSUnion, IncorrectTypeField) {
   }
 }
 
-TEST(StandaloneSUnion, FieldsWithCallbacks) {
-  std::string buf(
-      R"(
-{
-  "type": 1,
-  "bool": true
-})");
-
-  bool bool_value = false;
-  int64_t int_value;
-
-  auto boolCb = [&](const std::tuple<bool> &value) {
-    bool_value = std::get<0>(value);
-    return true;
-  };
-
-  auto intCb = [&](const std::tuple<int64_t> &value) {
-    int_value = std::get<0>(value);
-    return true;
-  };
-
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{1, {"bool", boolCb}}, {2, {"int", intCb}}}});
-  // clang-format on
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(true, std::get<0>(std::get<0>(parser.parser().get())));
-  ASSERT_EQ(true, bool_value);
-
-  buf = R"(
-{
-  "type": 2,
-  "int": 100
-})";
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get())));
-  ASSERT_EQ(100, int_value);
-}
-
-TEST(StandaloneSUnion, FieldsWithCallbackError) {
+TEST(StandaloneSUnion, MembersWithCallbackError) {
   std::string buf(
       R"(
 {
@@ -469,13 +350,12 @@ TEST(StandaloneSUnion, FieldsWithCallbackError) {
 
   auto intCb = [&](const std::tuple<int64_t> &) { return false; };
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{1, {"bool", boolCb}}, {2, {"int", intCb}}}});
-  // clang-format on
+  Parser parser{
+      SUnion{TypeHolder<int64_t>{}, "type",
+             std::tuple{Member{1, SAutoObject{std::tuple{
+                                      Member{"bool", Value<bool>{boolCb}}}}},
+                        Member{2, SAutoObject{std::tuple{Member{
+                                      "int", Value<int64_t>{intCb}}}}}}}};
 
   try {
     parser.parse(buf);
@@ -486,7 +366,7 @@ TEST(StandaloneSUnion, FieldsWithCallbackError) {
     ASSERT_EQ("Callback returned false", e.sjparserError());
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
-             "type": 1,   "bool": true }
+           {   "type": 1,   "bool": true }
                      (right here) ------^
 )",
         e.parserError());
@@ -509,7 +389,7 @@ TEST(StandaloneSUnion, FieldsWithCallbackError) {
     ASSERT_EQ("Callback returned false", e.sjparserError());
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
-           {   "type": 2,   "int": 100 }
+             {   "type": 2,   "int": 100 }
                      (right here) ------^
 )",
         e.parserError());
@@ -529,12 +409,12 @@ TEST(StandaloneSUnion, SUnionWithCallback) {
   bool bool_value = false;
   int64_t int_value;
 
-  // clang-format off
-  using UnionParser = SUnion<
-                        int64_t,
-                        SObject<Value<bool>>,
-                        SObject<Value<int64_t>>>;
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   auto unionCb =
       [&](const std::variant<std::tuple<bool>, std::tuple<int64_t>> &value) {
@@ -546,7 +426,7 @@ TEST(StandaloneSUnion, SUnionWithCallback) {
         return true;
       };
 
-  Parser<UnionParser> parser({"type", {{1, "bool"}, {2, "int"}}, unionCb});
+  parser.parser().setFinishCallback(unionCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -574,19 +454,19 @@ TEST(StandaloneSUnion, SUnionWithCallbackError) {
   "bool": true
 })");
 
-  // clang-format off
-  using UnionParser = SUnion<
-                        int64_t,
-                        SObject<Value<bool>>,
-                        SObject<Value<int64_t>>>;
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   auto unionCb =
       [&](const std::variant<std::tuple<bool>, std::tuple<int64_t>> &) {
         return false;
       };
 
-  Parser<UnionParser> parser({"type", {{1, "bool"}, {2, "int"}}, unionCb});
+  parser.parser().setFinishCallback(unionCb);
 
   try {
     parser.parse(buf);
@@ -606,42 +486,6 @@ TEST(StandaloneSUnion, SUnionWithCallbackError) {
   }
 }
 
-TEST(StandaloneSUnion, SUnionWithArgsStruct) {
-  std::string buf(
-      R"(
-{
-  "type": 1,
-  "bool": true
-})");
-
-  // clang-format off
-  using UnionParser = SUnion<
-                        int64_t,
-                        SObject<Value<bool>>,
-                        SObject<Value<int64_t>>>;
-  // clang-format on
-
-  UnionParser::Args union_args({"type", {{1, "bool"}, {2, "int"}}});
-
-  Parser<UnionParser> parser(union_args);
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(true, std::get<0>(std::get<0>(parser.parser().get())));
-
-  buf = R"(
-{
-  "type": 2,
-  "int": 100
-})";
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get())));
-}
-
 TEST(StandaloneSUnion, SUnionWithUnexpectedObject) {
   std::string buf(
       R"(
@@ -650,13 +494,12 @@ TEST(StandaloneSUnion, SUnionWithUnexpectedObject) {
   "error": true
 })");
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SObject<Value<bool>>,
-    SObject<Value<int64_t>>
-  >> parser({"type", {{1, "bool"}, {2, "int"}}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   try {
     parser.parse(buf);
@@ -664,7 +507,7 @@ TEST(StandaloneSUnion, SUnionWithUnexpectedObject) {
   } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
-    ASSERT_EQ("Unexpected field error", e.sjparserError());
+    ASSERT_EQ("Unexpected member error", e.sjparserError());
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
                 {   "type": 1,   "error": true }
@@ -686,31 +529,27 @@ TEST(StandaloneSUnion, SUnionWithSCustomObject) {
 })");
 
   struct ObjectStruct {
-    bool bool_field;
-    std::string str_field;
+    bool bool_member;
+    std::string str_member;
   };
 
-  using InnerObjectParser =
-      SObject<ObjectStruct, Value<bool>, Value<std::string>>;
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SCustomObject{TypeHolder<ObjectStruct>{},
+                                  std::tuple{
+                                      Member{"bool", Value<bool>{}},
+                                      Member{"string", Value<std::string>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
-  auto innerObjectCb = [&](InnerObjectParser &parser, ObjectStruct &value) {
+  auto innerObjectCb = [&](decltype(parser)::ParserType::ParserType<0> &parser,
+                           ObjectStruct &value) {
     value = {parser.pop<0>(), parser.pop<1>()};
     return true;
   };
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    InnerObjectParser,
-    SObject<Value<int64_t>>
-  >> parser({
-      "type", {
-      {
-        1, {{"bool", "string"}, innerObjectCb}
-      }, {
-        2, "int"
-      }}});
-  // clang-format on
+  parser.parser().parser<0>().setFinishCallback(innerObjectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -718,8 +557,8 @@ TEST(StandaloneSUnion, SUnionWithSCustomObject) {
   {
     auto value = std::get<0>(parser.parser().get());
 
-    ASSERT_EQ(true, value.bool_field);
-    ASSERT_EQ("value", value.str_field);
+    ASSERT_EQ(true, value.bool_member);
+    ASSERT_EQ("value", value.str_member);
   }
 
   buf = R"(
@@ -734,7 +573,7 @@ TEST(StandaloneSUnion, SUnionWithSCustomObject) {
   ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get())));
 }
 
-TEST(StandaloneSUnion, SUnionWithEmbeddedSUnion) {
+TEST(StandaloneSUnion, SUnionWithSUnion) {
   std::string buf(
       R"(
 {
@@ -743,23 +582,17 @@ TEST(StandaloneSUnion, SUnionWithEmbeddedSUnion) {
   "bool": true
 })");
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    SUnion<
-      int64_t,
-      SObject<Value<bool>>,
-      SObject<Value<int64_t>>
-    >,
-    SObject<Value<std::string>>
-  >> parser({
-      "type", {
-        {
-          1, {"subtype", {{1, "bool"}, {2, "int"}}}
-        }, {
-          2, "string"
-        }}});
-  // clang-format on
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1,
+                 SUnion{TypeHolder<int64_t>{}, "subtype",
+                        std::tuple{Member{1, SAutoObject{std::tuple{Member{
+                                                 "bool", Value<bool>{}}}}},
+                                   Member{2, SAutoObject{std::tuple{Member{
+                                                 "int", Value<int64_t>{}}}}}}}},
+          Member{2, SAutoObject{
+                        std::tuple{Member{"string", Value<std::string>{}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -790,78 +623,79 @@ TEST(StandaloneSUnion, SUnionWithEmbeddedSUnion) {
   ASSERT_EQ("value", std::get<0>(std::get<1>(parser.parser().get())));
 }
 
-template <typename Field1, typename Field2> struct MoveStruct {
-  Field1 field1;
-  Field2 field2;
+template <typename Member1, typename Member2> struct MoveStruct {
+  Member1 member1;
+  Member2 member2;
   static bool copy_used;
 
   MoveStruct() {
     if constexpr (std::is_integral_v<
-                      Field1> || std::is_floating_point_v<Field1>) {
-      field1 = 0;
+                      Member1> || std::is_floating_point_v<Member1>) {
+      member1 = 0;
     }
     if constexpr (std::is_integral_v<
-                      Field2> || std::is_floating_point_v<Field2>) {
-      field2 = 0;
+                      Member2> || std::is_floating_point_v<Member2>) {
+      member2 = 0;
     }
   }
 
-  MoveStruct(const MoveStruct<Field1, Field2> &other) {
-    field1 = std::move(other.field1);
-    field2 = std::move(other.field2);
+  MoveStruct(const MoveStruct<Member1, Member2> &other) {
+    member1 = std::move(other.member1);
+    member2 = std::move(other.member2);
     copy_used = true;
   }
 
-  MoveStruct &operator=(const MoveStruct<Field1, Field2> &other) {
-    field1 = std::move(other.field1);
-    field2 = std::move(other.field2);
+  MoveStruct &operator=(const MoveStruct<Member1, Member2> &other) {
+    member1 = std::move(other.member1);
+    member2 = std::move(other.member2);
     copy_used = true;
     return *this;
   }
 
-  MoveStruct(MoveStruct<Field1, Field2> &&other) {
-    field1 = std::move(other.field1);
-    field2 = std::move(other.field2);
+  MoveStruct(MoveStruct<Member1, Member2> &&other) {
+    member1 = std::move(other.member1);
+    member2 = std::move(other.member2);
   }
 };
 
-template <typename Field1, typename Field2>
-bool MoveStruct<Field1, Field2>::copy_used = false;
+template <typename Member1, typename Member2>
+bool MoveStruct<Member1, Member2>::copy_used = false;
 
 TEST(StandaloneSUnion, Move) {
   std::string buf(
       R"({"type": 1, "bool": true, "integer": 10})");
 
   using ObjectStruct1 = MoveStruct<bool, int64_t>;
-  using ObjectParser1 = SObject<ObjectStruct1, Value<bool>, Value<int64_t>>;
-
   using ObjectStruct2 = MoveStruct<double, std::string>;
-  using ObjectParser2 =
-      SObject<ObjectStruct2, Value<double>, Value<std::string>>;
 
-  auto objectCb1 = [&](ObjectParser1 &parser, auto &value) {
-    value.field1 = parser.get<0>();
-    value.field2 = parser.get<1>();
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SCustomObject{TypeHolder<ObjectStruct1>{},
+                                  std::tuple{
+                                      Member{"bool", Value<bool>{}},
+                                      Member{"integer", Value<int64_t>{}}}}},
+          Member{2, SCustomObject{
+                        TypeHolder<ObjectStruct2>{},
+                        std::tuple{Member{"double", Value<double>{}},
+                                   Member{"string", Value<std::string>{}}}}}}}};
+
+  auto objectCb1 = [&](decltype(parser)::ParserType::ParserType<0> &parser,
+                       auto &value) {
+    value.member1 = parser.get<0>();
+    value.member2 = parser.get<1>();
     return true;
   };
 
-  auto objectCb2 = [&](ObjectParser2 &parser, auto &value) {
-    value.field1 = parser.get<0>();
-    value.field2 = parser.get<1>();
+  auto objectCb2 = [&](decltype(parser)::ParserType::ParserType<1> &parser,
+                       auto &value) {
+    value.member1 = parser.get<0>();
+    value.member2 = parser.get<1>();
     return true;
   };
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    ObjectParser1,
-    ObjectParser2
-  >> parser({{
-      "type", {
-        {1, {{"bool", "integer"}, objectCb1}},
-        {2, {{"double", "string"}, objectCb2}}
-      }}});
-  // clang-format on
+  parser.parser().parser<0>().setFinishCallback(objectCb1);
+  parser.parser().parser<1>().setFinishCallback(objectCb2);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -878,8 +712,8 @@ TEST(StandaloneSUnion, Move) {
 
     auto &object = std::get<0>(variant);
 
-    ASSERT_EQ(true, object.field1);
-    ASSERT_EQ(10, object.field2);
+    ASSERT_EQ(true, object.member1);
+    ASSERT_EQ(10, object.member2);
   }
 
   buf = R"({"type": 2, "double": 11.5, "string": "value"})";
@@ -899,8 +733,8 @@ TEST(StandaloneSUnion, Move) {
 
     auto &object = std::get<1>(variant);
 
-    ASSERT_EQ(11.5, object.field1);
-    ASSERT_EQ("value", object.field2);
+    ASSERT_EQ(11.5, object.member1);
+    ASSERT_EQ("value", object.member2);
   }
 }
 
@@ -924,24 +758,21 @@ TEST(StandaloneSUnion, UnknownExceptionInValueSetter) {
     }
   };
 
-  using InnerObjectParser = SObject<ObjectStruct, Value<bool>>;
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SCustomObject{TypeHolder<ObjectStruct>{},
+                                  std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
-  auto innerObjectCb = [&](InnerObjectParser &, ObjectStruct &object) {
+  auto innerObjectCb = [&](decltype(parser)::ParserType::ParserType<0> &,
+                           ObjectStruct &object) {
     object.throw_on_assign = true;
     return true;
   };
 
-  // clang-format off
-  Parser<SUnion<
-    int64_t,
-    InnerObjectParser,
-    SObject<Value<int64_t>>
-  >> parser({{
-      "type", {
-        {1, {{"bool"}, innerObjectCb}},
-        {2, "int"}
-      }}});
-  // clang-format on
+  parser.parser().parser<0>().setFinishCallback(innerObjectCb);
 
   try {
     parser.parse(buf);
@@ -959,4 +790,41 @@ TEST(StandaloneSUnion, UnknownExceptionInValueSetter) {
   } catch (...) {
     FAIL() << "Invalid exception thrown";
   }
+}
+
+TEST(StandaloneSUnion, StandaloneSUnionWithParserReference) {
+  std::string buf(
+      R"(
+{
+  "type": 1,
+  "bool": true,
+  "string": "value"
+})");
+
+  SAutoObject sautoobject{std::tuple{Member{"bool", Value<bool>{}},
+                                     Member{"string", Value<std::string>{}}}};
+
+  Parser parser{SUnion{TypeHolder<int64_t>{}, "type",
+                       std::tuple{Member{1, sautoobject},
+                                  Member{2, SAutoObject{std::tuple{Member{
+                                                "int", Value<int64_t>{}}}}}}}};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(std::get<0>(parser.parser().get())));
+  ASSERT_EQ("value", std::get<1>(std::get<0>(parser.parser().get())));
+
+  buf = R"(
+{
+  "type": 2,
+  "int": 100
+})";
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get())));
+
+  ASSERT_EQ(&(parser.parser().parser<0>()), &sautoobject);
 }

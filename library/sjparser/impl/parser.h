@@ -25,27 +25,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-template <typename T, typename Impl>
-Parser<T, Impl>::Parser(const typename T::Args &args) : _parser(args) {
+template <typename T, typename ImplHolder>
+Parser<T, ImplHolder>::Parser(T &&parser, ImplHolder /*implementation*/)
+    : _parser(std::forward<T>(parser)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in Parser");
   this->setTokenParser(&_parser);
 }
 
-template <typename T, typename Impl>
-template <typename U>
-Parser<T, Impl>::Parser(const typename U::ChildArgs &args)
-    : Parser(typename T::Args(args)) {}
-
-template <typename T, typename Impl>
-template <typename U>
-Parser<T, Impl>::Parser(const typename U::template GrandChildArgs<U> &args)
-    : Parser(typename T::Args(args)) {}
-
-template <typename T, typename Impl>
-template <typename U>
-Parser<T, Impl>::Parser(const typename U::CallbackType &callback)
-    : Parser(typename T::Args(callback)) {}
-
-template <typename T, typename Impl> T &Parser<T, Impl>::parser() {
+template <typename T, typename ImplHolder> T &Parser<T, ImplHolder>::parser() {
   return _parser;
 }
 }  // namespace SJParser

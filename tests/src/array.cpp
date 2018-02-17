@@ -36,7 +36,7 @@ TEST(Array, Empty) {
     return true;
   };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -55,7 +55,7 @@ TEST(Array, Null) {
     return true;
   };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -74,7 +74,7 @@ TEST(Array, Reset) {
     return true;
   };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -99,7 +99,7 @@ TEST(Array, ArrayOfBooleans) {
     return true;
   };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -120,7 +120,7 @@ TEST(Array, ArrayOfIntegers) {
     return true;
   };
 
-  Parser<Array<Value<int64_t>>> parser(elementCb);
+  Parser parser{Array{Value<int64_t>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -141,7 +141,7 @@ TEST(Array, ArrayOfDoubles) {
     return true;
   };
 
-  Parser<Array<Value<double>>> parser(elementCb);
+  Parser parser{Array{Value<double>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -162,7 +162,7 @@ TEST(Array, ArrayOfStrings) {
     return true;
   };
 
-  Parser<Array<Value<std::string>>> parser(elementCb);
+  Parser parser{Array{Value<std::string>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -183,7 +183,7 @@ TEST(Array, ArrayWithNull) {
     return true;
   };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -202,7 +202,7 @@ TEST(Array, ArrayWithNullAndValues) {
     return true;
   };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -219,7 +219,7 @@ TEST(Array, UnexpectedBoolean) {
 
   auto elementCb = [&](const bool &) { return true; };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   try {
     parser.parse(buf);
@@ -244,7 +244,7 @@ TEST(Array, UnexpectedInteger) {
 
   auto elementCb = [&](const int64_t &) { return true; };
 
-  Parser<Array<Value<int64_t>>> parser(elementCb);
+  Parser parser{Array{Value<int64_t>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   try {
@@ -270,7 +270,7 @@ TEST(Array, UnexpectedDouble) {
 
   auto elementCb = [&](const double &) { return true; };
 
-  Parser<Array<Value<double>>> parser(elementCb);
+  Parser parser{Array{Value<double>{elementCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   try {
@@ -296,7 +296,7 @@ TEST(Array, UnexpectedString) {
 
   auto elementCb = [&](const std::string &) { return true; };
 
-  Parser<Array<Value<std::string>>> parser(elementCb);
+  Parser parser{Array{Value<std::string>{elementCb}}};
 
   try {
     parser.parse(buf);
@@ -321,7 +321,7 @@ TEST(Array, ArrayWithUnexpectedBoolean) {
 
   auto elementCb = [&](const std::string &) { return true; };
 
-  Parser<Array<Value<std::string>>> parser(elementCb);
+  Parser parser{Array{Value<std::string>{elementCb}}};
 
   try {
     parser.parse(buf);
@@ -346,7 +346,7 @@ TEST(Array, ArrayWithUnexpectedInteger) {
 
   auto elementCb = [&](const bool &) { return true; };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   try {
     parser.parse(buf);
@@ -371,7 +371,7 @@ TEST(Array, ArrayWithUnexpectedDouble) {
 
   auto elementCb = [&](const bool &) { return true; };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   try {
     parser.parse(buf);
@@ -396,7 +396,7 @@ TEST(Array, ArrayWithUnexpectedString) {
 
   auto elementCb = [&](const bool &) { return true; };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   try {
     parser.parse(buf);
@@ -421,7 +421,7 @@ TEST(Array, ArrayWithElementCallbackError) {
 
   auto elementCb = [&](const bool &) { return false; };
 
-  Parser<Array<Value<bool>>> parser(elementCb);
+  Parser parser{Array{Value<bool>{elementCb}}};
 
   try {
     parser.parse(buf);
@@ -451,14 +451,12 @@ TEST(Array, ArrayWithCallback) {
     return true;
   };
 
-  using ArrayParser = Array<Value<bool>>;
-
-  auto arrayCb = [&](ArrayParser &) {
+  auto arrayCb = [&](Array<Value<bool>> &) {
     callback_called = true;
     return true;
   };
 
-  Parser<ArrayParser> parser({elementCb, arrayCb});
+  Parser parser{Array{Value<bool>{elementCb}, arrayCb}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -477,11 +475,11 @@ TEST(Array, ArrayWithCallbackError) {
 
   auto elementCb = [&](const bool &) { return true; };
 
-  using ArrayParser = Array<Value<bool>>;
+  Parser parser{Array{Value<bool>{elementCb}}};
 
-  auto arrayCb = [&](ArrayParser &) { return false; };
+  auto arrayCb = [&](decltype(parser)::ParserType &) { return false; };
 
-  Parser<ArrayParser> parser({elementCb, arrayCb});
+  parser.parser().setFinishCallback(arrayCb);
 
   try {
     parser.parse(buf);
@@ -501,38 +499,13 @@ TEST(Array, ArrayWithCallbackError) {
   }
 }
 
-TEST(Array, ArrayWithArgsStruct) {
-  std::string buf(R"([true, false])");
-  std::vector<bool> values;
-
-  auto elementCb = [&](const bool &value) {
-    values.push_back(value);
-    return true;
-  };
-
-  using ArrayParser = Array<Value<bool>>;
-
-  ArrayParser::Args array_args = {elementCb};
-
-  Parser<ArrayParser> parser(array_args);
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, values.size());
-  ASSERT_EQ(true, values[0]);
-  ASSERT_EQ(false, values[1]);
-
-  ASSERT_TRUE(parser.parser().isSet());
-}
-
 TEST(Array, ArrayOfObjects) {
   std::string buf(
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
 
   struct ObjectStruct {
-    std::string field1;
-    int64_t field2;
+    std::string member1;
+    int64_t member2;
   };
 
   std::vector<ObjectStruct> values;
@@ -544,54 +517,25 @@ TEST(Array, ArrayOfObjects) {
     return true;
   };
 
-  Parser<Array<ObjectParser>> parser({{"key", "key2"}, objectCb});
+  Parser parser{Array{Object{std::tuple{Member{"key", Value<std::string>{}},
+                                        Member{"key2", Value<int64_t>{}}},
+                             objectCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
-  ASSERT_EQ("value", values[0].field1);
-  ASSERT_EQ(10, values[0].field2);
-  ASSERT_EQ("value2", values[1].field1);
-  ASSERT_EQ(20, values[1].field2);
-}
-
-TEST(Array, ArrayOfObjectsWithoutCallbacks) {
-  std::string buf(
-      R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
-
-  std::vector<std::string> str_values;
-  std::vector<int64_t> int_values;
-
-  auto stringCb = [&](const std::string &value) {
-    str_values.push_back(value);
-    return true;
-  };
-
-  auto integerCb = [&](const int64_t &value) {
-    int_values.push_back(value);
-    return true;
-  };
-
-  Parser<Array<Object<Value<std::string>, Value<int64_t>>>> parser(
-      {{"key", stringCb}, {"key2", integerCb}});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, str_values.size());
-  ASSERT_EQ("value", str_values[0]);
-  ASSERT_EQ("value2", str_values[1]);
-  ASSERT_EQ(2, int_values.size());
-  ASSERT_EQ(10, int_values[0]);
-  ASSERT_EQ(20, int_values[1]);
+  ASSERT_EQ("value", values[0].member1);
+  ASSERT_EQ(10, values[0].member2);
+  ASSERT_EQ("value2", values[1].member1);
+  ASSERT_EQ(20, values[1].member2);
 }
 
 TEST(Array, UnexpectedObject) {
   std::string buf(
       R"({"key": "value"})");
 
-  Parser<Array<Object<Value<std::string>>>> parser("key");
+  Parser parser{Array{Object{std::tuple{Member{"key", Value<std::string>{}}}}}};
 
   try {
     parser.parse(buf);
@@ -615,14 +559,14 @@ TEST(Array, ArrayWithUnexpectedObject) {
   std::string buf(
       R"([{"key2": "value"}])");
 
-  Parser<Array<Object<Value<std::string>>>> parser("key");
+  Parser parser{Array{Object{std::tuple{Member{"key", Value<std::string>{}}}}}};
 
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
   } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected field key2", e.sjparserError());
+    ASSERT_EQ("Unexpected member key2", e.sjparserError());
 
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
@@ -640,31 +584,34 @@ TEST(Array, ArrayOfSCustomObjects) {
       R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
 
   struct ObjectStruct {
-    std::string field1;
-    int64_t field2;
+    std::string member1;
+    int64_t member2;
   };
 
   std::vector<ObjectStruct> values;
 
-  using ObjectParser =
-      SObject<ObjectStruct, Value<std::string>, Value<int64_t>>;
+  Parser parser{
+      Array{SCustomObject{TypeHolder<ObjectStruct>{},
+                          std::tuple{Member{"key", Value<std::string>{}},
+                                     Member{"key2", Value<int64_t>{}}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType::ParserType &parser,
+                      ObjectStruct &value) {
     value = {parser.pop<0>(), parser.pop<1>()};
     values.push_back(value);
     return true;
   };
 
-  Parser<Array<ObjectParser>> parser({{"key", "key2"}, objectCb});
+  parser.parser().parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
-  ASSERT_EQ("value", values[0].field1);
-  ASSERT_EQ(10, values[0].field2);
-  ASSERT_EQ("value2", values[1].field1);
-  ASSERT_EQ(20, values[1].field2);
+  ASSERT_EQ("value", values[0].member1);
+  ASSERT_EQ(10, values[0].member2);
+  ASSERT_EQ("value2", values[1].member1);
+  ASSERT_EQ(20, values[1].member2);
 }
 
 TEST(Array, ArrayOfSAutoObjects) {
@@ -673,14 +620,15 @@ TEST(Array, ArrayOfSAutoObjects) {
 
   std::vector<std::tuple<std::string, int64_t>> values;
 
-  using ObjectParser = SObject<Value<std::string>, Value<int64_t>>;
-
   auto objectCb = [&](const std::tuple<std::string, int64_t> &value) {
     values.push_back(value);
     return true;
   };
 
-  Parser<Array<ObjectParser>> parser({{"key", "key2"}, objectCb});
+  Parser parser{
+      Array{SAutoObject{std::tuple{Member{"key", Value<std::string>{}},
+                                   Member{"key2", Value<int64_t>{}}},
+                        objectCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -699,10 +647,14 @@ TEST(Array, ArrayOfStandaloneUnions) {
   std::string value_str = "";
   int64_t value_int = 0;
 
-  using UnionParser =
-      Union<std::string, Object<Value<std::string>>, Object<Value<int64_t>>>;
+  Parser parser{
+      Array{Union{TypeHolder<std::string>{}, "type",
+                  std::tuple{Member{"str", Object{std::tuple{Member{
+                                               "key", Value<std::string>{}}}}},
+                             Member{"int", Object{std::tuple{Member{
+                                               "key", Value<int64_t>{}}}}}}}}};
 
-  auto unionCb = [&](UnionParser &parser) {
+  auto unionCb = [&](decltype(parser)::ParserType::ParserType &parser) {
     switch (parser.currentMemberId()) {
       case 0:
         value_str = parser.get<0>().get<0>();
@@ -716,8 +668,7 @@ TEST(Array, ArrayOfStandaloneUnions) {
     return true;
   };
 
-  Parser<Array<UnionParser>> parser(
-      {"type", {{"str", "key"}, {"int", "key"}}, unionCb});
+  parser.parser().parser().setFinishCallback(unionCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -733,8 +684,12 @@ TEST(Array, ArrayOfStandaloneSUnions) {
   std::string value_str = "";
   int64_t value_int = 0;
 
-  using UnionParser =
-      SUnion<std::string, SObject<Value<std::string>>, SObject<Value<int64_t>>>;
+  Parser parser{
+      Array{SUnion{TypeHolder<std::string>{}, "type",
+                   std::tuple{Member{"str", SAutoObject{std::tuple{Member{
+                                                "key", Value<std::string>{}}}}},
+                              Member{"int", SAutoObject{std::tuple{Member{
+                                                "key", Value<int64_t>{}}}}}}}}};
 
   auto unionCb = [&](const std::variant<std::tuple<std::string>,
                                         std::tuple<int64_t>> &value) {
@@ -746,8 +701,7 @@ TEST(Array, ArrayOfStandaloneSUnions) {
     return true;
   };
 
-  Parser<Array<UnionParser>> parser(
-      {"type", {{"str", "key"}, {"int", "key"}}, unionCb});
+  parser.parser().parser().setFinishCallback(unionCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -765,18 +719,17 @@ TEST(Array, ArrayOfEmbeddedUnions) {
   std::string value_str = "";
   int64_t value_int = 0;
 
-  // clang-format off
-  using ObjectParser =
-      Object<
-        Value<int64_t>,
-        Union<
-          std::string,
-          Object<Value<std::string>>,
-          Object<Value<int64_t>>
-      >>;
-  // clang-format on
+  Parser parser{Array{Object{std::tuple{
+      Member{"id", Value<int64_t>{}},
+      Member{
+          "type",
+          Union{TypeHolder<std::string>{},
+                std::tuple{Member{"str", Object{std::tuple{Member{
+                                             "key", Value<std::string>{}}}}},
+                           Member{"int", Object{std::tuple{Member{
+                                             "key", Value<int64_t>{}}}}}}}}}}}};
 
-  auto objectCb = [&](ObjectParser &parser) {
+  auto objectCb = [&](decltype(parser)::ParserType::ParserType &parser) {
     ids.push_back(parser.get<0>());
 
     switch (parser.get<1>().currentMemberId()) {
@@ -792,8 +745,7 @@ TEST(Array, ArrayOfEmbeddedUnions) {
     return true;
   };
 
-  Parser<Array<ObjectParser>> parser(
-      {{"id", {"type", {{"str", "key"}, {"int", "key"}}}}, objectCb});
+  parser.parser().parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -814,19 +766,17 @@ TEST(Array, ArrayOfEmbeddedSUnions) {
   std::string value_str = "";
   int64_t value_int = 0;
 
-  // clang-format off
-  using ObjectParser =
-      Object<
-        Value<int64_t>,
-        SUnion<
-          std::string,
-          SObject<Value<std::string>>,
-          SObject<Value<int64_t>>
-      >>;
+  Parser parser{Array{Object{std::tuple{
+      Member{"id", Value<int64_t>{}},
+      Member{"type",
+             SUnion{TypeHolder<std::string>{},
+                    std::tuple{
+                        Member{"str", SAutoObject{std::tuple{Member{
+                                          "key", Value<std::string>{}}}}},
+                        Member{"int", SAutoObject{std::tuple{Member{
+                                          "key", Value<int64_t>{}}}}}}}}}}}};
 
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser) {
+  auto objectCb = [&](decltype(parser)::ParserType::ParserType &parser) {
     ids.push_back(parser.get<0>());
 
     auto value = parser.get<1>();
@@ -839,8 +789,7 @@ TEST(Array, ArrayOfEmbeddedSUnions) {
     return true;
   };
 
-  Parser<Array<ObjectParser>> parser(
-      {{"id", {"type", {{"str", "key"}, {"int", "key"}}}}, objectCb});
+  parser.parser().parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -862,15 +811,13 @@ TEST(Array, ArrayOfArrays) {
     return true;
   };
 
-  using InnerArrayParser = Array<Value<bool>>;
-
-  auto innerArrayCb = [&](InnerArrayParser &) {
+  auto innerArrayCb = [&](Array<Value<bool>> &) {
     values.push_back(tmp_values);
     tmp_values.clear();
     return true;
   };
 
-  Parser<Array<InnerArrayParser>> parser({elementCb, innerArrayCb});
+  Parser parser{Array{Array{Value<bool>{elementCb}, innerArrayCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -890,20 +837,24 @@ TEST(Array, ArrayOfMaps) {
   std::vector<std::map<std::string, int64_t>> values;
   std::map<std::string, int64_t> tmp_values;
 
-  using MapParser = Map<Value<int64_t>>;
+  Parser parser{Array{Map{Value<int64_t>{}}}};
 
-  auto mapKeyCb = [&](const std::string &key, MapParser::ParserType &parser) {
-    tmp_values[key] = parser.get();
-    return true;
-  };
+  auto mapElementCb =
+      [&](const std::string &key,
+          decltype(parser)::ParserType::ParserType::ParserType &parser) {
+        tmp_values[key] = parser.get();
+        return true;
+      };
 
-  auto mapFinishCb = [&](MapParser &) {
+  auto mapFinishCb = [&](decltype(parser)::ParserType::ParserType &) {
     values.push_back(tmp_values);
     tmp_values.clear();
     return true;
   };
 
-  Parser<Array<MapParser>> parser({mapKeyCb, mapFinishCb});
+  parser.parser().parser().setElementCallback(mapElementCb);
+
+  parser.parser().parser().setFinishCallback(mapFinishCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -927,7 +878,7 @@ TEST(Array, ArrayOfSArrays) {
     return true;
   };
 
-  Parser<Array<SArray<Value<bool>>>> parser({innerArrayCb});
+  Parser parser{Array{SArray{Value<bool>{}, innerArrayCb}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -940,4 +891,31 @@ TEST(Array, ArrayOfSArrays) {
   ASSERT_EQ(2, values[1].size());
   ASSERT_EQ(false, values[1][0]);
   ASSERT_EQ(false, values[1][1]);
+}
+
+TEST(Array, ArrayWithParserReference) {
+  std::string buf(R"([[13, 15, 16]])");
+
+  SArray sarray{Value<int64_t>{}};
+
+  Parser parser{Array{sarray}};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(3, sarray.get().size());
+  ASSERT_EQ(13, sarray.get()[0]);
+  ASSERT_EQ(15, sarray.get()[1]);
+  ASSERT_EQ(16, sarray.get()[2]);
+
+  ASSERT_EQ(&(parser.parser().parser()), &sarray);
+}
+
+// Just check if the constructor compiles
+TEST(Array, ArrayWithArrayReference) {
+  Array array{Value<int64_t>{}};
+
+  Parser parser{Array{array}};
+
+  ASSERT_EQ(&(parser.parser().parser()), &array);
 }

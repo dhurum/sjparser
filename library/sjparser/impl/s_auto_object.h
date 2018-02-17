@@ -26,40 +26,64 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace SJParser {
 
 template <typename... Ts>
-SAutoObject<Ts...>::Args::Args(
-    const ChildArgs &args, const Type &default_value, const Options &options,
-    const std::function<bool(const Type &)> &on_finish)
-    : args(args),
-      default_value(default_value),
-      options(options),
-      on_finish(on_finish) {}
+template <typename CallbackT>
+SAutoObject<Ts...>::SAutoObject(
+    std::tuple<Member<std::string, Ts>...> members, CallbackT on_finish,
+    std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
+    : Object<Ts...>(std::move(members), {}),
+      _allow_default_value(false),
+      _on_finish(std::move(on_finish)) {}
 
 template <typename... Ts>
-SAutoObject<Ts...>::Args::Args(
-    const ChildArgs &args, const Type &default_value,
-    const std::function<bool(const Type &)> &on_finish)
-    : args(args), default_value(default_value), on_finish(on_finish) {}
+template <typename CallbackT>
+SAutoObject<Ts...>::SAutoObject(std::tuple<Member<std::string, Ts>...> members,
+                                Type default_value, CallbackT on_finish)
+    : Object<Ts...>(std::move(members), {}),
+      _default_value(std::move(default_value)),
+      _allow_default_value(true),
+      _value(_default_value),
+      _on_finish(std::move(on_finish)) {
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
 
 template <typename... Ts>
-SAutoObject<Ts...>::Args::Args(
-    const ChildArgs &args, const Options &options,
-    const std::function<bool(const Type &)> &on_finish)
-    : args(args),
-      allow_default_value(false),
-      options(options),
-      on_finish(on_finish) {}
+template <typename CallbackT>
+SAutoObject<Ts...>::SAutoObject(std::tuple<Member<std::string, Ts>...> members,
+                                ObjectOptions options, CallbackT on_finish)
+    : Object<Ts...>(std::move(members), options),
+      _allow_default_value(false),
+      _on_finish(std::move(on_finish)) {
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
 
 template <typename... Ts>
-SAutoObject<Ts...>::Args::Args(
-    const ChildArgs &args, const std::function<bool(const Type &)> &on_finish)
-    : args(args), allow_default_value(false), on_finish(on_finish) {}
+template <typename CallbackT>
+SAutoObject<Ts...>::SAutoObject(std::tuple<Member<std::string, Ts>...> members,
+                                Type default_value, ObjectOptions options,
+                                CallbackT on_finish)
+    : Object<Ts...>(std::move(members), options),
+      _default_value(std::move(default_value)),
+      _allow_default_value(true),
+      _value(_default_value),
+      _on_finish(std::move(on_finish)) {
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
 
 template <typename... Ts>
-SAutoObject<Ts...>::SAutoObject(const Args &args)
-    : Object<Ts...>({args.args, args.options}),
-      _default_value(args.default_value),
-      _allow_default_value(args.allow_default_value),
-      _on_finish(args.on_finish) {}
+SAutoObject<Ts...>::SAutoObject(SAutoObject &&other) noexcept
+    : Object<Ts...>(std::move(other)),
+      _default_value(std::move(other._default_value)),
+      _allow_default_value(other._allow_default_value),
+      _value(_default_value),
+      _on_finish(std::move(other._on_finish)) {}
+
+template <typename... Ts>
+void SAutoObject<Ts...>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
 
 template <typename... Ts>
 const typename SAutoObject<Ts...>::Type &SAutoObject<Ts...>::get() const {
@@ -100,11 +124,12 @@ template <size_t n, typename T, typename... TDs>
 SAutoObject<Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
     Type &value, SAutoObject<Ts...> &parser)
     : ValueSetter<n + 1, TDs...>(value, parser) {
-  if (auto &field_parser = parser.template parser<n>(); field_parser.isSet()) {
-    std::get<n>(value) = field_parser.pop();
+  if (auto &member_parser = parser.template parser<n>();
+      member_parser.isSet()) {
+    std::get<n>(value) = member_parser.pop();
   } else if (!parser._allow_default_value) {
     throw std::runtime_error(
-        "Not all fields are set in an storage object without a default value");
+        "Not all members are set in an storage object without a default value");
   }
 }
 }  // namespace SJParser

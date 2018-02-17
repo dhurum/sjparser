@@ -33,9 +33,7 @@ class Ignore : public TokenParser {
  public:
   void reset() override;
 
-  // Protected because we need to inherit from this class in order to unit test
-  // it
- protected:
+ private:
   enum class Structure { Object, Array };
   std::list<Structure> _structure{};
 

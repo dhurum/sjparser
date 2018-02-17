@@ -31,12 +31,15 @@ TEST(SCustomObject, Empty) {
 
   struct ObjectStruct {};
 
-  using ObjectParser =
-      SObject<ObjectStruct, Value<std::string>, Value<int64_t>>;
+  Parser parser{SCustomObject{TypeHolder<ObjectStruct>{},
+                              std::tuple{Member{"string", Value<std::string>{}},
+                                         Member{"integer", Value<int64_t>{}}}}};
 
-  auto objectCb = [&](ObjectParser &, ObjectStruct &) { return true; };
+  auto objectCb = [&](decltype(parser)::ParserType &, ObjectStruct &) {
+    return true;
+  };
 
-  Parser<ObjectParser> parser({{"string", "integer"}, objectCb});
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -49,12 +52,12 @@ TEST(SCustomObject, Null) {
 
   struct ObjectStruct {};
 
-  using ObjectParser =
-      SObject<ObjectStruct, Value<std::string>, Value<int64_t>>;
+  auto objectCb = [&](auto &, ObjectStruct &) { return true; };
 
-  auto objectCb = [&](ObjectParser &, ObjectStruct &) { return true; };
-
-  Parser<ObjectParser> parser({{"string", "integer"}, objectCb});
+  Parser parser{SCustomObject{TypeHolder<ObjectStruct>{},
+                              std::tuple{Member{"string", Value<std::string>{}},
+                                         Member{"integer", Value<int64_t>{}}},
+                              objectCb}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -71,20 +74,17 @@ TEST(SCustomObject, Reset) {
     std::string str_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<bool>,
-    Value<std::string>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.bool_value = parser.get<0>();
-    value.str_value = parser.get<1>();
+  auto objectCb = [&](auto &parser, ObjectStruct &value) {
+    value.bool_value = parser.template get<0>();
+    value.str_value = parser.template get<1>();
     return true;
   };
 
-  Parser<ObjectParser> parser({{"bool", "string"}, objectCb});
+  Parser parser{
+      SCustomObject{TypeHolder<ObjectStruct>{},
+                    std::tuple{Member{"bool", Value<bool>{}},
+                               Member{"string", Value<std::string>{}}},
+                    objectCb}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -100,47 +100,7 @@ TEST(SCustomObject, Reset) {
   ASSERT_FALSE(parser.parser().isSet());
 }
 
-TEST(SCustomObject, AllValuesFields) {
-  std::string buf(
-      R"({"bool": true, "integer": 10, "double": 11.5, "string": "value"})");
-
-  struct ObjectStruct {
-    bool bool_value;
-    int64_t int_value;
-    double double_value;
-    std::string str_value;
-  };
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<bool>,
-    Value<int64_t>,
-    Value<double>,
-    Value<std::string>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.bool_value = parser.get<0>();
-    value.int_value = parser.get<1>();
-    value.double_value = parser.get<2>();
-    value.str_value = parser.get<3>();
-    return true;
-  };
-
-  Parser<ObjectParser> parser(
-      {{"bool", "integer", "double", "string"}, objectCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(true, parser.parser().get().bool_value);
-  ASSERT_EQ(10, parser.parser().get().int_value);
-  ASSERT_EQ(11.5, parser.parser().get().double_value);
-  ASSERT_EQ("value", parser.parser().get().str_value);
-}
-
-TEST(SCustomObject, UnexpectedField) {
+TEST(SCustomObject, UnexpectedMember) {
   std::string buf(R"({"error": true, "bool": true, "string": "value"})");
 
   struct ObjectStruct {
@@ -148,27 +108,17 @@ TEST(SCustomObject, UnexpectedField) {
     std::string str_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<bool>,
-    Value<std::string>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.bool_value = parser.get<0>();
-    value.str_value = parser.get<1>();
-    return true;
-  };
-
-  Parser<ObjectParser> parser({{"bool", "string"}, objectCb});
+  Parser parser{
+      SCustomObject{TypeHolder<ObjectStruct>{},
+                    std::tuple{Member{"bool", Value<bool>{}},
+                               Member{"string", Value<std::string>{}}}}};
 
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
   } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected field error", e.sjparserError());
+    ASSERT_EQ("Unexpected member error", e.sjparserError());
 
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
@@ -181,7 +131,7 @@ TEST(SCustomObject, UnexpectedField) {
   }
 }
 
-TEST(SCustomObject, IgnoredUnexpectedField) {
+TEST(SCustomObject, IgnoredUnexpectedMember) {
   std::string buf(R"({"error": true, "bool": true, "string": "value"})");
 
   struct ObjectStruct {
@@ -189,21 +139,20 @@ TEST(SCustomObject, IgnoredUnexpectedField) {
     std::string str_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<bool>,
-    Value<std::string>>;
-  // clang-format on
+  Parser parser{
+      SCustomObject{TypeHolder<ObjectStruct>{},
+                    std::tuple{Member{"bool", Value<bool>{}},
+                               Member{"string", Value<std::string>{}}},
+                    {Reaction::Ignore}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.bool_value = parser.get<0>();
     value.str_value = parser.get<1>();
     return true;
   };
 
-  Parser<ObjectParser> parser(
-      {{"bool", "string"}, {Reaction::Ignore}, objectCb});
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -212,54 +161,7 @@ TEST(SCustomObject, IgnoredUnexpectedField) {
   ASSERT_EQ("value", parser.parser().get().str_value);
 }
 
-TEST(SCustomObject, FieldsWithCallbacks) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
-  bool bool_value = false;
-  std::string str_value;
-
-  auto boolCb = [&](const bool &value) {
-    bool_value = value;
-    return true;
-  };
-
-  auto stringCb = [&](const std::string &value) {
-    str_value = value;
-    return true;
-  };
-
-  struct ObjectStruct {
-    bool bool_value;
-    std::string str_value;
-  };
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<bool>,
-    Value<std::string>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.bool_value = parser.get<0>();
-    value.str_value = parser.get<1>();
-    return true;
-  };
-
-  Parser<ObjectParser> parser(
-      {{{"bool", boolCb}, {"string", stringCb}}, objectCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(true, parser.parser().get().bool_value);
-  ASSERT_EQ("value", parser.parser().get().str_value);
-
-  ASSERT_EQ(true, bool_value);
-  ASSERT_EQ("value", str_value);
-}
-
-TEST(SCustomObject, FieldsWithCallbackError) {
+TEST(SCustomObject, MembersWithCallbackError) {
   std::string buf(
       R"({"bool": true, "string": "value"})");
 
@@ -272,21 +174,10 @@ TEST(SCustomObject, FieldsWithCallbackError) {
     std::string str_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<bool>,
-    Value<std::string>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.bool_value = parser.get<0>();
-    value.str_value = parser.get<1>();
-    return true;
-  };
-
-  Parser<ObjectParser> parser(
-      {{{"bool", boolCb}, {"string", stringCb}}, objectCb});
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{Member{"bool", Value<bool>{boolCb}},
+                 Member{"string", Value<std::string>{stringCb}}}}};
 
   try {
     parser.parse(buf);
@@ -313,16 +204,16 @@ TEST(SCustomObject, SCustomObjectWithCallbackError) {
     std::string str_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<bool>,
-    Value<std::string>>;
-  // clang-format on
+  Parser parser{
+      SCustomObject{TypeHolder<ObjectStruct>{},
+                    std::tuple{Member{"bool", Value<bool>{}},
+                               Member{"string", Value<std::string>{}}}}};
 
-  auto objectCb = [&](ObjectParser &, ObjectStruct &) { return false; };
+  auto objectCb = [&](decltype(parser)::ParserType &, ObjectStruct &) {
+    return false;
+  };
 
-  Parser<ObjectParser> parser({{"bool", "string"}, objectCb});
+  parser.parser().setFinishCallback(objectCb);
 
   try {
     parser.parse(buf);
@@ -340,132 +231,6 @@ TEST(SCustomObject, SCustomObjectWithCallbackError) {
   }
 }
 
-TEST(SCustomObject, OneField) {
-  std::string buf(R"({"string": "value"})");
-
-  struct ObjectStruct {
-    std::string str_value;
-  };
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>();
-    return true;
-  };
-
-  Parser<ObjectParser> parser({"string", objectCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ("value", parser.parser().get().str_value);
-}
-
-TEST(SCustomObject, OneFieldWithFieldCallback) {
-  std::string buf(R"({"string": "value"})");
-  std::string value;
-
-  auto elementCb = [&](const std::string &str) {
-    value = str;
-    return true;
-  };
-
-  struct ObjectStruct {
-    std::string str_value;
-  };
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>();
-    return true;
-  };
-
-  Parser<ObjectParser> parser({{{"string", elementCb}}, objectCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ("value", parser.parser().get().str_value);
-  ASSERT_EQ("value", value);
-}
-
-TEST(SCustomObject, ObjectWithArgsStruct) {
-  std::string buf(
-      R"({"string": "value", "integer": 10})");
-
-  struct ObjectStruct {
-    std::string str_value;
-    int64_t int_value;
-  };
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Value<int64_t>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>();
-    value.int_value = parser.get<1>();
-    return true;
-  };
-
-  ObjectParser::Args object_args({{"string", "integer"}, objectCb});
-
-  Parser<ObjectParser> parser(object_args);
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ("value", parser.parser().get().str_value);
-  ASSERT_EQ(10, parser.parser().get().int_value);
-}
-
-TEST(SCustomObject, StdStringiFieldNames) {
-  std::string buf(
-      R"({"string": "value", "integer": 10})");
-
-  struct ObjectStruct {
-    std::string str_value;
-    int64_t int_value;
-  };
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Value<int64_t>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>();
-    value.int_value = parser.get<1>();
-    return true;
-  };
-
-  std::string string_name = "string";
-  std::string integer_name = "integer";
-
-  Parser<ObjectParser> parser({{string_name, integer_name}, objectCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ("value", parser.parser().get().str_value);
-  ASSERT_EQ(10, parser.parser().get().int_value);
-}
-
 TEST(SCustomObject, PopValue) {
   std::string buf(
       R"({"string": "value", "integer": 10})");
@@ -475,20 +240,18 @@ TEST(SCustomObject, PopValue) {
     int64_t int_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Value<int64_t>>;
-  // clang-format on
+  Parser parser{SCustomObject{TypeHolder<ObjectStruct>{},
+                              std::tuple{Member{"string", Value<std::string>{}},
+                                         Member{"integer", Value<int64_t>{}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.str_value = parser.get<0>();
     value.int_value = parser.get<1>();
     return true;
   };
 
-  Parser<ObjectParser> parser({{"string", "integer"}, objectCb});
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -522,19 +285,17 @@ TEST(SCustomObject, SCustomObjectWithObject) {
     bool bool_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Value<int64_t>,
-    Object<
-      Value<int64_t>,
-      Value<std::string>
-    >,
-    Value<bool>>;
-  // clang-format on
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{Member{"string", Value<std::string>{}},
+                 Member{"integer", Value<int64_t>{}},
+                 Member{"object", Object{std::tuple{
+                                      Member{"integer", Value<int64_t>{}},
+                                      Member{"string", Value<std::string>{}}}}},
+                 Member{"boolean", Value<bool>{}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.str_value = parser.get<0>();
     value.int_value = parser.get<1>();
     value.inner_int_value = parser.get<2>().get<0>();
@@ -543,18 +304,7 @@ TEST(SCustomObject, SCustomObjectWithObject) {
     return true;
   };
 
-  // clang-format off
-  Parser<ObjectParser> parser({{
-      "string",
-      "integer",
-      {
-        "object", {
-          "integer",
-          "string"
-        }
-      },
-      "boolean"}, objectCb});
-  // clang-format on
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -563,205 +313,6 @@ TEST(SCustomObject, SCustomObjectWithObject) {
   ASSERT_EQ(10, parser.parser().get().int_value);
   ASSERT_EQ(1, parser.parser().get().inner_int_value);
   ASSERT_EQ("in_value", parser.parser().get().inner_str_value);
-  ASSERT_EQ(true, parser.parser().get().bool_value);
-}
-
-TEST(SCustomObject, SCustomObjectWithUnexpectedObject) {
-  std::string buf(
-      R"(
-{
-  "string": "value",
-  "object": {
-    "error": 1
-  }
-})");
-
-  struct ObjectStruct {};
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Object<
-      Value<int64_t>
-    >>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &, ObjectStruct &) { return true; };
-
-  // clang-format off
-  Parser<ObjectParser> parser({{
-      "string",
-      {
-        "object", {
-          "integer"
-        }
-      }}, objectCb});
-  // clang-format on
-
-  try {
-    parser.parse(buf);
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected field error", e.sjparserError());
-
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-          ue",   "object": {     "error": 1   } }
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
-TEST(SCustomObject, SCustomObjectWithObjectWithCallback) {
-  std::string buf(
-      R"(
-{
-  "string": "value",
-  "integer": 10,
-  "object": {
-    "integer": 1,
-    "string": "in_value"
-  },
-  "boolean": true
-})");
-
-  int64_t int_value;
-  std::string str_value;
-
-  using InnerObjectParser = Object<Value<int64_t>, Value<std::string>>;
-
-  auto innerCb = [&](InnerObjectParser &parser) {
-    int_value = parser.get<0>();
-    str_value = parser.get<1>();
-    return true;
-  };
-
-  struct ObjectStruct {
-    std::string str_value;
-    int64_t int_value;
-    bool bool_value;
-  };
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Value<int64_t>,
-    InnerObjectParser,
-    Value<bool>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>();
-    value.int_value = parser.get<1>();
-    value.bool_value = parser.get<3>();
-    return true;
-  };
-
-  // clang-format off
-  Parser<ObjectParser> parser({{
-      "string",
-      "integer",
-      {
-        "object", {
-          {
-            "integer",
-            "string"
-          }, innerCb
-        }
-      },
-      "boolean"}, objectCb});
-  // clang-format on
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ("value", parser.parser().get().str_value);
-  ASSERT_EQ(10, parser.parser().get().int_value);
-  ASSERT_EQ(true, parser.parser().get().bool_value);
-
-  ASSERT_EQ(1, int_value);
-  ASSERT_EQ("in_value", str_value);
-}
-
-TEST(SCustomObject, SCustomObjectOfObjects) {
-  std::string buf(
-      R"(
-{
-  "object1": {
-    "string": "value",
-    "integer": 10
-  },
-  "object2": {
-    "integer": 1,
-    "string": "value2"
-  },
-  "object3": {
-    "boolean": true
-  }
-})");
-
-  struct ObjectStruct {
-    std::string first_str_value;
-    int64_t first_int_value;
-    int64_t second_int_value;
-    std::string second_str_value;
-    bool bool_value;
-  };
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Object<
-      Value<std::string>,
-      Value<int64_t>>,
-    Object<
-      Value<int64_t>,
-      Value<std::string>>,
-    Object<Value<bool>>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.first_str_value = parser.get<0>().get<0>();
-    value.first_int_value = parser.get<0>().get<1>();
-    value.second_int_value = parser.get<1>().get<0>();
-    value.second_str_value = parser.get<1>().get<1>();
-    value.bool_value = parser.get<2>().get<0>();
-    return true;
-  };
-
-  // clang-format off
-  Parser<ObjectParser> parser({{
-      {
-        "object1", {
-          "string",
-          "integer"
-        }
-      }, {
-        "object2", {
-          "integer",
-          "string"
-        }
-      }, {
-        "object3", {
-          "boolean"
-        }
-      }
-    }, objectCb});
-  // clang-format on
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ("value", parser.parser().get().first_str_value);
-  ASSERT_EQ(10, parser.parser().get().first_int_value);
-  ASSERT_EQ(1, parser.parser().get().second_int_value);
-  ASSERT_EQ("value2", parser.parser().get().second_str_value);
   ASSERT_EQ(true, parser.parser().get().bool_value);
 }
 
@@ -783,15 +334,6 @@ TEST(SCustomObject, SCustomObjectWithSCustomObject) {
     std::string str_value;
   };
 
-  using InnerObjectParser =
-      SObject<InnerObjectStruct, Value<int64_t>, Value<std::string>>;
-
-  auto innerCb = [&](InnerObjectParser &parser, InnerObjectStruct &value) {
-    value.int_value = parser.get<0>();
-    value.str_value = parser.get<1>();
-    return true;
-  };
-
   struct ObjectStruct {
     std::string str_value;
     int64_t int_value;
@@ -799,16 +341,29 @@ TEST(SCustomObject, SCustomObjectWithSCustomObject) {
     bool bool_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Value<int64_t>,
-    InnerObjectParser,
-    Value<bool>>;
-  // clang-format on
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{
+          Member{"string", Value<std::string>{}},
+          Member{"integer", Value<int64_t>{}},
+          Member{"object",
+                 SCustomObject{
+                     TypeHolder<InnerObjectStruct>{},
+                     std::tuple{Member{"integer", Value<int64_t>{}},
+                                Member{"string", Value<std::string>{}}}}},
+          Member{"boolean", Value<bool>{}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto innerCb = [&](decltype(parser)::ParserType::ParserType<2> &parser,
+                     InnerObjectStruct &value) {
+    value.int_value = parser.get<0>();
+    value.str_value = parser.get<1>();
+    return true;
+  };
+
+  parser.parser().parser<2>().setFinishCallback(innerCb);
+
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.str_value = parser.get<0>();
     value.int_value = parser.get<1>();
     value.inner_value = parser.get<2>();
@@ -816,20 +371,7 @@ TEST(SCustomObject, SCustomObjectWithSCustomObject) {
     return true;
   };
 
-  // clang-format off
-  Parser<ObjectParser> parser({{
-      "string",
-      "integer",
-      {
-        "object", {
-          {
-            "integer",
-            "string"
-          }, innerCb
-        }
-      },
-      "boolean"}, objectCb});
-  // clang-format on
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -861,19 +403,17 @@ TEST(SCustomObject, SCustomObjectWithSAutoObject) {
     bool bool_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Value<int64_t>,
-    SObject<
-      Value<int64_t>,
-      Value<std::string>
-    >,
-    Value<bool>>;
-  // clang-format on
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{Member{"string", Value<std::string>{}},
+                 Member{"integer", Value<int64_t>{}},
+                 Member{"object", SAutoObject{std::tuple{
+                                      Member{"integer", Value<int64_t>{}},
+                                      Member{"string", Value<std::string>{}}}}},
+                 Member{"boolean", Value<bool>{}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.str_value = parser.get<0>();
     value.int_value = parser.get<1>();
     value.inner_value = parser.get<2>();
@@ -881,18 +421,7 @@ TEST(SCustomObject, SCustomObjectWithSAutoObject) {
     return true;
   };
 
-  // clang-format off
-  Parser<ObjectParser> parser({{
-      "string",
-      "integer",
-      {
-        "object", {
-          "integer",
-          "string"
-        }
-      },
-      "boolean"}, objectCb});
-  // clang-format on
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -924,18 +453,20 @@ TEST(SCustomObject, SCustomObjectWithStandaloneUnion) {
     } inner_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<int64_t>,
-    Union<
-      std::string,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
-    >>;
-  // clang-format on
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{
+          Member{"id", Value<int64_t>{}},
+          Member{"data",
+                 Union{TypeHolder<std::string>{}, "type",
+                       std::tuple{
+                           Member{"1", Object{std::tuple{
+                                           Member{"bool", Value<bool>{}}}}},
+                           Member{"2", Object{std::tuple{Member{
+                                           "int", Value<int64_t>{}}}}}}}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.int_value = parser.get<0>();
     value.inner_bool = (parser.get<1>().currentMemberId() == 0) ? true : false;
     if (value.inner_bool) {
@@ -946,8 +477,7 @@ TEST(SCustomObject, SCustomObjectWithStandaloneUnion) {
     return true;
   };
 
-  Parser<ObjectParser> parser(
-      {{"id", {"data", {"type", {{"1", "bool"}, {"2", "int"}}}}}, objectCb});
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -992,18 +522,20 @@ TEST(SCustomObject, SCustomObjectWithStandaloneSUnion) {
     std::variant<bool, int64_t> inner_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<int64_t>,
-    SUnion<
-      std::string,
-      SObject<Value<bool>>,
-      SObject<Value<int64_t>>
-    >>;
-  // clang-format on
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{
+          Member{"id", Value<int64_t>{}},
+          Member{"data",
+                 SUnion{TypeHolder<std::string>{}, "type",
+                        std::tuple{
+                            Member{"1", SAutoObject{std::tuple{
+                                            Member{"bool", Value<bool>{}}}}},
+                            Member{"2", SAutoObject{std::tuple{Member{
+                                            "int", Value<int64_t>{}}}}}}}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.int_value = parser.get<0>();
 
     auto variant = parser.get<1>();
@@ -1016,8 +548,7 @@ TEST(SCustomObject, SCustomObjectWithStandaloneSUnion) {
     return true;
   };
 
-  Parser<ObjectParser> parser(
-      {{"id", {"data", {"type", {{"1", "bool"}, {"2", "int"}}}}}, objectCb});
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -1060,18 +591,20 @@ TEST(SCustomObject, SCustomObjectWithEmbeddedUnion) {
     } inner_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<int64_t>,
-    Union<
-      std::string,
-      Object<Value<bool>>,
-      Object<Value<int64_t>>
-    >>;
-  // clang-format on
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{
+          Member{"id", Value<int64_t>{}},
+          Member{"type",
+                 Union{TypeHolder<std::string>{},
+                       std::tuple{
+                           Member{"1", Object{std::tuple{
+                                           Member{"bool", Value<bool>{}}}}},
+                           Member{"2", Object{std::tuple{Member{
+                                           "int", Value<int64_t>{}}}}}}}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.int_value = parser.get<0>();
     value.inner_bool = (parser.get<1>().currentMemberId() == 0) ? true : false;
     if (value.inner_bool) {
@@ -1082,8 +615,7 @@ TEST(SCustomObject, SCustomObjectWithEmbeddedUnion) {
     return true;
   };
 
-  Parser<ObjectParser> parser(
-      {{"id", {"type", {{"1", "bool"}, {"2", "int"}}}}, objectCb});
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -1110,61 +642,6 @@ TEST(SCustomObject, SCustomObjectWithEmbeddedUnion) {
   ASSERT_EQ(100, parser.parser().get().inner_value.int_value);
 }
 
-TEST(SCustomObject, SCustomObjectWithArray) {
-  std::string buf(
-      R"(
-{
-  "string": "value",
-  "integer": 10,
-  "array": [
-    "elt1",
-    "elt2",
-    "elt3"
-  ]
-})");
-
-  std::vector<std::string> tmp_array;
-
-  auto arrayCb = [&](const std::string &value) {
-    tmp_array.push_back(value);
-    return true;
-  };
-
-  struct ObjectStruct {
-    std::string str_value;
-    int64_t int_value;
-    std::vector<std::string> array_value;
-  };
-
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Value<int64_t>,
-    Array<Value<std::string>>>;
-  // clang-format on
-
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.str_value = parser.get<0>();
-    value.int_value = parser.get<1>();
-    value.array_value = tmp_array;
-    return true;
-  };
-
-  Parser<ObjectParser> parser(
-      {{"string", "integer", {"array", arrayCb}}, objectCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ("value", parser.parser().get().str_value);
-  ASSERT_EQ(10, parser.parser().get().int_value);
-  ASSERT_EQ(3, parser.parser().get().array_value.size());
-  ASSERT_EQ("elt1", parser.parser().get().array_value[0]);
-  ASSERT_EQ("elt2", parser.parser().get().array_value[1]);
-  ASSERT_EQ("elt3", parser.parser().get().array_value[2]);
-}
-
 TEST(SCustomObject, SCustomObjectWithEmbeddedSUnion) {
   std::string buf(
       R"(
@@ -1179,18 +656,20 @@ TEST(SCustomObject, SCustomObjectWithEmbeddedSUnion) {
     std::variant<bool, int64_t> inner_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<int64_t>,
-    SUnion<
-      std::string,
-      SObject<Value<bool>>,
-      SObject<Value<int64_t>>
-    >>;
-  // clang-format on
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{
+          Member{"id", Value<int64_t>{}},
+          Member{"type",
+                 SUnion{TypeHolder<std::string>{},
+                        std::tuple{
+                            Member{"1", SAutoObject{std::tuple{
+                                            Member{"bool", Value<bool>{}}}}},
+                            Member{"2", SAutoObject{std::tuple{Member{
+                                            "int", Value<int64_t>{}}}}}}}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.int_value = parser.get<0>();
 
     auto variant = parser.get<1>();
@@ -1203,8 +682,7 @@ TEST(SCustomObject, SCustomObjectWithEmbeddedSUnion) {
     return true;
   };
 
-  Parser<ObjectParser> parser(
-      {{"id", {"type", {{"1", "bool"}, {"2", "int"}}}}, objectCb});
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -1227,6 +705,59 @@ TEST(SCustomObject, SCustomObjectWithEmbeddedSUnion) {
   ASSERT_EQ(100, std::get<1>(parser.parser().get().inner_value));
 }
 
+TEST(SCustomObject, SCustomObjectWithArray) {
+  std::string buf(
+      R"(
+{
+  "string": "value",
+  "integer": 10,
+  "array": [
+    "elt1",
+    "elt2",
+    "elt3"
+  ]
+})");
+
+  std::vector<std::string> tmp_array;
+
+  auto arrayElementCb = [&](const std::string &value) {
+    tmp_array.push_back(value);
+    return true;
+  };
+
+  struct ObjectStruct {
+    std::string str_value;
+    int64_t int_value;
+    std::vector<std::string> array_value;
+  };
+
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{Member{"string", Value<std::string>{}},
+                 Member{"integer", Value<int64_t>{}},
+                 Member{"array", Array{Value<std::string>{arrayElementCb}}}}}};
+
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
+    value.array_value = tmp_array;
+    return true;
+  };
+
+  parser.parser().setFinishCallback(objectCb);
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get().str_value);
+  ASSERT_EQ(10, parser.parser().get().int_value);
+  ASSERT_EQ(3, parser.parser().get().array_value.size());
+  ASSERT_EQ("elt1", parser.parser().get().array_value[0]);
+  ASSERT_EQ("elt2", parser.parser().get().array_value[1]);
+  ASSERT_EQ("elt3", parser.parser().get().array_value[2]);
+}
+
 TEST(SCustomObject, SCustomObjectWithSArray) {
   std::string buf(
       R"(
@@ -1246,22 +777,21 @@ TEST(SCustomObject, SCustomObjectWithSArray) {
     std::vector<std::string> array_value;
   };
 
-  // clang-format off
-  using ObjectParser = SObject<
-    ObjectStruct,
-    Value<std::string>,
-    Value<int64_t>,
-    SArray<Value<std::string>>>;
-  // clang-format on
+  Parser parser{
+      SCustomObject{TypeHolder<ObjectStruct>{},
+                    std::tuple{Member{"string", Value<std::string>{}},
+                               Member{"integer", Value<int64_t>{}},
+                               Member{"array", SArray{Value<std::string>{}}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
     value.str_value = parser.get<0>();
     value.int_value = parser.get<1>();
     value.array_value = parser.get<2>();
     return true;
   };
 
-  Parser<ObjectParser> parser({{"string", "integer", "array"}, objectCb});
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -1283,40 +813,37 @@ TEST(SCustomObject, Move) {
 })");
 
   struct ObjectStruct {
-    int64_t int_field;
-    std::string str_field;
+    int64_t int_member;
+    std::string str_member;
 
-    ObjectStruct() { int_field = 0; }
+    ObjectStruct() { int_member = 0; }
 
     ObjectStruct(ObjectStruct &&other) {
-      int_field = std::move(other.int_field);
-      str_field = std::move(other.str_field);
+      int_member = std::move(other.int_member);
+      str_member = std::move(other.str_member);
     }
 
     // Needed for parser internals
     ObjectStruct &operator=(ObjectStruct &&other) {
-      int_field = std::move(other.int_field);
-      str_field = std::move(other.str_field);
+      int_member = std::move(other.int_member);
+      str_member = std::move(other.str_member);
       return *this;
     }
   };
 
-  using ObjectParser =
-      SObject<ObjectStruct, Value<int64_t>, Value<std::string>>;
+  Parser parser{
+      SCustomObject{TypeHolder<ObjectStruct>{},
+                    std::tuple{Member{"integer", Value<int64_t>{}},
+                               Member{"string", Value<std::string>{}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
-    value.int_field = parser.get<0>();
-    value.str_field = parser.get<1>();
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
+    value.int_member = parser.get<0>();
+    value.str_member = parser.get<1>();
     return true;
   };
 
-  // clang-format off
-  Parser<ObjectParser> parser({
-      {
-          "integer",
-          "string"
-      }, objectCb});
-  // clang-format on
+  parser.parser().setFinishCallback(objectCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -1324,8 +851,8 @@ TEST(SCustomObject, Move) {
   auto value = parser.parser().pop();
   ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ(1, value.int_field);
-  ASSERT_EQ("in_value", value.str_field);
+  ASSERT_EQ(1, value.int_member);
+  ASSERT_EQ("in_value", value.str_member);
 
   buf = R"(
 {
@@ -1339,6 +866,55 @@ TEST(SCustomObject, Move) {
   auto value2 = parser.parser().pop();
   ASSERT_FALSE(parser.parser().isSet());
 
-  ASSERT_EQ(10, value2.int_field);
-  ASSERT_EQ("in_value2", value2.str_field);
+  ASSERT_EQ(10, value2.int_member);
+  ASSERT_EQ("in_value2", value2.str_member);
+}
+
+TEST(SCustomObject, SCustomObjectWithParserReference) {
+  std::string buf(
+      R"(
+{
+  "string": "value",
+  "integer": 10,
+  "array": [
+    "elt1",
+    "elt2",
+    "elt3"
+  ]
+})");
+
+  struct ObjectStruct {
+    std::string str_value;
+    int64_t int_value;
+    std::vector<std::string> array_value;
+  };
+
+  SArray sarray{Value<std::string>{}};
+
+  Parser parser{SCustomObject{TypeHolder<ObjectStruct>{},
+                              std::tuple{Member{"string", Value<std::string>{}},
+                                         Member{"integer", Value<int64_t>{}},
+                                         Member{"array", sarray}}}};
+
+  auto objectCb = [&](decltype(parser)::ParserType &parser,
+                      ObjectStruct &value) {
+    value.str_value = parser.get<0>();
+    value.int_value = parser.get<1>();
+    value.array_value = parser.get<2>();
+    return true;
+  };
+
+  parser.parser().setFinishCallback(objectCb);
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ("value", parser.parser().get().str_value);
+  ASSERT_EQ(10, parser.parser().get().int_value);
+  ASSERT_EQ(3, parser.parser().get().array_value.size());
+  ASSERT_EQ("elt1", parser.parser().get().array_value[0]);
+  ASSERT_EQ("elt2", parser.parser().get().array_value[1]);
+  ASSERT_EQ("elt3", parser.parser().get().array_value[2]);
+
+  ASSERT_EQ(&(parser.parser().parser<2>()), &sarray);
 }

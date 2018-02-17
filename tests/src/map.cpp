@@ -30,7 +30,7 @@ using namespace SJParser;
 TEST(Map, Empty) {
   std::string buf(R"({})");
 
-  Parser<Map<Value<bool>>> parser;
+  Parser parser{Map{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -43,19 +43,21 @@ TEST(Map, EmptyWithCallbacks) {
   bool key_callback_called = false;
   bool finish_callback_called = false;
 
-  using MapParser = Map<Value<bool>>;
+  Parser parser{Map{Value<bool>{}}};
 
-  auto keyCb = [&](const std::string &, MapParser::ParserType &) {
+  auto elementCb = [&](const std::string &,
+                       decltype(parser)::ParserType::ParserType &) {
     key_callback_called = true;
     return true;
   };
 
-  auto finishCb = [&](MapParser &) {
+  auto finishCb = [&](decltype(parser)::ParserType &) {
     finish_callback_called = true;
     return true;
   };
 
-  Parser<MapParser> parser({keyCb, finishCb});
+  parser.parser().setElementCallback(elementCb);
+  parser.parser().setFinishCallback(finishCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -69,7 +71,7 @@ TEST(Map, EmptyWithCallbacks) {
 TEST(Map, Null) {
   std::string buf(R"(null)");
 
-  Parser<Map<Value<bool>>> parser;
+  Parser parser{Map{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -83,14 +85,15 @@ TEST(Map, Reset) {
 
   bool value = false;
 
-  using MapParser = Map<Value<bool>>;
+  Parser parser{Map{Value<bool>{}}};
 
-  auto keyCb = [&](const std::string &, MapParser::ParserType &parser) {
+  auto elementCb = [&](const std::string &,
+                       decltype(parser)::ParserType::ParserType &parser) {
     value = parser.get();
     return true;
   };
 
-  Parser<MapParser> parser({keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -111,14 +114,15 @@ TEST(Map, SeveralKeys) {
 
   std::map<std::string, int64_t> values;
 
-  using MapParser = Map<Value<int64_t>>;
+  Parser parser{Map{Value<int64_t>{}}};
 
-  auto keyCb = [&](const std::string &key, MapParser::ParserType &parser) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
     values[key] = parser.get();
     return true;
   };
 
-  Parser<MapParser> parser({keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -127,99 +131,13 @@ TEST(Map, SeveralKeys) {
   ASSERT_EQ(15, values["2"]);
 }
 
-TEST(Map, WithInternalCallback) {
+TEST(Map, InternalCallbackError) {
   std::string buf(
       R"({"1": 10})");
-
-  int64_t value;
-
-  using MapParser = Map<Value<int64_t>>;
-
-  auto internalCb = [&](const int64_t &val) {
-    value = val;
-    return true;
-  };
-
-  Parser<MapParser> parser({internalCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(10, value);
-}
-
-TEST(Map, WithInternalAndFinishCallback) {
-  std::string buf(
-      R"({"1": 10})");
-
-  bool internal_callback_called = false;
-  bool finish_callback_called = false;
-
-  using MapParser = Map<Value<int64_t>>;
-
-  auto internalCb = [&](const int64_t &) {
-    internal_callback_called = true;
-    return true;
-  };
-
-  auto finishCb = [&](MapParser &) {
-    finish_callback_called = true;
-    return true;
-  };
-
-  Parser<MapParser> parser({internalCb, finishCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_TRUE(internal_callback_called);
-  ASSERT_TRUE(finish_callback_called);
-}
-
-TEST(Map, WithAllCallbacks) {
-  std::string buf(
-      R"({"1": 10})");
-
-  bool internal_callback_called = false;
-  bool key_callback_called = false;
-  bool finish_callback_called = false;
-
-  using MapParser = Map<Value<int64_t>>;
-
-  auto internalCb = [&](const int64_t &) {
-    internal_callback_called = true;
-    return true;
-  };
-
-  auto keyCb = [&](const std::string &, MapParser::ParserType &) {
-    key_callback_called = true;
-    return true;
-  };
-
-  auto finishCb = [&](MapParser &) {
-    finish_callback_called = true;
-    return true;
-  };
-
-  Parser<MapParser> parser({internalCb, keyCb, finishCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_TRUE(internal_callback_called);
-  ASSERT_TRUE(key_callback_called);
-  ASSERT_TRUE(finish_callback_called);
-}
-
-TEST(Map, WithInternalCallbackError) {
-  std::string buf(
-      R"({"1": 10})");
-
-  using MapParser = Map<Value<int64_t>>;
 
   auto internalCb = [&](const int64_t &) { return false; };
 
-  Parser<MapParser> parser({internalCb});
+  Parser parser{Map{Value<int64_t>{internalCb}}};
 
   try {
     parser.parse(buf);
@@ -239,17 +157,18 @@ TEST(Map, WithInternalCallbackError) {
   }
 }
 
-TEST(Map, WithKeyCallbackError) {
+TEST(Map, KeyCallbackError) {
   std::string buf(
       R"({"1": 10})");
 
-  using MapParser = Map<Value<int64_t>>;
+  Parser parser{Map{Value<int64_t>{}}};
 
-  auto keyCb = [&](const std::string &, MapParser::ParserType &) {
+  auto elementCb = [&](const std::string &,
+                       decltype(parser)::ParserType::ParserType &) {
     return false;
   };
 
-  Parser<MapParser> parser({keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   try {
     parser.parse(buf);
@@ -257,7 +176,7 @@ TEST(Map, WithKeyCallbackError) {
   } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
 
-    ASSERT_EQ("Key callback returned false", e.sjparserError());
+    ASSERT_EQ("Element callback returned false", e.sjparserError());
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
                                 {"1": 10}
@@ -269,15 +188,15 @@ TEST(Map, WithKeyCallbackError) {
   }
 }
 
-TEST(Map, WithFinishCallbackError) {
+TEST(Map, FinishCallbackError) {
   std::string buf(
       R"({"1": 10})");
 
-  using MapParser = Map<Value<int64_t>>;
+  Parser parser{Map{Value<int64_t>{}}};
 
-  auto finishCb = [&](MapParser &) { return false; };
+  auto finishCb = [&](decltype(parser)::ParserType &) { return false; };
 
-  Parser<MapParser> parser({finishCb});
+  parser.parser().setFinishCallback(finishCb);
 
   try {
     parser.parse(buf);
@@ -297,30 +216,6 @@ TEST(Map, WithFinishCallbackError) {
   }
 }
 
-TEST(Map, WithArgsStruct) {
-  std::string buf(
-      R"({"1": 10, "2": 15})");
-
-  std::map<std::string, int64_t> values;
-
-  using MapParser = Map<Value<int64_t>>;
-
-  auto keyCb = [&](const std::string &key, MapParser::ParserType &parser) {
-    values[key] = parser.get();
-    return true;
-  };
-
-  MapParser::Args map_args = {keyCb};
-
-  Parser<MapParser> parser(map_args);
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(10, values["1"]);
-  ASSERT_EQ(15, values["2"]);
-}
-
 TEST(Map, MapOfObjects) {
   std::string buf(
       R"({
@@ -335,79 +230,31 @@ TEST(Map, MapOfObjects) {
 })");
 
   struct ObjectStruct {
-    std::string string_field;
-    int64_t int_field;
+    std::string string_member;
+    int64_t int_member;
   };
 
   std::map<std::string, ObjectStruct> values;
 
-  using ObjectParser = Object<Value<std::string>, Value<int64_t>>;
+  Parser parser{Map{Object{std::tuple{Member{"string", Value<std::string>{}},
+                                      Member{"int", Value<int64_t>{}}}}}};
 
-  auto keyCb = [&](const std::string &key, ObjectParser &parser) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
     values[key] = {parser.get<0>(), parser.get<1>()};
     return true;
   };
 
-  Parser<Map<ObjectParser>> parser({{"string", "int"}, keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
-  ASSERT_EQ("value", values["1"].string_field);
-  ASSERT_EQ(10, values["1"].int_field);
-  ASSERT_EQ("value2", values["2"].string_field);
-  ASSERT_EQ(20, values["2"].int_field);
-}
-
-TEST(Map, MapOfObjectsWithFinishCallback) {
-  std::string buf(
-      R"({
-  "1": {
-    "string": "value",
-    "int": 10
-  },
-  "2": {
-    "string": "value2",
-    "int": 20
-  }
-})");
-
-  bool finish_callback_called = false;
-
-  using MapParser = Map<Object<Value<std::string>, Value<int64_t>>>;
-
-  auto finishCb = [&](MapParser &) {
-    finish_callback_called = true;
-    return true;
-  };
-
-  std::vector<std::string> str_values;
-  std::vector<int64_t> int_values;
-
-  auto stringCb = [&](const std::string &value) {
-    str_values.push_back(value);
-    return true;
-  };
-
-  auto integerCb = [&](const int64_t &value) {
-    int_values.push_back(value);
-    return true;
-  };
-
-  Parser<MapParser> parser(
-      {{{"string", stringCb}, {"int", integerCb}}, finishCb});
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_TRUE(finish_callback_called);
-  ASSERT_EQ(2, str_values.size());
-  ASSERT_EQ("value", str_values[0]);
-  ASSERT_EQ("value2", str_values[1]);
-  ASSERT_EQ(2, int_values.size());
-  ASSERT_EQ(10, int_values[0]);
-  ASSERT_EQ(20, int_values[1]);
+  ASSERT_EQ("value", values["1"].string_member);
+  ASSERT_EQ(10, values["1"].int_member);
+  ASSERT_EQ("value2", values["2"].string_member);
+  ASSERT_EQ(20, values["2"].int_member);
 }
 
 TEST(Map, MapOfSCustomObjects) {
@@ -424,35 +271,41 @@ TEST(Map, MapOfSCustomObjects) {
 })");
 
   struct ObjectStruct {
-    std::string string_field;
-    int64_t int_field;
+    std::string string_member;
+    int64_t int_member;
   };
 
   std::map<std::string, ObjectStruct> values;
 
-  using ObjectParser =
-      SObject<ObjectStruct, Value<std::string>, Value<int64_t>>;
+  Parser parser{
+      Map{SCustomObject{TypeHolder<ObjectStruct>{},
+                        std::tuple{Member{"string", Value<std::string>{}},
+                                   Member{"int", Value<int64_t>{}}}}}};
 
-  auto objectCb = [&](ObjectParser &parser, ObjectStruct &value) {
+  auto objectCb = [&](decltype(parser)::ParserType::ParserType &parser,
+                      ObjectStruct &value) {
     value = {parser.pop<0>(), parser.pop<1>()};
     return true;
   };
 
-  auto keyCb = [&](const std::string &key, ObjectParser &parser) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
     values[key] = parser.pop();
     return true;
   };
 
-  Parser<Map<ObjectParser>> parser({{{"string", "int"}, objectCb}, keyCb});
+  parser.parser().parser().setFinishCallback(objectCb);
+
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_EQ(2, values.size());
-  ASSERT_EQ("value", values["1"].string_field);
-  ASSERT_EQ(10, values["1"].int_field);
-  ASSERT_EQ("value2", values["2"].string_field);
-  ASSERT_EQ(20, values["2"].int_field);
+  ASSERT_EQ("value", values["1"].string_member);
+  ASSERT_EQ(10, values["1"].int_member);
+  ASSERT_EQ("value2", values["2"].string_member);
+  ASSERT_EQ(20, values["2"].int_member);
 }
 
 TEST(Map, MapOfAutoObjects) {
@@ -468,16 +321,19 @@ TEST(Map, MapOfAutoObjects) {
   }
 })");
 
-  using ObjectParser = SObject<Value<std::string>, Value<int64_t>>;
+  Parser parser{
+      Map{SAutoObject{std::tuple{Member{"string", Value<std::string>{}},
+                                 Member{"int", Value<int64_t>{}}}}}};
 
-  std::map<std::string, ObjectParser::Type> values;
+  std::map<std::string, decltype(parser)::ParserType::ParserType::Type> values;
 
-  auto keyCb = [&](const std::string &key, ObjectParser &parser) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
     values[key] = parser.pop();
     return true;
   };
 
-  Parser<Map<ObjectParser>> parser({{"string", "int"}, keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -499,20 +355,21 @@ TEST(Map, MapOfArrays) {
   std::map<std::string, std::vector<int64_t>> values;
   std::vector<int64_t> tmp_values;
 
-  auto elementCb = [&](const int64_t &value) {
+  auto arrayElementCb = [&](const int64_t &value) {
     tmp_values.push_back(value);
     return true;
   };
 
-  using ArrayParser = Array<Value<int64_t>>;
+  Parser parser{Map{Array{Value<int64_t>{arrayElementCb}}}};
 
-  auto keyCb = [&](const std::string &key, ArrayParser &) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &) {
     values[key] = tmp_values;
     tmp_values.clear();
     return true;
   };
 
-  Parser<Map<ArrayParser>> parser({elementCb, keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -533,14 +390,15 @@ TEST(Map, MapOfSArrays) {
 
   std::map<std::string, std::vector<int64_t>> values;
 
-  using ArrayParser = SArray<Value<int64_t>>;
+  Parser parser{Map{SArray{Value<int64_t>{}}}};
 
-  auto keyCb = [&](const std::string &key, ArrayParser &parser) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
     values[key] = parser.pop();
     return true;
   };
 
-  Parser<Map<ArrayParser>> parser({keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -569,10 +427,15 @@ TEST(Map, MapOfStandaloneUnions) {
   int64_t int_value = 0;
   std::map<std::string, size_t> union_types;
 
-  using UnionParser =
-      Union<std::string, Object<Value<std::string>>, Object<Value<int64_t>>>;
+  Parser parser{
+      Map{Union{TypeHolder<std::string>{}, "type",
+                std::tuple{Member{"str", Object{std::tuple{Member{
+                                             "string", Value<std::string>{}}}}},
+                           Member{"int", Object{std::tuple{Member{
+                                             "int", Value<int64_t>{}}}}}}}}};
 
-  auto keyCb = [&](const std::string &key, UnionParser &parser) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
     union_types[key] = parser.currentMemberId();
 
     switch (parser.currentMemberId()) {
@@ -588,8 +451,7 @@ TEST(Map, MapOfStandaloneUnions) {
     return true;
   };
 
-  Parser<Map<UnionParser>> parser(
-      {{"type", {{"str", "string"}, {"int", "int"}}}, keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -614,18 +476,22 @@ TEST(Map, MapOfStandaloneSUnions) {
   }
 })");
 
-  using UnionParser =
-      SUnion<std::string, SObject<Value<std::string>>, SObject<Value<int64_t>>>;
+  Parser parser{Map{SUnion{
+      TypeHolder<std::string>{}, "type",
+      std::tuple{Member{"str", SAutoObject{std::tuple{
+                                   Member{"string", Value<std::string>{}}}}},
+                 Member{"int", SAutoObject{std::tuple{
+                                   Member{"int", Value<int64_t>{}}}}}}}}};
 
-  std::map<std::string, UnionParser::Type> values;
+  std::map<std::string, decltype(parser)::ParserType::ParserType::Type> values;
 
-  auto keyCb = [&](const std::string &key, UnionParser &parser) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
     values[key] = parser.pop();
     return true;
   };
 
-  Parser<Map<UnionParser>> parser(
-      {{"type", {{"str", "string"}, {"int", "int"}}}, keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -655,18 +521,18 @@ TEST(Map, MapOfEmbeddedUnions) {
   int64_t int_value = 0;
   std::map<std::string, size_t> union_types;
 
-  // clang-format off
-  using ObjectParser =
-      Object<
-        Value<int64_t>,
-        Union<
-          std::string,
-          Object<Value<std::string>>,
-          Object<Value<int64_t>>
-      >>;
-  // clang-format on
+  Parser parser{Map{Object{std::tuple{
+      Member{"id", Value<int64_t>{}},
+      Member{
+          "type",
+          Union{TypeHolder<std::string>{},
+                std::tuple{Member{"str", Object{std::tuple{Member{
+                                             "string", Value<std::string>{}}}}},
+                           Member{"int", Object{std::tuple{Member{
+                                             "int", Value<int64_t>{}}}}}}}}}}}};
 
-  auto keyCb = [&](const std::string &key, ObjectParser &parser) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
     ids.push_back(parser.get<0>());
     union_types[key] = parser.get<1>().currentMemberId();
 
@@ -683,8 +549,7 @@ TEST(Map, MapOfEmbeddedUnions) {
     return true;
   };
 
-  Parser<Map<ObjectParser>> parser(
-      {{"id", {"type", {{"str", "string"}, {"int", "int"}}}}, keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -716,26 +581,25 @@ TEST(Map, MapOfEmbeddedSUnions) {
   }
 })");
 
-  // clang-format off
-  using ObjectParser =
-      SObject<
-        Value<int64_t>,
-        SUnion<
-          std::string,
-          SObject<Value<std::string>>,
-          SObject<Value<int64_t>>
-      >>;
-  // clang-format on
+  Parser parser{Map{SAutoObject{std::tuple{
+      Member{"id", Value<int64_t>{}},
+      Member{"type",
+             SUnion{TypeHolder<std::string>{},
+                    std::tuple{
+                        Member{"str", SAutoObject{std::tuple{Member{
+                                          "string", Value<std::string>{}}}}},
+                        Member{"int", SAutoObject{std::tuple{Member{
+                                          "int", Value<int64_t>{}}}}}}}}}}}};
 
-  std::map<std::string, ObjectParser::Type> values;
+  std::map<std::string, decltype(parser)::ParserType::ParserType::Type> values;
 
-  auto keyCb = [&](const std::string &key, ObjectParser &parser) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
     values[key] = parser.pop();
     return true;
   };
 
-  Parser<Map<ObjectParser>> parser(
-      {{"id", {"type", {{"str", "string"}, {"int", "int"}}}}, keyCb});
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -763,22 +627,25 @@ TEST(Map, MapOfMaps) {
   std::map<std::string, std::map<std::string, std::vector<int64_t>>> values;
   std::map<std::string, std::vector<int64_t>> tmp_values;
 
-  using ArrayParser = SArray<Value<int64_t>>;
+  Parser parser{Map{Map{SArray{Value<int64_t>{}}}}};
 
-  auto innerKeyCb = [&](const std::string &key, ArrayParser &parser) {
-    tmp_values[key] = parser.pop();
-    return true;
-  };
+  auto innerElementCb =
+      [&](const std::string &key,
+          decltype(parser)::ParserType::ParserType::ParserType &parser) {
+        tmp_values[key] = parser.pop();
+        return true;
+      };
 
-  using InnerMapParser = Map<ArrayParser>;
-
-  auto keyCb = [&](const std::string &key, InnerMapParser &) {
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &) {
     values[key] = tmp_values;
     tmp_values.clear();
     return true;
   };
 
-  Parser<Map<InnerMapParser>> parser({{innerKeyCb}, keyCb});
+  parser.parser().parser().setElementCallback(innerElementCb);
+
+  parser.parser().setElementCallback(elementCb);
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -794,4 +661,45 @@ TEST(Map, MapOfMaps) {
   ASSERT_EQ(21, values["2"]["1"][1]);
   ASSERT_EQ(31, values["2"]["2"][0]);
   ASSERT_EQ(41, values["2"]["2"][1]);
+}
+
+TEST(Map, MapWithParserReference) {
+  std::string buf(R"({
+  "1": [10, 20],
+  "2": [30, 40]
+})");
+
+  std::map<std::string, std::vector<int64_t>> values;
+
+  SArray sarray{Value<int64_t>{}};
+
+  Parser parser{Map{sarray}};
+
+  auto elementCb = [&](const std::string &key,
+                       decltype(parser)::ParserType::ParserType &parser) {
+    values[key] = parser.pop();
+    return true;
+  };
+
+  parser.parser().setElementCallback(elementCb);
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(2, values.size());
+  ASSERT_EQ(10, values["1"][0]);
+  ASSERT_EQ(20, values["1"][1]);
+  ASSERT_EQ(30, values["2"][0]);
+  ASSERT_EQ(40, values["2"][1]);
+
+  ASSERT_EQ(&(parser.parser().parser()), &sarray);
+}
+
+// Just check if the constructor compiles
+TEST(Map, MapWithMapReference) {
+  Map array{Value<int64_t>{}};
+
+  Parser parser{Map{array}};
+
+  ASSERT_EQ(&(parser.parser().parser()), &array);
 }

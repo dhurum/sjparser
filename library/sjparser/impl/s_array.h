@@ -26,23 +26,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace SJParser {
 
 template <typename T>
-SArray<T>::Args::Args(const ChildArgs &args,
-                      const std::function<bool(const Type &)> &on_finish)
-    : args(args), on_finish(on_finish) {}
+template <typename CallbackT>
+SArray<T>::SArray(T &&parser, CallbackT on_finish)
+    : Array<T>(std::forward<T>(parser)), _on_finish(std::move(on_finish)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in SArray");
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
 
 template <typename T>
-template <typename U>
-SArray<T>::Args::Args(const GrandChildArgs<U> &args,
-                      const std::function<bool(const Type &)> &on_finish)
-    : args(args), on_finish(on_finish) {}
+SArray<T>::SArray(SArray &&other) noexcept
+    : Array<T>(std::move(other)), _on_finish(std::move(other._on_finish)) {}
 
-template <typename T>
-SArray<T>::Args::Args(const std::function<bool(const Type &)> &on_finish)
-    : on_finish(on_finish) {}
-
-template <typename T>
-SArray<T>::SArray(const Args &args)
-    : Array<T>(args.args), _on_finish(args.on_finish) {}
+template <typename T> void SArray<T>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
 
 template <typename T> const typename SArray<T>::Type &SArray<T>::get() const {
   checkSet();

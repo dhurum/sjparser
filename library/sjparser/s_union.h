@@ -25,119 +25,142 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "union.h"
 
+#include <functional>
 #include <variant>
 
 namespace SJParser {
 
-/** @brief %Union parser, that stores the result in a variant of field parser
- * types.
+/** @brief %Union of @ref Object "Objects" parser, that stores the result in an
+ * std::variant of member parser types.
  *
  * Parses an object from @ref SUnion_Ts "Ts" list based on a value of the type
- * field value.
+ * member.
  *
- * You can use it stand-alone (in this case the first field of an object must
- * be a type field) or embedded in an object (in this case object fields after
- * the type field will be parsed by one of union's object parsers).
+ * You can use it standalone (in this case the first member of an object must
+ * be a type member) or embedded in an object (in this case object members after
+ * the type member will be parsed by one of union's object parsers).
  *
- * SUnion type is defined by the Args, passed to the constructor.
+ * SUnion type is defined by arguments passed to the constructor.
  *
- * @tparam TypeFieldT A type of the type field. Can be int64_t, bool, double and
- * std::string.
+ * @tparam TypeMemberT A type of the type member. Can be int64_t, bool, double
+ * or std::string.
  *
  * @tparam Ts A list of object parsers.
  * @anchor SUnion_Ts
  */
 
-template <typename TypeFieldT, typename... Ts>
-class SUnion : public Union<TypeFieldT, Ts...> {
+template <typename TypeMemberT, typename... Ts>
+class SUnion : public Union<TypeMemberT, Ts...> {
  public:
-  /** A std::tuple with arguments for field parsers. */
-  using ChildArgs = typename Union<TypeFieldT, Ts...>::ChildArgs;
+#ifdef DOXYGEN_ONLY
+  /** @brief %Member parser type.
+   *
+   * Resolves to n-th member parser type
+   *
+   * @tparam n %Member index
+   */
+  template <size_t n> struct ParserType {
+    /** n-th member parser type */
+    using ParserType = NthTypes<n, TDs...>::ParserType;
+  };
+#endif
 
   /** Stored value type */
-  using Type = std::variant<typename Ts::Type...>;
+  using Type = std::variant<typename std::decay_t<Ts>::Type...>;
 
-  /** @brief Struct with arguments for the SUnion @ref SUnion() "constructor".
-   */
-  struct Args {
-    /** @brief Embedded SUnion constructor arguments.
-     *
-     * In this mode the parser must be used as an Object field. That field value
-     * would be used as a type field value by the SUnion.
-     *
-     * @param [in] args Sets #args.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args,
-         const std::function<bool(const Type &)> &on_finish = nullptr);
+  /** Finish callback type. */
+  using Callback = std::function<bool(const Type &)>;
 
-    /** @brief Standalone SUnion constructor arguments.
-     *
-     * @param [in] type_field Type field name.
-     *
-     * @param [in] args Sets #args.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const FieldName &type_field, const ChildArgs &args,
-         const std::function<bool(const Type &)> &on_finish = nullptr);
-
-    /** @brief Standalone SUnion constructor arguments.
-     *
-     * @param [in] type_field Type field name.
-     *
-     * @param [in] args Sets #args.
-     *
-     * @param[in] default_value Default for the parser value. Will be used in
-     * case of empty union.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const FieldName &type_field, const ChildArgs &args,
-         const Type &default_value,
-         const std::function<bool(const Type &)> &on_finish = nullptr);
-
-    /** Type field name */
-    std::string type_field;
-    /** A std::tuple with field arguments.
-     *
-     * A field argument is a structure where the first element is a string
-     * with field's name and the second element is arguments to that field's
-     * parser. If you do not want to provide any arguments to the field's
-     * parser, you can pass only the field's name:
-     * @code {.cpp} {"field1", {"field2", ...}, "field3"} @endcode
-     * In this example field1 and field3 parsers do not receive any agruments
-     * while field2 does receive something.
-     */
-    ChildArgs args;
-
-    /** Default for the parser value. */
-    Type default_value;
-
-    /** @cond INTERNAL Internal flag, shows if default value was set. */
-    bool allow_default_value = true;
-    /** @endcond */
-
-    /** Callback, that will be called after an sunion object is parsed.
-     *
-     * The callback will be called with a reference to the stored value as an
-     * argument.
-     *
-     * If the callback returns false, parsing will be stopped with an error.
-     */
-    std::function<bool(const Type &)> on_finish;
-  };
-
-  /** @brief SUnion constructor.
+  /** @brief Embedded mode constructor.
    *
-   * @param [in] args Args stucture.
-   * If you do not specify @ref Args::type_field "type_field" type field
-   * and @ref Args::on_finish "on_finish" callback, you can pass a
-   * @ref Args::args "tuple of field arguments" directly into the constructor.
+   * This union must be used as a member of an object. In JSON that member's
+   * content will represent this union's type. Latter members will be parsed by
+   * one of this union's objects parsers.
+   *
+   * @param [in] type Type member's type, please use a TypeHolder wrapper for
+   * it.
+   *
+   * @param [in] members std::tuple of Member structures, describing union
+   * objects.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * union is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
    */
-  SUnion(const Args &args);
-  SUnion(const SUnion &) = delete;
+  template <typename CallbackT = std::nullptr_t>
+  SUnion(TypeHolder<TypeMemberT> type,
+         std::tuple<Member<TypeMemberT, Ts>...> members,
+         CallbackT on_finish = nullptr);
+
+  /** @brief Standalone mode constructor.
+   *
+   * This union will parse a whole JSON object. Object's first member's name
+   * must be same as type_member, and latter members will be parsed by one of
+   * this union's objects parsers.
+   *
+   * @param [in] type Type member's type, please use a TypeHolder wrapper for
+   * it.
+   *
+   * @param [in] type_member Type member's name.
+   *
+   * @param [in] members std::tuple of Member structures, describing union
+   * objects.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * union is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  template <typename CallbackT = std::nullptr_t>
+  SUnion(TypeHolder<TypeMemberT> type, std::string type_member,
+         std::tuple<Member<TypeMemberT, Ts>...> members,
+         CallbackT on_finish = nullptr,
+         std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
+             * /*unused*/
+         = 0);
+
+  /** @brief Standalone mode constructor.
+   *
+   * This union will parse a whole JSON object. Object's first member's name
+   * must be same as type_member, and latter members will be parsed by one of
+   * this union's objects parsers.
+   *
+   * This constructor allows you to set value that would be used in case of an
+   * empty object in JSON.
+   *
+   * @param [in] type Type member's type, please use a TypeHolder wrapper for
+   * it.
+   *
+   * @param [in] type_member Type member's name.
+   *
+   * @param [in] members std::tuple of Member structures, describing union
+   * objects.
+   *
+   * @param [in] default_value Value, which will be used in case of an empty
+   * JSON object.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * union is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  template <typename CallbackT = std::nullptr_t>
+  SUnion(TypeHolder<TypeMemberT> type, std::string type_member,
+         std::tuple<Member<TypeMemberT, Ts>...> members, Type default_value,
+         CallbackT on_finish = nullptr);
+
+  /** Move constructor. */
+  SUnion(SUnion &&other) noexcept;
+
+  /** @brief Finish callback setter.
+   *
+   * @param [in] on_finish Callback, that will be called after the
+   * union is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  void setFinishCallback(Callback on_finish);
 
 #ifdef DOXYGEN_ONLY
   /** @brief Check if the parser has a value.
@@ -155,6 +178,16 @@ class SUnion : public Union<TypeFieldT, Ts...> {
    * parsed or #pop was called).
    */
   const Type &get() const;
+
+#ifdef DOXYGEN_ONLY
+  /** @brief Member parser getter.
+   *
+   * @tparam n Index of the parser's member.
+   *
+   * @return Reference to n-th member parser.
+   */
+  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+#endif
 
   /** @brief Get the parsed value and unset the parser.
    *
@@ -179,24 +212,24 @@ class SUnion : public Union<TypeFieldT, Ts...> {
   void reset() override;
 
   // This is placed in the private section because the ValueSetter uses pop on
-  // all fields, so they are always unset after parsing.
-  using Union<TypeFieldT, Ts...>::get;
-  using Union<TypeFieldT, Ts...>::pop;
-  using Union<TypeFieldT, Ts...>::currentMemberId;
+  // all members, so they are always unset after parsing.
+  using Union<TypeMemberT, Ts...>::get;
+  using Union<TypeMemberT, Ts...>::pop;
+  using Union<TypeMemberT, Ts...>::currentMemberId;
 
   template <size_t, typename...> struct ValueSetter {
-    ValueSetter(Type & /*value*/, SUnion<TypeFieldT, Ts...> & /*parser*/) {}
+    ValueSetter(Type & /*value*/, SUnion<TypeMemberT, Ts...> & /*parser*/) {}
   };
 
   template <size_t n, typename T, typename... TDs>
   struct ValueSetter<n, T, TDs...> : private ValueSetter<n + 1, TDs...> {
-    ValueSetter(Type &value, SUnion<TypeFieldT, Ts...> &parser);
+    ValueSetter(Type &value, SUnion<TypeMemberT, Ts...> &parser);
   };
 
-  Type _value;
   Type _default_value;
   bool _allow_default_value;
-  std::function<bool(const Type &)> _on_finish;
+  Type _value;
+  Callback _on_finish;
 };
 }  // namespace SJParser
 

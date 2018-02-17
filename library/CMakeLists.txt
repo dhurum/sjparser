@@ -10,45 +10,46 @@ add_library(sjparser STATIC
   sjparser/internals/token_parser.cpp
   sjparser/internals/dispatcher.cpp
   sjparser/internals/ignore.cpp
-  sjparser/internals/key_value_parser.cpp
   sjparser/internals/array_parser.cpp
 )
 set_property(TARGET sjparser PROPERTY SJPARSER_HEADERS
+  sjparser/s_custom_object.h
   sjparser/sjparser.h
   sjparser/parsing_error.h
+  sjparser/value.h
+  sjparser/object.h
+  sjparser/s_array.h
+  sjparser/map.h
+  sjparser/type_holder.h
+  sjparser/array.h
   sjparser/yajl_parser.h
+  sjparser/s_auto_object.h
+  sjparser/s_union.h
+  sjparser/parser.h
+  sjparser/union.h
+  sjparser/member.h
   sjparser/options.h
 
-  sjparser/value.h
-  sjparser/impl/value.h
-  sjparser/object.h
-  sjparser/impl/object.h
-  sjparser/s_custom_object.h
   sjparser/impl/s_custom_object.h
-  sjparser/s_auto_object.h
-  sjparser/impl/s_auto_object.h
-  sjparser/s_object.h
-  sjparser/union.h
-  sjparser/impl/union.h
-  sjparser/s_union.h
-  sjparser/impl/s_union.h
-  sjparser/map.h
-  sjparser/impl/map.h
-  sjparser/array.h
-  sjparser/impl/array.h
-  sjparser/s_array.h
+  sjparser/impl/value.h
+  sjparser/impl/object.h
   sjparser/impl/s_array.h
-  sjparser/parser.h
+  sjparser/impl/map.h
+  sjparser/impl/array.h
+  sjparser/impl/s_auto_object.h
+  sjparser/impl/s_union.h
   sjparser/impl/parser.h
+  sjparser/impl/union.h
+  sjparser/impl/member.h
 
-  sjparser/internals/token_parser.h
-  sjparser/internals/impl/token_parser.h
-  sjparser/internals/dispatcher.h
-  sjparser/internals/impl/dispatcher.h
-  sjparser/internals/ignore.h
   sjparser/internals/key_value_parser.h
-  sjparser/internals/impl/key_value_parser.h
+  sjparser/internals/ignore.h
+  sjparser/internals/token_parser.h
+  sjparser/internals/dispatcher.h
   sjparser/internals/array_parser.h
+  sjparser/internals/impl/key_value_parser.h
+  sjparser/internals/impl/token_parser.h
+  sjparser/internals/impl/dispatcher.h
 )
 set_target_properties(sjparser PROPERTIES OUTPUT_NAME sjparser_static)
 

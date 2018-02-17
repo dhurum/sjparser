@@ -16,6 +16,10 @@ add_executable(sjparser_tests
   src/dispatcher.cpp
   src/map.cpp
   src/ignore.cpp
+  src/parser.cpp
+)
+set_property(TARGET sjparser_tests PROPERTY SJPARSER_HEADERS
+  src/test_parser.h
 )
 
 setup_compilation_options(sjparser_tests)

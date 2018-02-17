@@ -27,113 +27,116 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-/** @brief %Object parser, that stores the result in a tuple of field parsers
- * types.
+/** @brief %Object parser, that stores the result in an std::tuple of member
+ * parsers types.
  *
- * Instead of using this type directly you should use an SObject, it will
- * automatically dispatch SCustomObject and SAutoObject based on the template
- * parameters.
- *
- * @tparam Ts A list of field parsers types.
+ * @tparam Ts A list of member parsers types.
  */
 
 template <typename... Ts> class SAutoObject : public Object<Ts...> {
  public:
-  /** A std::tuple with arguments for field parsers. */
-  using ChildArgs = typename Object<Ts...>::ChildArgs;
+#ifdef DOXYGEN_ONLY
+  /** @brief %Member parser type.
+   *
+   * Resolves to n-th member parser type
+   *
+   * @tparam n %Member index
+   */
+  template <size_t n> struct ParserType {
+    /** n-th member parser type */
+    using ParserType = NthTypes<n, TDs...>::ParserType;
+  };
+#endif
 
   /** Stored value type */
-  using Type = std::tuple<typename Ts::Type...>;
+  using Type = std::tuple<typename std::decay_t<Ts>::Type...>;
 
-  /** Type alias for the parser options. */
-  using Options = typename Object<Ts...>::Options;
+  /** Finish callback type. */
+  using Callback = std::function<bool(const Type &)>;
 
-  /** @brief Struct with arguments for the SAutoObject
-   * @ref SAutoObject() "constructor".
-   */
-  struct Args {
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] default_value Default for the parser value.
-     *
-     * @param [in] options Sets #options.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args, const Type &default_value,
-         const Options &options,
-         const std::function<bool(const Type &)> &on_finish = nullptr);
-
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] default_value Default for the parser value.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args, const Type &default_value,
-         const std::function<bool(const Type &)> &on_finish = nullptr);
-
-    /** @param [in] args Sets #args.
-     *
-     * @param [in] options Sets #options.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args, const Options &options,
-         const std::function<bool(const Type &)> &on_finish = nullptr);
-
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args,
-         const std::function<bool(const Type &)> &on_finish = nullptr);
-
-    /** A std::tuple with field arguments.
-     *
-     * A field argument is a structure where the first element is a string
-     * with field's name and the second element is arguments to that field's
-     * parser. If you do not want to provide any arguments to the field's
-     * parser, you can pass only the field's name:
-     * @code {.cpp} {"field1", {"field2", ...}, "field3"} @endcode
-     * In this example field1 and field3 parsers do not receive any agruments
-     * while field2 does receive something.
-     */
-    ChildArgs args;
-
-    /** Default for the parser value. */
-    Type default_value;
-
-    /** @cond INTERNAL Internal flag, shows if default value was set. */
-    bool allow_default_value = true;
-    /** @endcond */
-
-    /** #SJParser::ObjectOptions struct with parser options. */
-    Options options;
-
-    /** Callback, that will be called after an object is parsed.
-     *
-     * The callback will be called with a reference to the stored value as an
-     * argument.
-     *
-     * If the callback returns false, parsing will be stopped with an error.
-     */
-    std::function<bool(const Type &)> on_finish;
-  };
-
-  /** @brief SAutoObject constructor.
+  /** @brief Constructor.
    *
-   * @param [in] args Args stucture.
-   * If you do not specify @ref Args::default_value "defult_value" default value
-   * and @ref Args::on_finish "on_finish" callback, you can pass a
-   * @ref Args::args "tuple of field arguments" directly into the constructor.
+   * @param [in] members std::tuple of Member structures, describing object
+   * members.
    *
-   * @note If you are passing a single field name (without arguments), you must
-   * pass it directly to the constructor, without surrounding {}:
-   * @code {.cpp} SObject<...> object("field"); @endcode
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
    */
-  SAutoObject(const Args &args);
-  SAutoObject(const SAutoObject &) = delete;
+  template <typename CallbackT = std::nullptr_t>
+  SAutoObject(std::tuple<Member<std::string, Ts>...> members,
+              CallbackT on_finish = nullptr,
+              std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
+                  * /*unused*/
+              = 0);
+
+  /** @brief Constructor.
+   *
+   * @param [in] members std::tuple of Member structures, describing object
+   * members.
+   *
+   * @param [in] default_value Default value, will be used to fill members that
+   * were not present in the JSON. If no default value is specified, an
+   * exception will be thrown when some member is not in the JSON.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  template <typename CallbackT = std::nullptr_t>
+  SAutoObject(std::tuple<Member<std::string, Ts>...> members,
+              Type default_value, CallbackT on_finish = nullptr);
+
+  /** @brief Constructor.
+   *
+   * @param [in] members std::tuple of Member structures, describing object
+   * members.
+   *
+   * @param [in] options Additional options for the parser.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  template <typename CallbackT = std::nullptr_t>
+  SAutoObject(std::tuple<Member<std::string, Ts>...> members,
+              ObjectOptions options, CallbackT on_finish = nullptr);
+
+  /** @brief Constructor.
+   *
+   * @param [in] members std::tuple of Member structures, describing object
+   * members.
+   *
+   * @param [in] default_value Default value, will be used to fill members that
+   * were not present in the JSON. If no default value is specified, an
+   * exception will be thrown when some member is not in the JSON.
+   *
+   * @param [in] options Additional options for the parser.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  template <typename CallbackT = std::nullptr_t>
+  SAutoObject(std::tuple<Member<std::string, Ts>...> members,
+              Type default_value, ObjectOptions options,
+              CallbackT on_finish = nullptr);
+
+  /** Move constructor. */
+  SAutoObject(SAutoObject &&other) noexcept;
+
+  /** @brief Finish callback setter.
+   *
+   * @param [in] on_finish Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  void setFinishCallback(Callback on_finish);
 
 #ifdef DOXYGEN_ONLY
   /** @brief Check if the parser has a value.
@@ -167,6 +170,16 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    */
   Type &&pop();
 
+#ifdef DOXYGEN_ONLY
+  /** @brief Member parser getter.
+   *
+   * @tparam n Index of the parser's member.
+   *
+   * @return Reference to n-th member parser.
+   */
+  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+#endif
+
  private:
   using TokenParser::_set;
   using TokenParser::checkSet;
@@ -175,7 +188,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
   void reset() override;
 
   // This is placed in the private section because the ValueSetter uses pop on
-  // all fields, so they are always unset after parsing.
+  // all members, so they are always unset after parsing.
   using Object<Ts...>::get;
   using Object<Ts...>::pop;
 
@@ -188,10 +201,10 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
     ValueSetter(Type &value, SAutoObject<Ts...> &parser);
   };
 
-  Type _value;
   Type _default_value;
   bool _allow_default_value;
-  std::function<bool(const Type &)> _on_finish;
+  Type _value;
+  Callback _on_finish;
 };
 }  // namespace SJParser
 

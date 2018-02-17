@@ -27,6 +27,7 @@ set(CHECKS
   -cppcoreguidelines-special-member-functions
   -hicpp-special-member-functions
   -hicpp-explicit-conversions
+  -google-readability-todo
   # For some reason, it does not play well with comments before pragma once
   -llvm-header-guard
   # clang-tidy and clang-format seems to disagree

@@ -31,131 +31,111 @@ namespace SJParser {
 
 /** @brief %Object parser.
  *
- * @tparam Ts A list of field parsers types.
+ * @tparam Ts A list of member parsers types.
  */
 
 template <typename... Ts>
-class Object : public KeyValueParser<FieldName, Ts...> {
+class Object : public KeyValueParser<std::string, Ts...> {
  protected:
   /** @cond INTERNAL Internal typedef */
-  using KVParser = KeyValueParser<FieldName, Ts...>;
+  using KVParser = KeyValueParser<std::string, Ts...>;
   /** @endcond */
 
  public:
-  /** A std::tuple with arguments for field parsers. */
-  using ChildArgs = typename KVParser::ChildArgs;
-
-  /** Type alias for the parser options. */
-  using Options = ObjectOptions;
-
-  /** @brief Struct with arguments for the Object @ref Object() "constructor".
+#ifdef DOXYGEN_ONLY
+  /** @brief %Member parser type.
+   *
+   * Resolves to n-th member parser type
+   *
+   * @tparam n %Member index
    */
-  struct Args {
-    /** @param [in] args Sets #args.
-     *
-     * @param [in] options Sets #options.
-     *
-     * @param [in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args, const Options &options,
-         const std::function<bool(Object<Ts...> &)> &on_finish = nullptr);
-
-    /** @param [in] args Sets #args.
-     *
-     * @param [in] on_finish (optional) Sets #on_finish.
-     *
-     * @note If you are passing a single field name (without arguments)
-     * to the constructor, you must pass it without surrounding {}:
-     * @code {.cpp} Object<...>::Args args("field"); @endcode
-     * However, if you initialize Args, you can pass the extra {}:
-     * @code {.cpp} Object<...>::Args args = {"field"}; @endcode
-     * @code {.cpp} Object<...>::Args args = {{"field"}}; @endcode
-     */
-    Args(const ChildArgs &args,
-         const std::function<bool(Object<Ts...> &)> &on_finish = nullptr);
-
-    /** A std::tuple with field arguments.
-     *
-     * A field argument is a structure where the first element is a string
-     * with field's name and the second element is arguments to that field's
-     * parser. If you do not want to provide any arguments to the field's
-     * parser, you can pass only the field's name:
-     * @code {.cpp} {"field1", {"field2", ...}, "field3"} @endcode
-     * In this example field1 and field3 parsers do not receive any agruments
-     * while field2 does receive something.
-     */
-    ChildArgs args;
-
-    /** #SJParser::ObjectOptions struct with parser options. */
-    Options options;
-
-    /** Callback, that will be called after an object is parsed.
-     *
-     * The callback will be called with a reference to the parser as an
-     * argument.
-     *
-     * If the callback returns false, parsing will be stopped with an error.
-     */
-    std::function<bool(Object<Ts...> &)> on_finish;
+  template <size_t n> struct ParserType {
+    /** n-th member parser type */
+    using ParserType = NthTypes<n, TDs...>::ParserType;
   };
+#endif
 
-  /** @brief Object constructor.
+  /** Finish callback type. */
+  using Callback = std::function<bool(Object<Ts...> &)>;
+
+  /** @brief Constructor.
    *
-   * @param [in] args Args stucture.
-   * If you do not specify @ref Args::on_finish "on_finish" callback,
-   * you can pass a @ref Args::args "tuple of field arguments" directly
-   * into the constructor.
+   * @param [in] members std::tuple of Member structures, describing object
+   * members.
    *
-   * @note If you are passing a single field name (without arguments) directly
-   * to the constructor, you must pass it without surrounding {}:
-   * @code {.cpp} Object<...> object("field"); @endcode
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
    */
-  Object(const Args &args);
-  Object(const Object &) = delete;
+  template <typename CallbackT = std::nullptr_t>
+  Object(std::tuple<Member<std::string, Ts>...> members,
+         CallbackT on_finish = nullptr,
+         std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
+             * /*unused*/
+         = 0);
+
+  /** @brief Constructor.
+   *
+   * @param [in] members std::tuple of Member structures, describing object
+   * members.
+   *
+   * @param [in] options Additional options for the parser.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  template <typename CallbackT = std::nullptr_t>
+  Object(std::tuple<Member<std::string, Ts>...> members, ObjectOptions options,
+         CallbackT on_finish = nullptr);
+
+  /** Move constructor. */
+  Object(Object &&other) noexcept;
+
+  /** @brief Finish callback setter.
+   *
+   * @param [in] on_finish Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  void setFinishCallback(Callback on_finish);
 
 #ifdef DOXYGEN_ONLY
-  /** @brief Universal field getter.
+  /** @brief Universal member getter.
    *
-   * @tparam n Index of the parser's field.
+   * @tparam n Index of the parser's member.
    *
-   * @return If the n-th field parser stores value (is a Value, SObject or
-   * SArray), then the method returns a const reference to the n-th field parser
-   * value. Otherwise, returns a reference to the n-th field parser.
+   * @return If the n-th member parser stores value (is a Value, SAutoObject,
+   * SCustomObject, SUnion or SArray), then the method returns a const reference
+   * to the n-th member parser value. Otherwise, returns a reference to the n-th
+   * member parser.
    *
-   * @throw std::runtime_error thrown if the field parser value is unset (no
-   * value was parsed or #pop was called for the field parser).
+   * @throw std::runtime_error thrown if the member parser value is unset (no
+   * value was parsed or #pop was called for the member parser).
    */
-  template <size_t n>
-  const typename NthTypes<n, Ts...>::template ValueType<> &get();
+  template <size_t n> auto &get();
 
-  /** @brief Universal field getter.
+  /** @brief Member parser getter.
    *
-   * @tparam n Index of the parser's field.
+   * @tparam n Index of the parser's member.
    *
-   * @return If the n-th field parser stores value (is a Value, SObject or
-   * SArray), then the method returns a const reference to the n-th field parser
-   * value. Otherwise, returns a reference to the n-th field parser.
-   */
-  template <size_t n> typename NthTypes<n, Ts...>::ParserType &get();
-
-  /** @brief Field parser getter.
-   *
-   * @tparam n Index of the parser's field.
-   *
-   * @return Reference to n-th field parser.
+   * @return Reference to n-th member parser.
    */
   template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
 
-  /** @brief Get the field parsed value and unset the field parser.
+  /** @brief Get the member parsed value and unset the member parser.
    *
-   * Moves the n-th field parsed value out of the field parser.
+   * Moves the n-th member parsed value out of the member parser.
    *
-   * @tparam n Index of the parser's field.
+   * @tparam n Index of the parser's member.
    *
-   * @return Rvalue reference to n-th field parser value.
+   * @return Rvalue reference to n-th member parser value.
    *
-   * @throw std::runtime_error thrown if the field parser value is unset (no
-   * value was parsed or #pop was called for the field parser).
+   * @throw std::runtime_error thrown if the member parser value is unset (no
+   * value was parsed or #pop was called for the member parser).
    */
   template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 #endif
@@ -166,7 +146,7 @@ class Object : public KeyValueParser<FieldName, Ts...> {
 
   void finish() override;
 
-  std::function<bool(Object<Ts...> &)> _on_finish;
+  Callback _on_finish;
 };
 }  // namespace SJParser
 

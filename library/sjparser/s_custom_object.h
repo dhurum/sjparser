@@ -24,91 +24,98 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "object.h"
+#include "type_holder.h"
 
 namespace SJParser {
 
 /** @brief %Object parser, that stores parsed value of type
- * @ref SCustomObject_T "T"
+ * @ref SCustomObject_TypeT "TypeT"
  *
- * Stored value is set from a @ref Args::on_finish "callback".
+ * Stored value is set from a finish callback.
  *
- * Instead of using this type directly you should use an SObject, it will
- * automatically dispatch SCustomObject and SAutoObject based on the template
- * parameters.
+ * @tparam TypeT Stored value type. It must have a default constructor. If you
+ * want to include this parser into SArray, a move constructor of this type will
+ * be used if possible.
+ * @anchor SCustomObject_TypeT
  *
- * @tparam T Stored value type. It must have a default constructor. If you want
- * to include this parser into SArray, a move constructor of this type will be
- * used if possible.
- * @anchor SCustomObject_T
- *
- * @tparam Ts A list of field parsers types.
+ * @tparam Ts A list of member parsers types.
  */
 
-template <typename T, typename... Ts>
+template <typename TypeT, typename... Ts>
 class SCustomObject : public Object<Ts...> {
  public:
-  /** A std::tuple with arguments for field parsers. */
-  using ChildArgs = typename Object<Ts...>::ChildArgs;
+#ifdef DOXYGEN_ONLY
+  /** @brief %Member parser type.
+   *
+   * Resolves to n-th member parser type
+   *
+   * @tparam n %Member index
+   */
+  template <size_t n> struct ParserType {
+    /** n-th member parser type */
+    using ParserType = NthTypes<n, TDs...>::ParserType;
+  };
+#endif
 
   /** Stored value type */
-  using Type = T;
+  using Type = TypeT;
 
-  /** Type alias for the parser options. */
-  using Options = typename Object<Ts...>::Options;
+  /** Finish callback type. */
+  using Callback = std::function<bool(SCustomObject<Type, Ts...> &, Type &)>;
 
-  /** @brief Struct with arguments for the SCustomObject
-   * @ref SCustomObject() "constructor".
-   */
-  struct Args {
-    /** @param [in] args Sets #args.
-     *
-     * @param [in] options Sets #options.
-     *
-     * @param[in] on_finish Sets #on_finish.
-     */
-    Args(const ChildArgs &args, const Options &options,
-         const std::function<bool(SCustomObject<Type, Ts...> &, Type &)>
-             &on_finish);
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] on_finish Sets #on_finish.
-     */
-    Args(const ChildArgs &args,
-         const std::function<bool(SCustomObject<Type, Ts...> &, Type &)>
-             &on_finish);
-
-    /** A std::tuple with field arguments.
-     *
-     * A field argument is a structure where the first element is a string
-     * with field's name and the second element is arguments to that field's
-     * parser. If you do not want to provide any arguments to the field's
-     * parser, you can pass only the field's name:
-     * @code {.cpp} {"field1", {"field2", ...}, "field3"} @endcode
-     * In this example field1 and field3 parsers do not receive any agruments
-     * while field2 does receive something.
-     */
-    ChildArgs args;
-
-    /** #SJParser::ObjectOptions struct with parser options. */
-    Options options;
-
-    /** Callback, that will be called after an object is parsed.
-     *
-     * The callback will be called with a reference to the parser as a first
-     * argument and a reference to the stored value as a second argument. You
-     * must set the stored value in this callback.
-     *
-     * If the callback returns false, parsing will be stopped with an error.
-     */
-    std::function<bool(SCustomObject<Type, Ts...> &, Type &)> on_finish;
-  };
-
-  /** @brief SCustomObject constructor.
+  /** @brief Constructor.
    *
-   * @param [in] args Args stucture.
+   * @param [in] type Stored value type, please use a TypeHolder wrapper for it.
+   *
+   * @param [in] members std::tuple of Member structures, describing object
+   * members.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser and a reference
+   * to the stored value as arguments. If the callback returns false, parsing
+   * will be stopped with an error.
    */
-  SCustomObject(const Args &args);
-  SCustomObject(const SCustomObject &) = delete;
+  template <typename CallbackT = std::nullptr_t>
+  SCustomObject(TypeHolder<Type> type,
+                std::tuple<Member<std::string, Ts>...> members,
+                CallbackT on_finish = nullptr,
+                std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
+                    * /*unused*/
+                = 0);
+
+  /** @brief Constructor.
+   *
+   * @param [in] type Stored value type, please use a TypeHolder wrapper for it.
+   *
+   * @param [in] members std::tuple of Member structures, describing object
+   * members.
+   *
+   * @param [in] options Additional options for the parser.
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser and a reference
+   * to the stored value as arguments. If the callback returns false, parsing
+   * will be stopped with an error.
+   */
+  template <typename CallbackT = std::nullptr_t>
+  SCustomObject(TypeHolder<Type> type,
+                std::tuple<Member<std::string, Ts>...> members,
+                ObjectOptions options, CallbackT on_finish = nullptr);
+
+  /** Move constructor. */
+  SCustomObject(SCustomObject &&other) noexcept;
+
+  /** @brief Finish callback setter.
+   *
+   * @param [in] on_finish Callback, that will be called after the
+   * object is parsed.
+   * The callback will be called with a reference to the parser and a reference
+   * to the stored value as arguments. If the callback returns false, parsing
+   * will be stopped with an error.
+   */
+  void setFinishCallback(Callback on_finish);
 
 #ifdef DOXYGEN_ONLY
   /** @brief Check if the parser has a value.
@@ -119,35 +126,25 @@ class SCustomObject : public Object<Ts...> {
 #endif
 
 #ifdef DOXYGEN_ONLY
-  /** @brief Universal field getter.
+  /** @brief Universal member getter.
    *
-   * @tparam n Index of the parser's field.
+   * @tparam n Index of the parser's member.
    *
-   * @return If the n-th field parser stores value (is a Value, SObject or
-   * SArray), then the method returns a const reference to the n-th field parser
-   * value. Otherwise, returns a reference to the n-th field parser.
+   * @return If the n-th member parser stores value (is a Value, SAutoObject,
+   * SCustomObject, SUnion or SArray), then the method returns a const reference
+   * to the n-th member parser value. Otherwise, returns a reference to the n-th
+   * member parser.
    *
-   * @throw std::runtime_error thrown if the field parser value is unset (no
-   * value was parsed or #pop was called for the field parser).
+   * @throw std::runtime_error thrown if the member parser value is unset (no
+   * value was parsed or #pop was called for the member parser).
    */
-  template <size_t n>
-  const typename NthTypes<n, Ts...>::template ValueType<> &get();
+  template <size_t n> auto &get();
 
-  /** @brief Universal field getter.
+  /** @brief Member parser getter.
    *
-   * @tparam n Index of the parser's field.
+   * @tparam n Index of the parser's member.
    *
-   * @return If the n-th field parser stores value (is a Value, SObject or
-   * SArray), then the method returns a const reference to the n-th field parser
-   * value. Otherwise, returns a reference to the n-th field parser.
-   */
-  template <size_t n> typename NthTypes<n, Ts...>::ParserType &get();
-
-  /** @brief Field parser getter.
-   *
-   * @tparam n Index of the parser's field.
-   *
-   * @return Reference to n-th field parser.
+   * @return Reference to n-th member parser.
    */
   template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
 #endif
@@ -163,16 +160,16 @@ class SCustomObject : public Object<Ts...> {
   const Type &get() const;
 
 #ifdef DOXYGEN_ONLY
-  /** @brief Get the field parsed value and unset the field parser.
+  /** @brief Get the member parsed value and unset the member parser.
    *
-   * Moves the n-th field parsed value out of the field parser.
+   * Moves the n-th member parsed value out of the member parser.
    *
-   * @tparam n Index of the parser's field.
+   * @tparam n Index of the parser's member.
    *
-   * @return Rvalue reference to n-th field parser value.
+   * @return Rvalue reference to n-th member parser value.
    *
-   * @throw std::runtime_error thrown if the field parser value is unset (no
-   * value was parsed or #pop was called for the field parser).
+   * @throw std::runtime_error thrown if the member parser value is unset (no
+   * value was parsed or #pop was called for the member parser).
    */
   template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 #endif
@@ -207,7 +204,7 @@ class SCustomObject : public Object<Ts...> {
   void reset() override;
 
   Type _value;
-  std::function<bool(SCustomObject<T, Ts...> &, T &)> _on_finish;
+  Callback _on_finish;
 };
 }  // namespace SJParser
 

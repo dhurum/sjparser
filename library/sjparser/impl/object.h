@@ -26,21 +26,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace SJParser {
 
 template <typename... Ts>
-Object<Ts...>::Args::Args(const ChildArgs &args, const Options &options,
-                          const std::function<bool(Object<Ts...> &)> &on_finish)
-    : args(args), options(options), on_finish(on_finish) {}
+template <typename CallbackT>
+Object<Ts...>::Object(
+    std::tuple<Member<std::string, Ts>...> members, CallbackT on_finish,
+    std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
+    : KVParser(std::move(members), {}), _on_finish(std::move(on_finish)) {}
 
 template <typename... Ts>
-Object<Ts...>::Args::Args(const ChildArgs &args,
-                          const std::function<bool(Object<Ts...> &)> &on_finish)
-    : args(args), on_finish(on_finish) {}
+template <typename CallbackT>
+Object<Ts...>::Object(std::tuple<Member<std::string, Ts>...> members,
+                      ObjectOptions options, CallbackT on_finish)
+    : KVParser(std::move(members), options), _on_finish(std::move(on_finish)) {
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
 
 template <typename... Ts>
-Object<Ts...>::Object(const Args &args)
-    : KVParser(args.args, args.options), _on_finish(args.on_finish) {}
+Object<Ts...>::Object(Object &&other) noexcept
+    : KVParser(std::move(other)), _on_finish(std::move(other._on_finish)) {}
+
+template <typename... Ts>
+void Object<Ts...>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
 
 template <typename... Ts> void Object<Ts...>::on(MapKeyT key) {
-  KVParser::onField(key.key);
+  KVParser::onMember(key.key);
 }
 
 template <typename... Ts> void Object<Ts...>::finish() {

@@ -25,76 +25,105 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-template <typename TypeFieldT, typename... Ts>
-Union<TypeFieldT, Ts...>::Args::Args(
-    const ChildArgs &args,
-    const std::function<bool(Union<TypeFieldT, Ts...> &)> &on_finish)
-    : args(args), on_finish(on_finish) {}
-
-template <typename TypeFieldT, typename... Ts>
-Union<TypeFieldT, Ts...>::Args::Args(
-    const FieldName &type_field, const ChildArgs &args,
-    const std::function<bool(Union<TypeFieldT, Ts...> &)> &on_finish)
-    : type_field(type_field), args(args), on_finish(on_finish) {}
-
-template <typename TypeFieldT, typename... Ts>
-Union<TypeFieldT, Ts...>::Union(const Args &args)
-    : KVParser(args.args),
-      _type_field(args.type_field),
-      _on_finish(args.on_finish),
+template <typename TypeMemberT, typename... Ts>
+template <typename CallbackT>
+Union<TypeMemberT, Ts...>::Union(TypeHolder<TypeMemberT> /*type*/,
+                                 std::tuple<Member<TypeMemberT, Ts>...> members,
+                                 CallbackT on_finish)
+    : KVParser(std::move(members), {}),
+      _on_finish(std::move(on_finish)),
       _current_member_id(0) {
-  for (size_t i = 0; i < KVParser::_fields_array.size(); ++i) {
-    _fields_ids_map[KVParser::_fields_array[i]] = i;
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+  setupIdsMap();
+}
+
+template <typename TypeMemberT, typename... Ts>
+template <typename CallbackT>
+Union<TypeMemberT, Ts...>::Union(TypeHolder<TypeMemberT> /*type*/,
+                                 std::string type_member,
+                                 std::tuple<Member<TypeMemberT, Ts>...> members,
+                                 CallbackT on_finish)
+    : KVParser(std::move(members), {}),
+      _type_member(std::move(type_member)),
+      _on_finish(std::move(on_finish)),
+      _current_member_id(0) {
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+  setupIdsMap();
+}
+
+template <typename TypeMemberT, typename... Ts>
+Union<TypeMemberT, Ts...>::Union(Union &&other) noexcept
+    : KVParser(std::move(other)),
+      _type_member(std::move(other._type_member)),
+      _on_finish(std::move(other._on_finish)),
+      _current_member_id(0) {
+  setupIdsMap();
+}
+
+template <typename TypeMemberT, typename... Ts>
+void Union<TypeMemberT, Ts...>::setupIdsMap() {
+  _members_ids_map.clear();
+  for (size_t i = 0; i < KVParser::_parsers_array.size(); ++i) {
+    _members_ids_map[KVParser::_parsers_array[i]] = i;
   }
 }
 
-template <typename TypeFieldT, typename... Ts>
-size_t Union<TypeFieldT, Ts...>::currentMemberId() {
+template <typename TypeMemberT, typename... Ts>
+void Union<TypeMemberT, Ts...>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
+
+template <typename TypeMemberT, typename... Ts>
+size_t Union<TypeMemberT, Ts...>::currentMemberId() {
   checkSet();
   return _current_member_id;
 }
 
-template <typename TypeFieldT, typename... Ts>
-void Union<TypeFieldT, Ts...>::on(TokenType<TypeFieldT> value) {
+template <typename TypeMemberT, typename... Ts>
+void Union<TypeMemberT, Ts...>::on(TokenType<TypeMemberT> value) {
   KVParser::reset();
-  KVParser::onField(value);
-  _current_member_id = _fields_ids_map[KVParser::_fields_map[value]];
+  KVParser::onMember(value);
+  _current_member_id = _members_ids_map[KVParser::_parsers_map[value]];
 }
 
-template <typename TypeFieldT, typename... Ts>
-void Union<TypeFieldT, Ts...>::on(MapStartT /*unused*/) {
-  if (_type_field.empty()) {
+template <typename TypeMemberT, typename... Ts>
+void Union<TypeMemberT, Ts...>::on(MapStartT /*unused*/) {
+  if (_type_member.empty()) {
     // Should never happen
-    throw std::runtime_error("Union with an empty type field can't parse this");
+    throw std::runtime_error(
+        "Union with an empty type member can't parse this");
   }
   KVParser::on(MapStartT{});
 }
 
-template <typename TypeFieldT, typename... Ts>
-void Union<TypeFieldT, Ts...>::on(MapKeyT key) {
-  if (_type_field.empty()) {
+template <typename TypeMemberT, typename... Ts>
+void Union<TypeMemberT, Ts...>::on(MapKeyT key) {
+  if (_type_member.empty()) {
     // Should never happen
-    throw std::runtime_error("Union with an empty type field can't parse this");
+    throw std::runtime_error(
+        "Union with an empty type member can't parse this");
   }
-  if (key.key != _type_field) {
+  if (key.key != _type_member) {
     std::stringstream err;
-    err << "Unexpected field " << key.key;
+    err << "Unexpected member " << key.key;
     throw std::runtime_error(err.str());
   }
 }
 
-template <typename TypeFieldT, typename... Ts>
-void Union<TypeFieldT, Ts...>::childParsed() {
+template <typename TypeMemberT, typename... Ts>
+void Union<TypeMemberT, Ts...>::childParsed() {
   KVParser::endParsing();
-  if (_type_field.empty()) {
+  if (_type_member.empty()) {
     // The union embedded into an object must propagate the end event to the
     // parent.
     KVParser::_dispatcher->on(MapEndT());
   }
 }
 
-template <typename TypeFieldT, typename... Ts>
-void Union<TypeFieldT, Ts...>::finish() {
+template <typename TypeMemberT, typename... Ts>
+void Union<TypeMemberT, Ts...>::finish() {
   if (_on_finish && !_on_finish(*this)) {
     throw std::runtime_error("Callback returned false");
   }

@@ -37,7 +37,10 @@ namespace SJParser {
  */
 class YajlParser {
  public:
+  /** Constructor */
   YajlParser();
+
+  /** Destructor */
   ~YajlParser();
 
   /** @brief Parses a piece of JSON from an std::string.

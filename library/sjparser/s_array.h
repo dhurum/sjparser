@@ -38,72 +38,42 @@ namespace SJParser {
 
 template <typename T> class SArray : public Array<T> {
  public:
-  /** Arguments for the underlying parser */
-  using ChildArgs = typename T::Args;
-
-  /** Underlying parser value type */
-  using EltType = typename T::Type;
+  /** Underlying parser type */
+  using ParserType = std::decay_t<T>;
 
   /** Stored value type */
-  using Type = std::vector<EltType>;
+  using Type = std::vector<typename ParserType::Type>;
 
   /** Finish callback type */
-  using CallbackType = std::function<bool(const Type &)>;
+  using Callback = std::function<bool(const Type &)>;
 
-  /** @cond INTERNAL Underlying parser type */
-  using ParserType = T;
-  /** @endcond */
-
-  /** Child arguments for the underlying type */
-  template <typename U = Array<T>>
-  using GrandChildArgs = typename U::ParserType::ChildArgs;
-
-  /** @brief Struct with arguments for the SArray @ref SArray() "constructor".
-   */
-  struct Args {
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    Args(const ChildArgs &args = {}, const CallbackType &on_finish = nullptr);
-
-    /** @param [in] args Sets #args.
-     *
-     * @param[in] on_finish (optional) Sets #on_finish.
-     */
-    template <typename U = Array<T>>
-    Args(const GrandChildArgs<U> &args,
-         const CallbackType &on_finish = nullptr);
-
-    /**@param[in] on_finish (optional) Sets #on_finish. */
-    Args(const CallbackType &on_finish);
-
-    /** Arguments for the underlying parser */
-    ChildArgs args;
-    /** Callback, that will be called after an object is parsed.
-     *
-     * The callback will be called with a reference to the parser as an
-     * argument.
-     * This reference is mostly useless, it's main purpose it to help the
-     * compiler.
-     *
-     * If the callback returns false, parsing will be stopped with an error.
-     */
-    std::function<bool(const Type &)> on_finish;
-  };
-
-  /** @brief Array constructor.
+  /** @brief Constructor.
    *
-   * @param [in] args Args stucture.
-   * If you do not specify @ref Args::on_finish "on_finish" callback, you can
-   * pass a @ref Args::args "underlying parser arguments" directly into the
-   * constructor.
-   * If you do not specify @ref Args::args "underlying parser arguments", you
-   * can pass a @ref Args::on_finish "on_finish" callback directly into the
-   * constructor.
+   * @param [in] parser %Parser for array elements, can be an lvalue reference
+   * or an rvalue. It must be one of the parsers that store values (Value,
+   * SArray, SAutoObject, SCustomObject, SUnion).
+   *
+   * @param [in] on_finish (optional) Callback, that will be called after the
+   * array is parsed.
+   * The callback will be called with a reference to the parser as an argument.
+   * If the callback returns false, parsing will be stopped with an error.
    */
-  SArray(const Args &args);
-  SArray(const SArray &) = delete;
+  template <typename CallbackT = std::nullptr_t>
+  SArray(T &&parser, CallbackT on_finish = nullptr);
+
+  /** Move constructor. */
+  SArray(SArray &&other) noexcept;
+
+  /** @brief Finish callback setter.
+   *
+   * @param [in] on_finish Callback, that will be called after the
+   * array is parsed.
+   *
+   * The callback will be called with a reference to the parser as an argument.
+   *
+   * If the callback returns false, parsing will be stopped with an error.
+   */
+  void setFinishCallback(Callback on_finish);
 
 #ifdef DOXYGEN_ONLY
   /** @brief Check if the parser has a value.
@@ -111,6 +81,8 @@ template <typename T> class SArray : public Array<T> {
    * @return True if the parser has some value stored or false otherwise.
    */
   bool isSet();
+
+  T &parser();
 #endif
 
   /** @brief Parsed value getter.
@@ -141,9 +113,17 @@ template <typename T> class SArray : public Array<T> {
   void finish() override;
   void reset() override;
 
-  std::vector<EltType> _values;
-  std::function<bool(const Type &)> _on_finish;
+  Type _values;
+  Callback _on_finish;
 };
+
+template <template <typename> typename U, typename T>
+SArray(U<T> &&)->SArray<U<T>>;
+
+template <template <typename> typename U, typename T>
+SArray(U<T> &)->SArray<U<T> &>;
+
+template <typename T> SArray(T &&)->SArray<T>;
 }  // namespace SJParser
 
 #include "impl/s_array.h"
