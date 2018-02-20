@@ -17,7 +17,7 @@ This is an event-driven parser on steroids - you specify the expected json struc
 
 [Class reference](https://dhurum.github.io/sjparser/documentation/html/).  
 
-[Tutorial (Currently outdated, will be fixed soon)](https://github.com/dhurum/sjparser_tutorial).  
+[Tutorial](https://github.com/dhurum/sjparser_tutorial).  
 
 Also you can check the [Concepts](#concepts).
 
