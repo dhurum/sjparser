@@ -31,20 +31,18 @@ TEST(SCustomObject, Empty) {
 
   struct ObjectStruct {};
 
+  auto objectCb = [&](auto &, ObjectStruct &) { return true; };
+
   Parser parser{SCustomObject{TypeHolder<ObjectStruct>{},
                               std::tuple{Member{"string", Value<std::string>{}},
-                                         Member{"integer", Value<int64_t>{}}}}};
-
-  auto objectCb = [&](decltype(parser)::ParserType &, ObjectStruct &) {
-    return true;
-  };
-
-  parser.parser().setFinishCallback(objectCb);
+                                         Member{"integer", Value<int64_t>{}}},
+                              objectCb}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(SCustomObject, Null) {
@@ -63,6 +61,7 @@ TEST(SCustomObject, Null) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(SCustomObject, Reset) {
@@ -917,4 +916,76 @@ TEST(SCustomObject, SCustomObjectWithParserReference) {
   ASSERT_EQ("elt3", parser.parser().get().array_value[2]);
 
   ASSERT_EQ(&(parser.parser().parser<2>()), &sarray);
+}
+
+TEST(SCustomObject, MissingMember) {
+  std::string buf(R"({"bool": true})");
+
+  struct ObjectStruct {
+    bool bool_value;
+    std::string str_value;
+  };
+
+  Parser parser{
+      SCustomObject{TypeHolder<ObjectStruct>{},
+                    std::tuple{Member{"bool", Value<bool>{}},
+                               Member{"string", Value<std::string>{}}}}};
+
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Mandatory member string is not present", e.sjparserError());
+
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+                          {"bool": true}
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(SCustomObject, OptionalMember) {
+  std::string buf(R"({"bool": true})");
+
+  struct ObjectStruct {
+    bool bool_value;
+    std::string str_value;
+  };
+
+  Parser parser{SCustomObject{
+      TypeHolder<ObjectStruct>{},
+      std::tuple{Member{"bool", Value<bool>{}},
+                 Member{"string", Value<std::string>{}, Presence::Optional}}}};
+
+  parser.parse(buf);
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, parser.parser().get<0>());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
+}
+
+TEST(SCustomObject, OptionalMemberWithDefaultValue) {
+  std::string buf(R"({"bool": true})");
+
+  struct ObjectStruct {
+    bool bool_value;
+    std::string str_value;
+  };
+
+  Parser parser{SCustomObject{TypeHolder<ObjectStruct>{},
+                              std::tuple{Member{"bool", Value<bool>{}},
+                                         Member{"string", Value<std::string>{},
+                                                Presence::Optional, "value"}}}};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, parser.parser().get<0>());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
+  ASSERT_EQ("value", parser.parser().get<1>());
 }

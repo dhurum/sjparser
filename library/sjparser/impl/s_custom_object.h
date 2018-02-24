@@ -65,13 +65,25 @@ template <typename TypeT, typename... Ts>
 typename SCustomObject<TypeT, Ts...>::Type &&
 SCustomObject<TypeT, Ts...>::pop() {
   checkSet();
-  _set = false;
+  TokenParser::_set = false;
   return std::move(_value);
 }
 
 template <typename TypeT, typename... Ts>
 void SCustomObject<TypeT, Ts...>::finish() {
-  if (!_on_finish(*this, _value)) {
+  if (TokenParser::isEmpty()) {
+    TokenParser::_set = false;
+    return;
+  }
+
+  try {
+    typename Object<Ts...>::template MemberChecker<0, Ts...>(*this);
+  } catch (std::exception &e) {
+    TokenParser::_set = false;
+    throw;
+  }
+
+  if (_on_finish && !_on_finish(*this, _value)) {
     throw std::runtime_error("Callback returned false");
   }
 }

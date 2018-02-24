@@ -37,6 +37,7 @@ TEST(SArray, Empty) {
   ASSERT_EQ(0, parser.parser().get().size());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(SArray, Null) {
@@ -48,6 +49,7 @@ TEST(SArray, Null) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(SArray, Reset) {
@@ -58,6 +60,9 @@ TEST(SArray, Reset) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
+
   ASSERT_EQ(1, parser.parser().get().size());
   ASSERT_EQ(true, parser.parser().get()[0]);
 
@@ -67,6 +72,7 @@ TEST(SArray, Reset) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(SArray, SArrayOfBooleans) {
@@ -466,25 +472,6 @@ TEST(SArray, SArrayOfSAutoObjects) {
   ASSERT_EQ("value", std::get<0>(parser.parser().get()[0]));
   ASSERT_EQ(10, std::get<1>(parser.parser().get()[0]));
   ASSERT_EQ("value2", std::get<0>(parser.parser().get()[1]));
-  ASSERT_EQ(20, std::get<1>(parser.parser().get()[1]));
-}
-
-TEST(SArray, SArrayOfSAutoObjectsWithDefaultValues) {
-  std::string buf(
-      R"([{"key": "value"}, {"key2": 20}])");
-
-  Parser parser{
-      SArray{SAutoObject{std::tuple{Member{"key", Value<std::string>{}},
-                                    Member{"key2", Value<int64_t>{}}},
-                         {"test", 10}}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ("value", std::get<0>(parser.parser().get()[0]));
-  ASSERT_EQ(10, std::get<1>(parser.parser().get()[0]));
-  ASSERT_EQ("test", std::get<0>(parser.parser().get()[1]));
   ASSERT_EQ(20, std::get<1>(parser.parser().get()[1]));
 }
 

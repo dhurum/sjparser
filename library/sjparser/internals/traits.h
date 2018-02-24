@@ -23,22 +23,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include <type_traits>
+
 namespace SJParser {
 
-/** Enum with error reaction options */
-enum class Reaction {
-  /** Throw an exception */
-  Error,
-  /** Ignore the error */
-  Ignore
-};
+template <typename, typename = std::void_t<>>
+struct IsStorageParserT : public std::false_type {};
+template <typename T>
+struct IsStorageParserT<T, std::void_t<typename std::decay_t<T>::Type>>
+    : public std::true_type {};
 
-/** @brief Option for object parsers
- *
- * Additional options for Object, SAutoObject and SCustomObject
- */
-struct ObjectOptions {
-  /** How to react to a member, not specified in the arguments */
-  Reaction unknown_member = Reaction::Error;
-};
+template <typename T>
+constexpr bool IsStorageParser = IsStorageParserT<T>::value;
 }  // namespace SJParser

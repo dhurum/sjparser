@@ -28,7 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 using namespace SJParser;
 
 TEST(EmbeddedSUnion, Empty) {
-  std::string buf(R"({})");
+  std::string buf(R"({"type": 1})");
 
   Parser parser{Object{std::tuple{Member{
       "type", SUnion{TypeHolder<int64_t>{},
@@ -37,28 +37,84 @@ TEST(EmbeddedSUnion, Empty) {
                                 Member{2, SAutoObject{std::tuple{Member{
                                               "int", Value<int64_t>{}}}}}}}}}}};
 
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().parser<0>().isSet());
+    ASSERT_EQ("Can not set value: Mandatory member #0 is not present",
+              e.sjparserError());
 
-  ASSERT_TRUE(parser.parser().isSet());
-  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+                             {"type": 1}
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
-TEST(EmbeddedSUnion, Null) {
-  std::string buf(R"(null)");
+TEST(EmbeddedSUnion, OptionalMember) {
+  std::string buf(R"({"type": 1})");
 
   Parser parser{Object{std::tuple{Member{
-      "type", SUnion{TypeHolder<int64_t>{},
-                     std::tuple{Member{1, SAutoObject{std::tuple{
-                                              Member{"bool", Value<bool>{}}}}},
-                                Member{2, SAutoObject{std::tuple{Member{
-                                              "int", Value<int64_t>{}}}}}}}}}}};
+      "type",
+      SUnion{
+          TypeHolder<int64_t>{},
+          std::tuple{
+              Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}},
+                     Presence::Optional},
+              Member{2, SAutoObject{
+                            std::tuple{Member{"int", Value<int64_t>{}}}}}}}}}}};
+
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().parser<0>().isSet());
+    ASSERT_EQ(
+        "Can not set value: Optional member #0 does not have a default value",
+        e.sjparserError());
+
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+                             {"type": 1}
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(EmbeddedSUnion, OptionalMemberWithDefaultValue) {
+  std::string buf(R"({"type": 1})");
+
+  Parser parser{Object{std::tuple{Member{
+      "type",
+      SUnion{
+          TypeHolder<int64_t>{},
+          std::tuple{
+              Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}},
+                     Presence::Optional, std::tuple<bool>{false}},
+              Member{2, SAutoObject{
+                            std::tuple{Member{"int", Value<int64_t>{}}}}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_FALSE(parser.parser().isSet());
-  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isEmpty());
+
+  auto variant = parser.parser().get<0>();
+
+  ASSERT_EQ(0, variant.index());
+
+  auto object = std::get<0>(variant);
+
+  ASSERT_EQ(false, std::get<0>(object));
 }
 
 TEST(EmbeddedSUnion, Reset) {
@@ -77,6 +133,9 @@ TEST(EmbeddedSUnion, Reset) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
+  ASSERT_TRUE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<0>().isEmpty());
+
   auto variant = parser.parser().get<0>();
 
   ASSERT_EQ(0, variant.index());
@@ -93,6 +152,7 @@ TEST(EmbeddedSUnion, Reset) {
 
   ASSERT_FALSE(parser.parser().isSet());
   ASSERT_FALSE(parser.parser().parser<0>().isSet());
+  ASSERT_TRUE(parser.parser().parser<0>().isEmpty());
 }
 
 TEST(EmbeddedSUnion, AllValuesMembers) {

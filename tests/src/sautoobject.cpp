@@ -29,67 +29,14 @@ using namespace SJParser;
 TEST(SAutoObject, Empty) {
   std::string buf(R"({})");
 
-  Parser parser{SAutoObject{std::tuple{Member{"string", Value<std::string>{}},
-                                       Member{"integer", Value<int64_t>{}}}}};
-
-  try {
-    parser.parse(buf);
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ(
-        "Can not set value: Not all members are set in an storage object "
-        "without "
-        "a default value",
-        e.sjparserError());
-
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-                                      {}
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
-TEST(SAutoObject, EmptyDefault) {
-  std::string buf(R"({})");
-
-  Parser parser{SAutoObject{std::tuple{Member{"string", Value<std::string>{}},
-                                       Member{"integer", Value<int64_t>{}}},
-                            {"test", 1}}};
+  Parser parser{SAutoObject{std::tuple{
+      Member{"bool", Value<bool>{}}, Member{"string", Value<std::string>{}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_TRUE(parser.parser().isSet());
-
-  ASSERT_EQ("test", std::get<0>(parser.parser().get()));
-  ASSERT_EQ(1, std::get<1>(parser.parser().get()));
-}
-
-TEST(SAutoObject, EmptyDefaultWithCallback) {
-  std::string buf(R"({})");
-  bool callback_called = false;
-
-  auto objectCb = [&](const std::tuple<bool, std::string> &) {
-    callback_called = true;
-    return true;
-  };
-
-  Parser parser{SAutoObject{std::tuple{Member{"bool", Value<bool>{}},
-                                       Member{"string", Value<std::string>{}}},
-                            {true, "test"},
-                            objectCb}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_TRUE(parser.parser().isSet());
-
-  ASSERT_TRUE(callback_called);
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(SAutoObject, Null) {
@@ -102,6 +49,7 @@ TEST(SAutoObject, Null) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(SAutoObject, Reset) {
@@ -154,40 +102,6 @@ TEST(SAutoObject, IgnoredUnexpectedMember) {
 
   Parser parser{SAutoObject{std::tuple{Member{"bool", Value<bool>{}},
                                        Member{"string", Value<std::string>{}}},
-                            {Reaction::Ignore}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
-  ASSERT_EQ("value", std::get<1>(parser.parser().get()));
-}
-
-TEST(SAutoObject, Default) {
-  std::string buf(
-      R"({"bool": true, "double": 11.5})");
-
-  Parser parser{SAutoObject{std::tuple{Member{"bool", Value<bool>{}},
-                                       Member{"integer", Value<int64_t>{}},
-                                       Member{"double", Value<double>{}},
-                                       Member{"string", Value<std::string>{}}},
-                            {false, 10, 10.0, "value"}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
-  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
-  ASSERT_EQ(11.5, std::get<2>(parser.parser().get()));
-  ASSERT_EQ("value", std::get<3>(parser.parser().get()));
-}
-
-TEST(SAutoObject, DefaultWithIgnoredUnexpectedMember) {
-  std::string buf(R"({"error": true, "bool": true})");
-
-  Parser parser{SAutoObject{std::tuple{Member{"bool", Value<bool>{}},
-                                       Member{"string", Value<std::string>{}}},
-                            {false, "value"},
                             {Reaction::Ignore}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
@@ -384,32 +298,6 @@ TEST(SAutoObject, SAutoObjectWithSArray) {
   ASSERT_EQ("elt1", array[0]);
   ASSERT_EQ("elt2", array[1]);
   ASSERT_EQ("elt3", array[2]);
-}
-
-TEST(SAutoObject, SAutoObjectWithDefaultSArray) {
-  std::string buf(
-      R"(
-{
-  "string": "value",
-  "integer": 10
-})");
-
-  Parser parser{
-      SAutoObject{std::tuple{Member{"string", Value<std::string>{}},
-                             Member{"integer", Value<int64_t>{}},
-                             Member{"array", SArray{Value<std::string>{}}}},
-                  {"default", 0, {"elt1", "elt2"}}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ("value", std::get<0>(parser.parser().get()));
-  ASSERT_EQ(10, std::get<1>(parser.parser().get()));
-
-  auto array = std::get<2>(parser.parser().get());
-  ASSERT_EQ(2, array.size());
-  ASSERT_EQ("elt1", array[0]);
-  ASSERT_EQ("elt2", array[1]);
 }
 
 TEST(SAutoObject, SAutoObjectWithStandaloneSUnion) {
@@ -670,4 +558,72 @@ TEST(SAutoObject, SAutoObjectWithParserReference) {
   ASSERT_EQ("elt3", array[2]);
 
   ASSERT_EQ(&(parser.parser().parser<2>()), &sarray);
+}
+
+TEST(SAutoObject, MissingMember) {
+  std::string buf(R"({"bool": true})");
+
+  Parser parser{SAutoObject{std::tuple{
+      Member{"bool", Value<bool>{}}, Member{"string", Value<std::string>{}}}}};
+
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Can not set value: Mandatory member string is not present",
+              e.sjparserError());
+
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+                          {"bool": true}
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(SAutoObject, OptionalMember) {
+  std::string buf(R"({"bool": true})");
+
+  Parser parser{SAutoObject{
+      std::tuple{Member{"bool", Value<bool>{}},
+                 Member{"string", Value<std::string>{}, Presence::Optional}}}};
+
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ(
+        "Can not set value: Optional member string does not have a default "
+        "value",
+        e.sjparserError());
+
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+                          {"bool": true}
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(SAutoObject, OptionalMemberWithDefaultValue) {
+  std::string buf(R"({"bool": true})");
+
+  Parser parser{SAutoObject{std::tuple{
+      Member{"bool", Value<bool>{}},
+      Member{"string", Value<std::string>{}, Presence::Optional, "value"}}}};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
+  ASSERT_EQ("value", std::get<1>(parser.parser().get()));
 }

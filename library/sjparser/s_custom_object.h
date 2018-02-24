@@ -33,9 +33,18 @@ namespace SJParser {
  *
  * Stored value is set from a finish callback.
  *
- * @tparam TypeT Stored value type. It must have a default constructor. If you
- * want to include this parser into SArray, a move constructor of this type will
- * be used if possible.
+ * All object members are mandatory, except for members with Presence::Optional.
+ * For absent members with default value SCustomObject::get<> will return the
+ * default value and isSet will return false.
+ *
+ * Unknown members will cause parsing error unless ObjectOptions is passed to
+ * the constructor with unknown_member set to Reaction::Ignore.
+ *
+ * Empty object will be parsed and marked as unset.
+ *
+ * @tparam TypeT Stored value type. It must have a default constructor and a
+ * copy constructor. If you want to include this parser into SArray, a move
+ * constructor of this type will be used if possible.
  * @anchor SCustomObject_TypeT
  *
  * @tparam Ts A list of member parsers types.
@@ -123,6 +132,12 @@ class SCustomObject : public Object<Ts...> {
    * @return True if the parser has some value stored or false otherwise.
    */
   bool isSet();
+
+  /** @brief Check if the parsed object was empy (null).
+   *
+   * @return True if the parsed object was empty (null) or false otherwise.
+   */
+  bool isEmpty();
 #endif
 
 #ifdef DOXYGEN_ONLY
@@ -132,11 +147,13 @@ class SCustomObject : public Object<Ts...> {
    *
    * @return If the n-th member parser stores value (is a Value, SAutoObject,
    * SCustomObject, SUnion or SArray), then the method returns a const reference
-   * to the n-th member parser value. Otherwise, returns a reference to the n-th
-   * member parser.
+   * to the n-th member parser value or a default value (if a default value is
+   * set and the member is not present). Otherwise, returns a reference to the
+   * n-th member parser.
    *
    * @throw std::runtime_error thrown if the member parser value is unset (no
-   * value was parsed or #pop was called for the member parser).
+   * value was parsed and no default value was specified or #pop was called for
+   * the member parser).
    */
   template <size_t n> auto &get();
 
@@ -197,7 +214,6 @@ class SCustomObject : public Object<Ts...> {
   Type &&pop();
 
  private:
-  using TokenParser::_set;
   using TokenParser::checkSet;
 
   void finish() override;

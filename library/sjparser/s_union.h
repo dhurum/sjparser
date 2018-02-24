@@ -42,6 +42,11 @@ namespace SJParser {
  *
  * SUnion type is defined by arguments passed to the constructor.
  *
+ * Empty standalone union will be parsed and marked as unset.
+ *
+ * If union type was parsed, then the corresponding object is mandatory
+ * unless it's member has Presence::Optional and default value set.
+ *
  * @tparam TypeMemberT A type of the type member. Can be int64_t, bool, double
  * or std::string.
  *
@@ -115,39 +120,6 @@ class SUnion : public Union<TypeMemberT, Ts...> {
   template <typename CallbackT = std::nullptr_t>
   SUnion(TypeHolder<TypeMemberT> type, std::string type_member,
          std::tuple<Member<TypeMemberT, Ts>...> members,
-         CallbackT on_finish = nullptr,
-         std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
-             * /*unused*/
-         = 0);
-
-  /** @brief Standalone mode constructor.
-   *
-   * This union will parse a whole JSON object. Object's first member's name
-   * must be same as type_member, and latter members will be parsed by one of
-   * this union's objects parsers.
-   *
-   * This constructor allows you to set value that would be used in case of an
-   * empty object in JSON.
-   *
-   * @param [in] type Type member's type, please use a TypeHolder wrapper for
-   * it.
-   *
-   * @param [in] type_member Type member's name.
-   *
-   * @param [in] members std::tuple of Member structures, describing union
-   * objects.
-   *
-   * @param [in] default_value Value, which will be used in case of an empty
-   * JSON object.
-   *
-   * @param [in] on_finish (optional) Callback, that will be called after the
-   * union is parsed.
-   * The callback will be called with a reference to the parser as an argument.
-   * If the callback returns false, parsing will be stopped with an error.
-   */
-  template <typename CallbackT = std::nullptr_t>
-  SUnion(TypeHolder<TypeMemberT> type, std::string type_member,
-         std::tuple<Member<TypeMemberT, Ts>...> members, Type default_value,
          CallbackT on_finish = nullptr);
 
   /** Move constructor. */
@@ -168,6 +140,12 @@ class SUnion : public Union<TypeMemberT, Ts...> {
    * @return True if the parser has some value stored or false otherwise.
    */
   bool isSet();
+
+  /** @brief Check if the parsed union was empy (null).
+   *
+   * @return True if the parsed union was empty (null) or false otherwise.
+   */
+  bool isEmpty();
 #endif
 
   /** @brief Parsed value getter.
@@ -205,7 +183,6 @@ class SUnion : public Union<TypeMemberT, Ts...> {
   Type &&pop();
 
  private:
-  using TokenParser::_set;
   using TokenParser::checkSet;
 
   void finish() override;
@@ -226,8 +203,6 @@ class SUnion : public Union<TypeMemberT, Ts...> {
     ValueSetter(Type &value, SUnion<TypeMemberT, Ts...> &parser);
   };
 
-  Type _default_value;
-  bool _allow_default_value;
   Type _value;
   Callback _on_finish;
 };

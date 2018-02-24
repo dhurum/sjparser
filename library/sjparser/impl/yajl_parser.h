@@ -25,20 +25,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-/** Enum with error reaction options */
-enum class Reaction {
-  /** Throw an exception */
-  Error,
-  /** Ignore the error */
-  Ignore
-};
-
-/** @brief Option for object parsers
- *
- * Additional options for Object, SAutoObject and SCustomObject
- */
-struct ObjectOptions {
-  /** How to react to a member, not specified in the arguments */
-  Reaction unknown_member = Reaction::Error;
-};
+template <typename T> int YajlParser::on(T token) noexcept {
+  try {
+    _dispatcher->on(token);
+  } catch (std::exception &e) {
+    _sjparser_error = e.what();
+    return 0;
+  } catch (...) {
+    _sjparser_error = "Unknown exception";
+    return 0;
+  }
+  return 1;
+}
 }  // namespace SJParser

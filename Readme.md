@@ -24,6 +24,7 @@ Also you can check the [Concepts](#concepts).
 ## Example
 
 ~~~cpp
+#include <iostream>
 #include "sjparser/sjparser.h"
 
 using SJParser::Array;
@@ -32,6 +33,7 @@ using SJParser::Object;
 using SJParser::Parser;
 using SJParser::SArray;
 using SJParser::Value;
+using SJParser::Presence;
 
 class TestPrinter {
  public:
@@ -52,15 +54,15 @@ TestPrinter DB;
 
 int main() {
   /* Declare parser. It expects an array of objects, where first member is a
-   * string, second member is integer, and third member is an array of strings.
-   * We don't want to process individual elements of the object's thied member,
-   * so we will use an array parser that stores it's parsing result in an
-   * std::vector.
+   * string, second member is an optional integer with default value 0, and
+   * third member is an array of strings. We don't want to process individual
+   * elements of the object's thied member, so we will use an array parser that
+   * stores it's parsing result in an std::vector.
    */
-  Parser parser{
-      Array{Object{std::tuple{Member{"string", Value<std::string>{}},
-                              Member{"integer", Value<int64_t>{}},
-                              Member{"array", SArray{Value<std::string>{}}}}}}};
+  Parser parser{Array{Object{
+      std::tuple{Member{"string", Value<std::string>{}},
+                 Member{"integer", Value<int64_t>{}, Presence::Optional, 0},
+                 Member{"array", SArray{Value<std::string>{}}}}}}};
 
   /* Callback, will be called once object is parsed.
    * It receives a reference to the object parser as an argument, so we use
@@ -71,8 +73,9 @@ int main() {
     DB.writeObject(
         // Rvalue reference to the first object member (std::string)
         parser.pop<0>(),
-        // If second member is present use it, otherwise use some default value
-        parser.parser<1>().isSet() ? parser.get<1>() : 0,
+        // Lvalue reference to the second object member (int64_t) or default
+        // value if it is not present
+        parser.get<1>(),
         // Rvalue reference to the third object member
         // (std::vector<std::string>)
         parser.pop<2>());
@@ -197,8 +200,11 @@ make format
 
 Expected json structure is specified as constructor arguments of `SJParser::Parser` and entities parsers.  
 
-Members, specified for `SJParser::Object`, `SJParser::SCustomObject`, `SJParser::SAutoObject` with a default value and `SJParser::SUnion` in standalone mode with a default value are not mandatory, even empty object would be successfully parsed.  
-The validation should be done in finish callback.  
+Membersof `SJParser::Object`, `SJParser::SCustomObject`, `SJParser::SAutoObject`, `SJParser::Union` and `SJParser::SUnion` are mandatory.
+You can pass `SJParser::Presence::Optional` to a `SJParser::Member` constructor to make the member optional.
+
+Members of  `` in a standalone mode with a default value are not mandatory, even empty object would be successfully parsed.  
+
 If you call `get()` or `pop()` on a parser of an entity, that was not present in the parsed object, exception will be thrown.  
 You can check if member was parsed with method `isSet()`.  
 So, for your mandatory members you can just use `get()` or `pop()`, and for optional you can do checks with `isSet()` first.  

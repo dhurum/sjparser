@@ -38,6 +38,7 @@ TEST(Value, Boolean) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
   ASSERT_EQ(true, parser.parser().get());
 
   ASSERT_TRUE(parser.parser().isSet());
@@ -56,6 +57,7 @@ TEST(Value, Integer) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
   ASSERT_EQ(10, parser.parser().get());
 
   ASSERT_TRUE(parser.parser().isSet());
@@ -74,6 +76,7 @@ TEST(Value, Double) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
   ASSERT_EQ(1.3, parser.parser().get());
 
   ASSERT_TRUE(parser.parser().isSet());
@@ -92,6 +95,7 @@ TEST(Value, String) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
   ASSERT_EQ("value", parser.parser().get());
 
   ASSERT_TRUE(parser.parser().isSet());
@@ -108,6 +112,7 @@ TEST(Value, Null) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Value, Reset) {
@@ -119,6 +124,7 @@ TEST(Value, Reset) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
   ASSERT_EQ(true, parser.parser().get());
 
   buf = R"(null)";
@@ -127,6 +133,7 @@ TEST(Value, Reset) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Value, UnexpectedBoolean) {

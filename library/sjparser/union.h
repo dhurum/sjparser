@@ -41,6 +41,13 @@ namespace SJParser {
  *
  * Union type is defined by arguments passed to the constructor.
  *
+ * Empty standalone union will be parsed and marked as unset.
+ *
+ * If union type was parsed, then the corresponding object is mandatory
+ * unless it's member has Presence::Optional set.
+ * For absent member with default value Union::get<> will return the default
+ * value and isSet will return false.
+ *
  * @tparam TypeMemberT A type of the type member. Can be int64_t, bool, double
  * or std::string.
  *
@@ -141,9 +148,15 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
 #ifdef DOXYGEN_ONLY
   /** @brief Check if the parser has a value.
    *
-   * @return True if the parser has some value stored or false otherwise.
+   * @return True if the parser parsed something or false otherwise.
    */
   bool isSet();
+
+  /** @brief Check if the parsed union was empy (null).
+   *
+   * @return True if the parsed union was empty (null) or false otherwise.
+   */
+  bool isEmpty();
 #endif
 
 #ifdef DOXYGEN_ONLY
@@ -186,6 +199,8 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
  protected:
   using TokenParser::checkSet;
 
+  void reset() override;
+
  private:
   void setupIdsMap();
 
@@ -197,6 +212,15 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
 
   void childParsed() override;
   void finish() override;
+
+  template <size_t, typename...> struct MemberChecker {
+    MemberChecker(Union<TypeMemberT, Ts...> & /*parser*/) {}
+  };
+
+  template <size_t n, typename T, typename... TDs>
+  struct MemberChecker<n, T, TDs...> : private MemberChecker<n + 1, TDs...> {
+    MemberChecker(Union<TypeMemberT, Ts...> &parser);
+  };
 
   std::string _type_member;
   Callback _on_finish;

@@ -55,8 +55,32 @@ template <typename... Ts> void Object<Ts...>::on(MapKeyT key) {
 }
 
 template <typename... Ts> void Object<Ts...>::finish() {
+  if (TokenParser::isEmpty()) {
+    TokenParser::_set = false;
+    return;
+  }
+
+  try {
+    MemberChecker<0, Ts...>(*this);
+  } catch (std::exception &e) {
+    TokenParser::_set = false;
+    throw;
+  }
+
   if (_on_finish && !_on_finish(*this)) {
     throw std::runtime_error("Callback returned false");
+  }
+}
+
+template <typename... Ts>
+template <size_t n, typename T, typename... TDs>
+Object<Ts...>::MemberChecker<n, T, TDs...>::MemberChecker(Object<Ts...> &parser)
+    : MemberChecker<n + 1, TDs...>(parser) {
+  auto &member = parser._member_parsers.template get<n>();
+
+  if (!member.parser.isSet() && !member.optional) {
+    throw std::runtime_error("Mandatory member " + member.name
+                             + " is not present");
   }
 }
 }  // namespace SJParser

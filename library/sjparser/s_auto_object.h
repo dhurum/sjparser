@@ -30,6 +30,14 @@ namespace SJParser {
 /** @brief %Object parser, that stores the result in an std::tuple of member
  * parsers types.
  *
+ * All object members are mandatory, except for members with Presence::Optional
+ * and default value set.
+ *
+ * Unknown members will cause parsing error unless ObjectOptions is passed to
+ * the constructor with unknown_member set to Reaction::Ignore.
+ *
+ * Empty object will be parsed and marked as unset.
+ *
  * @tparam Ts A list of member parsers types.
  */
 
@@ -76,24 +84,6 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    * @param [in] members std::tuple of Member structures, describing object
    * members.
    *
-   * @param [in] default_value Default value, will be used to fill members that
-   * were not present in the JSON. If no default value is specified, an
-   * exception will be thrown when some member is not in the JSON.
-   *
-   * @param [in] on_finish (optional) Callback, that will be called after the
-   * object is parsed.
-   * The callback will be called with a reference to the parser as an argument.
-   * If the callback returns false, parsing will be stopped with an error.
-   */
-  template <typename CallbackT = std::nullptr_t>
-  SAutoObject(std::tuple<Member<std::string, Ts>...> members,
-              Type default_value, CallbackT on_finish = nullptr);
-
-  /** @brief Constructor.
-   *
-   * @param [in] members std::tuple of Member structures, describing object
-   * members.
-   *
    * @param [in] options Additional options for the parser.
    *
    * @param [in] on_finish (optional) Callback, that will be called after the
@@ -104,27 +94,6 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
   template <typename CallbackT = std::nullptr_t>
   SAutoObject(std::tuple<Member<std::string, Ts>...> members,
               ObjectOptions options, CallbackT on_finish = nullptr);
-
-  /** @brief Constructor.
-   *
-   * @param [in] members std::tuple of Member structures, describing object
-   * members.
-   *
-   * @param [in] default_value Default value, will be used to fill members that
-   * were not present in the JSON. If no default value is specified, an
-   * exception will be thrown when some member is not in the JSON.
-   *
-   * @param [in] options Additional options for the parser.
-   *
-   * @param [in] on_finish (optional) Callback, that will be called after the
-   * object is parsed.
-   * The callback will be called with a reference to the parser as an argument.
-   * If the callback returns false, parsing will be stopped with an error.
-   */
-  template <typename CallbackT = std::nullptr_t>
-  SAutoObject(std::tuple<Member<std::string, Ts>...> members,
-              Type default_value, ObjectOptions options,
-              CallbackT on_finish = nullptr);
 
   /** Move constructor. */
   SAutoObject(SAutoObject &&other) noexcept;
@@ -144,14 +113,21 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    * @return True if the parser has some value stored or false otherwise.
    */
   bool isSet();
+
+  /** @brief Check if the parsed object was empy (null).
+   *
+   * @return True if the parsed object was empty (null) or false otherwise.
+   */
+  bool isEmpty();
 #endif
 
   /** @brief Parsed value getter.
    *
-   * @return Const reference to a parsed value.
+   * @return Const reference to a parsed value or a default value (if a default
+   * value is set and the member is not present).
    *
    * @throw std::runtime_error Thrown if the value is unset (no value was
-   * parsed or #pop was called).
+   * parsed and no default value was specified or #pop was called).
    */
   const Type &get() const;
 
@@ -181,7 +157,6 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
 #endif
 
  private:
-  using TokenParser::_set;
   using TokenParser::checkSet;
 
   void finish() override;
@@ -201,8 +176,6 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
     ValueSetter(Type &value, SAutoObject<Ts...> &parser);
   };
 
-  Type _default_value;
-  bool _allow_default_value;
   Type _value;
   Callback _on_finish;
 };

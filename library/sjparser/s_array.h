@@ -82,6 +82,12 @@ template <typename T> class SArray : public Array<T> {
    */
   bool isSet();
 
+  /** @brief Check if the parsed array was empy (null).
+   *
+   * @return True if the parsed array was empty (null) or false otherwise.
+   */
+  bool isEmpty();
+
   T &parser();
 #endif
 
@@ -106,7 +112,6 @@ template <typename T> class SArray : public Array<T> {
   Type &&pop();
 
  private:
-  using TokenParser::_set;
   using TokenParser::checkSet;
 
   void childParsed() override;

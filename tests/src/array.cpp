@@ -44,6 +44,7 @@ TEST(Array, Empty) {
   ASSERT_EQ(0, values.size());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Array, Null) {
@@ -63,6 +64,7 @@ TEST(Array, Null) {
   ASSERT_EQ(0, values.size());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Array, Reset) {
@@ -82,12 +84,16 @@ TEST(Array, Reset) {
   ASSERT_EQ(1, values.size());
   ASSERT_EQ(true, values[0]);
 
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
+
   buf = R"(null)";
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Array, ArrayOfBooleans) {

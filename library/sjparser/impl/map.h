@@ -76,6 +76,7 @@ template <typename T> void Map<T>::on(MapStartT /*unused*/) {
 }
 
 template <typename T> void Map<T>::on(MapKeyT key) {
+  TokenParser::_empty = false;
   _dispatcher->pushParser(&_parser);
   _current_key = key.key;
 }

@@ -31,6 +31,15 @@ namespace SJParser {
 
 /** @brief %Object parser.
  *
+ * All object members are mandatory, except for members with Presence::Optional.
+ * For absent members with default value Object::get<> will return the default
+ * value and isSet will return false.
+ *
+ * Unknown members will cause parsing error unless ObjectOptions is passed to
+ * the constructor with unknown_member set to Reaction::Ignore.
+ *
+ * Empty object will be parsed and marked as unset.
+ *
  * @tparam Ts A list of member parsers types.
  */
 
@@ -104,17 +113,31 @@ class Object : public KeyValueParser<std::string, Ts...> {
   void setFinishCallback(Callback on_finish);
 
 #ifdef DOXYGEN_ONLY
+  /** @brief Check if the parser has a value.
+   *
+   * @return True if the parser parsed something or false otherwise.
+   */
+  bool isSet();
+
+  /** @brief Check if the parsed object was empy (null).
+   *
+   * @return True if the parsed object was empty (null) or false otherwise.
+   */
+  bool isEmpty();
+
   /** @brief Universal member getter.
    *
    * @tparam n Index of the parser's member.
    *
    * @return If the n-th member parser stores value (is a Value, SAutoObject,
    * SCustomObject, SUnion or SArray), then the method returns a const reference
-   * to the n-th member parser value. Otherwise, returns a reference to the n-th
-   * member parser.
+   * to the n-th member parser value or a default value (if a default value is
+   * set and the member is not present). Otherwise, returns a reference to the
+   * n-th member parser.
    *
    * @throw std::runtime_error thrown if the member parser value is unset (no
-   * value was parsed or #pop was called for the member parser).
+   * value was parsed and no default value was specified or #pop was called for
+   * the member parser).
    */
   template <size_t n> auto &get();
 
@@ -132,13 +155,24 @@ class Object : public KeyValueParser<std::string, Ts...> {
    *
    * @tparam n Index of the parser's member.
    *
-   * @return Rvalue reference to n-th member parser value.
+   * @return Rvalue reference to the n-th member parser value or a default value
+   * (if a default value is set and the member is not present).
    *
    * @throw std::runtime_error thrown if the member parser value is unset (no
    * value was parsed or #pop was called for the member parser).
    */
   template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
 #endif
+
+ protected:
+  template <size_t, typename...> struct MemberChecker {
+    MemberChecker(Object<Ts...> & /*parser*/) {}
+  };
+
+  template <size_t n, typename T, typename... TDs>
+  struct MemberChecker<n, T, TDs...> : private MemberChecker<n + 1, TDs...> {
+    MemberChecker(Object<Ts...> &parser);
+  };
 
  private:
   using KVParser::on;

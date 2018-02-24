@@ -23,11 +23,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "default_value.h"
 #include "dispatcher.h"
 #include "ignore.h"
 #include "sjparser/member.h"
 #include "sjparser/options.h"
 #include "token_parser.h"
+#include "traits.h"
 
 #include <sstream>
 #include <string>
@@ -63,7 +65,7 @@ class KeyValueParser : public TokenParser {
     template <typename U = NextLevel>
     using ValueType = typename U::template ValueType<>;
 
-    enum { has_value_type = NextLevel::has_value_type };
+    static constexpr bool has_value_type = NextLevel::has_value_type;
   };
 
   template <typename T, typename... TDs> struct NthTypes<0, T, TDs...> {
@@ -71,18 +73,7 @@ class KeyValueParser : public TokenParser {
 
     template <typename U = ParserType> using ValueType = typename U::Type;
 
-   private:
-    using HasValueType = uint8_t;
-    using NoValueType = uint32_t;
-    template <typename U>
-    static HasValueType valueTypeTest(typename U::Type * /*unused*/);
-    template <typename U> static NoValueType valueTypeTest(...);
-
-   public:
-    enum {
-      has_value_type =
-          sizeof(valueTypeTest<ParserType>(nullptr)) == sizeof(HasValueType)
-    };
+    static constexpr bool has_value_type = IsStorageParser<T>;
   };
 
   template <size_t n>
@@ -94,7 +85,7 @@ class KeyValueParser : public TokenParser {
 
   template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
 
-  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
+  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> pop();
 
  protected:
   template <size_t, typename...> struct MemberParser {
@@ -121,8 +112,12 @@ class KeyValueParser : public TokenParser {
         std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
         MemberParser &&other);
 
+    template <size_t index> auto &get();
+
     T parser;
     NameType name;
+    bool optional;
+    DefaultValue<T, IsStorageParser<T>> default_value;
   };
 
   std::array<TokenParser *, sizeof...(Ts)> _parsers_array;

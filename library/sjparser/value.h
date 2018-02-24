@@ -71,6 +71,12 @@ template <typename T> class Value : public TokenParser {
    * @return True if the parser has some value stored or false otherwise.
    */
   bool isSet();
+
+  /** @brief Check if the parsed value was empy (null).
+   *
+   * @return True if the parsed value was empty (null) or false otherwise.
+   */
+  bool isEmpty();
 #endif
 
   /** @brief Parsed value getter.

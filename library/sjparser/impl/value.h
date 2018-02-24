@@ -48,6 +48,7 @@ template <typename T> void Value<T>::setFinishCallback(Callback on_finish) {
 }
 
 template <typename T> void Value<T>::on(TokenType<T> value) {
+  TokenParser::_empty = false;
   _value = value;
   endParsing();
 }

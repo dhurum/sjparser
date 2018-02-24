@@ -133,17 +133,6 @@ class YajlParser {
       nullptr,      yajlOnString,     yajlOnMapStart, yajlOnMapKey,
       yajlOnMapEnd, yajlOnArrayStart, yajlOnArrayEnd};
 };
-
-template <typename T> int YajlParser::on(T token) noexcept {
-  try {
-    _dispatcher->on(token);
-  } catch (std::exception &e) {
-    _sjparser_error = e.what();
-    return 0;
-  } catch (...) {
-    _sjparser_error = "Unknown exception";
-    return 0;
-  }
-  return 1;
-}
 }  // namespace SJParser
+
+#include "impl/yajl_parser.h"

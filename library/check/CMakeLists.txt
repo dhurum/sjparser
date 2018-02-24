@@ -22,6 +22,7 @@ set(CHECKS
   *
   -cppcoreguidelines-pro-type-reinterpret-cast
   -readability-implicit-bool-cast
+  -readability-implicit-bool-conversion
   -google-runtime-int
   -google-explicit-constructor
   -cppcoreguidelines-special-member-functions
@@ -32,6 +33,7 @@ set(CHECKS
   -llvm-header-guard
   # clang-tidy and clang-format seems to disagree
   -llvm-include-order
+  -fuchsia-default-arguments
 )
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")

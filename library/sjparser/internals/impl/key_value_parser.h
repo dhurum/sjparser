@@ -71,6 +71,8 @@ void KeyValueParser<NameType, Ts...>::on(MapEndT /*unused*/) {
 
 template <typename NameType, typename... Ts>
 void KeyValueParser<NameType, Ts...>::onMember(TokenType<NameType> member) {
+  TokenParser::_empty = false;
+
   if (auto parser_it = _parsers_map.find(member);
       parser_it != _parsers_map.end()) {
     _dispatcher->pushParser(parser_it->second);
@@ -89,14 +91,16 @@ void KeyValueParser<NameType, Ts...>::onMember(TokenType<NameType> member) {
 template <typename NameType, typename... Ts>
 template <size_t n>
 auto &KeyValueParser<NameType, Ts...>::get() {
-  const auto parser =
-      reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
-          _parsers_array[n]);
+  auto &member = _member_parsers.template get<n>();
 
   if constexpr (NthTypes<n, Ts...>::has_value_type) {
-    return parser->get();
+    if (!member.parser.isSet() && member.default_value.present) {
+      return static_cast<const decltype(member.default_value.value) &>(
+          member.default_value.value);
+    }
+    return member.parser.get();
   } else {  // NOLINT
-    return *parser;
+    return member.parser;
   }
 }
 
@@ -105,18 +109,25 @@ template <size_t n>
 typename KeyValueParser<NameType, Ts...>::template NthTypes<n,
                                                             Ts...>::ParserType &
 KeyValueParser<NameType, Ts...>::parser() {
-  return *reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
-      _parsers_array[n]);
+  return _member_parsers.template get<n>().parser;
 }
 
 template <typename NameType, typename... Ts>
 template <size_t n>
 typename KeyValueParser<NameType, Ts...>::template NthTypes<
     n, Ts...>::template ValueType<>
-    &&KeyValueParser<NameType, Ts...>::pop() {
-  return reinterpret_cast<typename NthTypes<n, Ts...>::ParserType *>(
-             _parsers_array[n])
-      ->pop();
+KeyValueParser<NameType, Ts...>::pop() {
+  auto &member = _member_parsers.template get<n>();
+
+  if (!member.parser.isSet() && member.default_value.present) {
+    // This form is used to reduce the number of required methods for
+    // SCustomObject stored type. Otherwise a copy constructor would be
+    // necessary.
+    decltype(member.default_value.value) value;
+    value = member.default_value.value;
+    return value;
+  }
+  return std::move(member.parser.pop());
 }
 
 template <typename NameType, typename... Ts>
@@ -127,10 +138,12 @@ KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::MemberParser(
     std::tuple<Member<NameType, Ts>...> &members)
     : MemberParser<n + 1, TDs...>(parsers_array, parsers_map, members),
       parser(std::forward<T>(std::get<n>(members).parser)),
-      name(std::move(std::get<n>(members).name)) {
+      name(std::move(std::get<n>(members).name)),
+      optional(std::get<n>(members).optional),
+      default_value(std::move(std::get<n>(members).default_value)) {
   parsers_array[n] = &parser;
 
-  auto[_, inserted] = parsers_map.insert({name, &parser});
+  auto [_, inserted] = parsers_map.insert({name, &parser});
   std::ignore = _;
   if (!inserted) {
     std::stringstream error;
@@ -147,8 +160,21 @@ KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::MemberParser(
     MemberParser &&other)
     : MemberParser<n + 1, TDs...>(parsers_array, parsers_map, std::move(other)),
       parser(std::forward<T>(other.parser)),
-      name(std::move(other.name)) {
+      name(std::move(other.name)),
+      optional(other.optional),
+      default_value(std::move(other.default_value)) {
   parsers_array[n] = &parser;
   parsers_map[name] = &parser;
+}
+
+template <typename NameType, typename... Ts>
+template <size_t n, typename T, typename... TDs>
+template <size_t index>
+auto &KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::get() {
+  if constexpr (index == n) {
+    return *this;
+  } else {  // NOLINT
+    return MemberParser<n + 1, TDs...>::template get<index>();
+  }
 }
 }  // namespace SJParser

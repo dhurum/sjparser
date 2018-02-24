@@ -36,6 +36,7 @@ TEST(Map, Empty) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Map, EmptyWithCallbacks) {
@@ -77,6 +78,7 @@ TEST(Map, Null) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Map, Reset) {
@@ -100,12 +102,16 @@ TEST(Map, Reset) {
 
   ASSERT_TRUE(value);
 
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
+
   buf = R"(null)";
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Map, SeveralKeys) {

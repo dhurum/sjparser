@@ -29,6 +29,10 @@ bool TokenParser::isSet() const noexcept {
   return _set;
 }
 
+bool TokenParser::isEmpty() const noexcept {
+  return _empty;
+}
+
 void TokenParser::checkSet() const {
   if (!isSet()) {
     throw std::runtime_error("Can't get value, parser is unset");

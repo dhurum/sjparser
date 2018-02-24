@@ -82,8 +82,14 @@ size_t Union<TypeMemberT, Ts...>::currentMemberId() {
 }
 
 template <typename TypeMemberT, typename... Ts>
-void Union<TypeMemberT, Ts...>::on(TokenType<TypeMemberT> value) {
+void Union<TypeMemberT, Ts...>::reset() {
+  _current_member_id = 0;
   KVParser::reset();
+}
+
+template <typename TypeMemberT, typename... Ts>
+void Union<TypeMemberT, Ts...>::on(TokenType<TypeMemberT> value) {
+  reset();
   KVParser::onMember(value);
   _current_member_id = _members_ids_map[KVParser::_parsers_map[value]];
 }
@@ -91,17 +97,15 @@ void Union<TypeMemberT, Ts...>::on(TokenType<TypeMemberT> value) {
 template <typename TypeMemberT, typename... Ts>
 void Union<TypeMemberT, Ts...>::on(MapStartT /*unused*/) {
   if (_type_member.empty()) {
-    // Should never happen
     throw std::runtime_error(
         "Union with an empty type member can't parse this");
   }
-  KVParser::on(MapStartT{});
+  reset();
 }
 
 template <typename TypeMemberT, typename... Ts>
 void Union<TypeMemberT, Ts...>::on(MapKeyT key) {
   if (_type_member.empty()) {
-    // Should never happen
     throw std::runtime_error(
         "Union with an empty type member can't parse this");
   }
@@ -124,8 +128,38 @@ void Union<TypeMemberT, Ts...>::childParsed() {
 
 template <typename TypeMemberT, typename... Ts>
 void Union<TypeMemberT, Ts...>::finish() {
+  if (TokenParser::isEmpty()) {
+    TokenParser::_set = false;
+    return;
+  }
+
+  try {
+    MemberChecker<0, Ts...>(*this);
+  } catch (std::exception &e) {
+    TokenParser::_set = false;
+    throw;
+  }
+
   if (_on_finish && !_on_finish(*this)) {
     throw std::runtime_error("Callback returned false");
+  }
+}
+
+template <typename TypeMemberT, typename... Ts>
+template <size_t n, typename T, typename... TDs>
+Union<TypeMemberT, Ts...>::MemberChecker<n, T, TDs...>::MemberChecker(
+    Union<TypeMemberT, Ts...> &parser)
+    : MemberChecker<n + 1, TDs...>(parser) {
+  if (parser.currentMemberId() != n) {
+    return;
+  }
+
+  auto &member = parser._member_parsers.template get<n>();
+
+  if (!member.parser.isSet() && !member.optional) {
+    std::stringstream error;
+    error << "Mandatory member #" << n << " is not present";
+    throw std::runtime_error(error.str());
   }
 }
 }  // namespace SJParser

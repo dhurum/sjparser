@@ -38,13 +38,12 @@ TEST(StandaloneUnion, Empty) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
-TEST(StandaloneSUnion, EmptyWithCallback) {
-  std::string buf(R"({})");
-
-  bool callback_called = false;
+TEST(StandaloneUnion, EmptyWithType) {
+  std::string buf(R"({"type": 1})");
 
   Parser parser{Union{
       TypeHolder<int64_t>{}, "type",
@@ -52,19 +51,61 @@ TEST(StandaloneSUnion, EmptyWithCallback) {
           Member{1, Object{std::tuple{Member{"bool", Value<bool>{}}}}},
           Member{2, Object{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
-  auto unionCb = [&](decltype(parser)::ParserType &) {
-    callback_called = true;
-    return true;
-  };
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Mandatory member #0 is not present", e.sjparserError());
 
-  parser.parser().setFinishCallback(unionCb);
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+                             {"type": 1}
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(StandaloneUnion, OptionalMember) {
+  std::string buf(R"({"type": 1})");
+
+  Parser parser{Union{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, Object{std::tuple{Member{"bool", Value<bool>{}}}},
+                 Presence::Optional},
+          Member{2, Object{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
+  ASSERT_EQ(0, parser.parser().currentMemberId());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+}
 
-  ASSERT_TRUE(callback_called);
+TEST(StandaloneUnion, OptionalMemberWithDefaultValue) {
+  std::string buf(R"({"type": 1})");
+
+  Parser parser{Union{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}},
+                 Presence::Optional, std::tuple<bool>{false}},
+          Member{2, Object{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
+  ASSERT_EQ(0, parser.parser().currentMemberId());
+  ASSERT_FALSE(parser.parser().parser<0>().isSet());
+  ASSERT_EQ(std::tuple<bool>{false}, parser.parser().get<0>());
 }
 
 TEST(StandaloneUnion, Null) {
@@ -80,6 +121,7 @@ TEST(StandaloneUnion, Null) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(StandaloneUnion, Reset) {
@@ -97,6 +139,7 @@ TEST(StandaloneUnion, Reset) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_TRUE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
   ASSERT_FALSE(parser.parser().parser<1>().isSet());
   ASSERT_EQ(0, parser.parser().currentMemberId());
 
@@ -109,6 +152,7 @@ TEST(StandaloneUnion, Reset) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(StandaloneUnion, AllValuesMembers) {

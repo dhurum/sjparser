@@ -25,20 +25,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-/** Enum with error reaction options */
-enum class Reaction {
-  /** Throw an exception */
-  Error,
-  /** Ignore the error */
-  Ignore
-};
+template <typename U, bool = false> struct DefaultValue {};
 
-/** @brief Option for object parsers
- *
- * Additional options for Object, SAutoObject and SCustomObject
- */
-struct ObjectOptions {
-  /** How to react to a member, not specified in the arguments */
-  Reaction unknown_member = Reaction::Error;
+template <typename U> struct DefaultValue<U, true> {
+  bool present = false;
+  typename std::decay_t<U>::Type value;
 };
 }  // namespace SJParser

@@ -45,6 +45,7 @@ void ArrayParser::on(bool value) {
     unexpectedToken("boolean");
   }
   _parser_ptr->on(value);
+  TokenParser::_empty = false;
   childParsed();
 }
 
@@ -53,6 +54,7 @@ void ArrayParser::on(int64_t value) {
     unexpectedToken("integer");
   }
   _parser_ptr->on(value);
+  TokenParser::_empty = false;
   childParsed();
 }
 
@@ -61,6 +63,7 @@ void ArrayParser::on(double value) {
     unexpectedToken("double");
   }
   _parser_ptr->on(value);
+  TokenParser::_empty = false;
   childParsed();
 }
 
@@ -69,6 +72,7 @@ void ArrayParser::on(std::string_view value) {
     unexpectedToken("string");
   }
   _parser_ptr->on(value);
+  TokenParser::_empty = false;
   childParsed();
 }
 
@@ -76,6 +80,7 @@ void ArrayParser::on(MapStartT /*unused*/) {
   if (!_started) {
     unexpectedToken("map start");
   }
+  TokenParser::_empty = false;
   _parser_ptr->setDispatcher(_dispatcher);
   _dispatcher->pushParser(_parser_ptr);
   _parser_ptr->on(MapStartT{});
@@ -88,6 +93,7 @@ void ArrayParser::on(ArrayStartT /*unused*/) {
     return;
   }
 
+  TokenParser::_empty = false;
   _parser_ptr->setDispatcher(_dispatcher);
   _dispatcher->pushParser(_parser_ptr);
   _parser_ptr->on(ArrayStartT{});

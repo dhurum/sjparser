@@ -32,6 +32,7 @@ void TokenParser::setDispatcher(Dispatcher *dispatcher) noexcept {
 
 void TokenParser::reset() {
   _set = false;
+  _empty = true;
 }
 
 void TokenParser::endParsing() {

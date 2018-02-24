@@ -52,17 +52,18 @@ class TokenParser {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher) noexcept;
   inline bool isSet() const noexcept;
+  inline bool isEmpty() const noexcept;
   virtual void reset();
   void endParsing();
   virtual void finish() = 0;
 
-  virtual void on(NullT /*unused*/);
-  virtual void on(bool /*value*/);
-  virtual void on(int64_t /*value*/);
-  virtual void on(double /*value*/);
-  virtual void on(std::string_view /*value*/);
+  virtual void on(NullT unused);
+  virtual void on(bool value);
+  virtual void on(int64_t value);
+  virtual void on(double value);
+  virtual void on(std::string_view value);
   virtual void on(MapStartT /*unused*/);
-  virtual void on(MapKeyT /*key*/);
+  virtual void on(MapKeyT key);
   virtual void on(MapEndT /*unused*/);
   virtual void on(ArrayStartT /*unused*/);
   virtual void on(ArrayEndT /*unused*/);
@@ -74,6 +75,7 @@ class TokenParser {
  protected:
   Dispatcher *_dispatcher = nullptr;
   bool _set = false;
+  bool _empty = true;
 
   inline void checkSet() const;
 

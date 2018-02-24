@@ -36,17 +36,34 @@ TEST(StandaloneSUnion, Empty) {
           Member{2,
                  SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
+}
+
+TEST(StandaloneSUnion, EmptyWithType) {
+  std::string buf(R"({"type": 1})");
+
+  Parser parser{SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
+
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
   } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Can not set value: Empty storage union without a default value",
+    ASSERT_EQ("Can not set value: Mandatory member #0 is not present",
               e.sjparserError());
 
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
-                                      {}
+                             {"type": 1}
                      (right here) ------^
 )",
         e.parserError());
@@ -55,52 +72,56 @@ TEST(StandaloneSUnion, Empty) {
   }
 }
 
-TEST(StandaloneSUnion, EmptyDefault) {
-  std::string buf(R"({})");
+TEST(StandaloneSUnion, OptionalMember) {
+  std::string buf(R"({"type": 1})");
 
   Parser parser{SUnion{
       TypeHolder<int64_t>{}, "type",
       std::tuple{
-          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
-          Member{2, SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}},
-      std::tuple<int64_t>{100}}};
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}},
+                 Presence::Optional},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ(
+        "Can not set value: Optional member #0 does not have a default value",
+        e.sjparserError());
 
-  ASSERT_TRUE(parser.parser().isSet());
-
-  ASSERT_EQ(1, parser.parser().get().index());
-  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get())));
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+                             {"type": 1}
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
 }
 
-TEST(StandaloneSUnion, EmptyDefaultWithCallback) {
-  std::string buf(R"({})");
-
-  bool callback_called = false;
+TEST(StandaloneSUnion, OptionalMemberWithDefaultValue) {
+  std::string buf(R"({"type": 1})");
 
   Parser parser{SUnion{
       TypeHolder<int64_t>{}, "type",
       std::tuple{
-          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}}},
-          Member{2, SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}},
-      std::tuple<int64_t>{100}}};
-
-  auto unionCb = [&](const decltype(parser)::ParserType::Type &) {
-    callback_called = true;
-    return true;
-  };
-
-  parser.parser().setFinishCallback(unionCb);
+          Member{1, SAutoObject{std::tuple{Member{"bool", Value<bool>{}}}},
+                 Presence::Optional, std::tuple<bool>{false}},
+          Member{2,
+                 SAutoObject{std::tuple{Member{"int", Value<int64_t>{}}}}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_TRUE(parser.parser().isSet());
+  auto variant = parser.parser().get();
 
-  ASSERT_TRUE(callback_called);
-  ASSERT_EQ(1, parser.parser().get().index());
-  ASSERT_EQ(100, std::get<0>(std::get<1>(parser.parser().get())));
+  ASSERT_EQ(0, variant.index());
+
+  ASSERT_EQ(false, std::get<0>(std::get<0>(variant)));
 }
 
 TEST(StandaloneSUnion, Null) {
@@ -117,6 +138,7 @@ TEST(StandaloneSUnion, Null) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(StandaloneSUnion, Reset) {
@@ -149,6 +171,7 @@ TEST(StandaloneSUnion, Reset) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(StandaloneSUnion, AllValuesMembers) {

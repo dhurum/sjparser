@@ -36,34 +36,8 @@ TEST(Object, Empty) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_TRUE(parser.parser().isSet());
-  ASSERT_FALSE(parser.parser().parser<0>().isSet());
-  ASSERT_FALSE(parser.parser().parser<1>().isSet());
-}
-
-TEST(Object, EmptyWithCallback) {
-  std::string buf(R"({})");
-  bool callback_called = false;
-
-  using ObjectParser = Object<Value<bool>, Value<std::string>>;
-
-  auto objectCb = [&](ObjectParser &) {
-    callback_called = true;
-    return true;
-  };
-
-  Parser parser{Object{std::tuple{Member{"bool", Value<bool>{}},
-                                  Member{"string", Value<std::string>{}}},
-                       objectCb}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_TRUE(parser.parser().isSet());
-  ASSERT_FALSE(parser.parser().parser<0>().isSet());
-  ASSERT_FALSE(parser.parser().parser<1>().isSet());
-
-  ASSERT_TRUE(callback_called);
+  ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Object, Null) {
@@ -76,6 +50,7 @@ TEST(Object, Null) {
   ASSERT_NO_THROW(parser.finish());
 
   ASSERT_FALSE(parser.parser().isSet());
+  ASSERT_TRUE(parser.parser().isEmpty());
 }
 
 TEST(Object, Reset) {
@@ -729,6 +704,8 @@ TEST(Object, Move) {
   }
 })");
 
+  static bool copy_constructor_used = false;
+
   struct ObjectStruct {
     int64_t int_member;
     std::string str_member;
@@ -741,9 +718,10 @@ TEST(Object, Move) {
     }
 
     // Needed for parser internals
-    ObjectStruct &operator=(ObjectStruct &&other) {
-      int_member = std::move(other.int_member);
-      str_member = std::move(other.str_member);
+    ObjectStruct &operator=(const ObjectStruct &other) {
+      int_member = other.int_member;
+      str_member = other.str_member;
+      copy_constructor_used = true;
       return *this;
     }
   };
@@ -766,9 +744,11 @@ TEST(Object, Move) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
+  copy_constructor_used = false;
   auto value = parser.parser().pop<0>();
   ASSERT_FALSE(parser.parser().parser<0>().isSet());
 
+  ASSERT_FALSE(copy_constructor_used);
   ASSERT_EQ(1, value.int_member);
   ASSERT_EQ("in_value", value.str_member);
 
@@ -783,8 +763,10 @@ TEST(Object, Move) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
+  copy_constructor_used = false;
   auto value2 = parser.parser().pop<0>();
   ASSERT_FALSE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(copy_constructor_used);
 
   ASSERT_EQ(10, value2.int_member);
   ASSERT_EQ("in_value2", value2.str_member);
@@ -833,4 +815,60 @@ TEST(Object, ObjectWithParserReference) {
   ASSERT_EQ("elt3", parser.parser().get<2>()[2]);
 
   ASSERT_EQ(&(parser.parser().parser<2>()), &sarray);
+}
+
+TEST(Object, MissingMember) {
+  std::string buf(R"({"bool": true})");
+
+  Parser parser{Object{std::tuple{Member{"bool", Value<bool>{}},
+                                  Member{"string", Value<std::string>{}}}}};
+
+  try {
+    parser.parse(buf);
+    FAIL() << "No exception thrown";
+  } catch (ParsingError &e) {
+    ASSERT_FALSE(parser.parser().isSet());
+    ASSERT_EQ("Mandatory member string is not present", e.sjparserError());
+
+    ASSERT_EQ(
+        R"(parse error: client cancelled parse via callback return value
+                          {"bool": true}
+                     (right here) ------^
+)",
+        e.parserError());
+  } catch (...) {
+    FAIL() << "Invalid exception thrown";
+  }
+}
+
+TEST(Object, OptionalMember) {
+  std::string buf(R"({"bool": true})");
+
+  Parser parser{Object{
+      std::tuple{Member{"bool", Value<bool>{}},
+                 Member{"string", Value<std::string>{}, Presence::Optional}}}};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, parser.parser().get<0>());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
+}
+
+TEST(Object, OptionalMemberWithDefaultValue) {
+  std::string buf(R"({"bool": true})");
+
+  Parser parser{Object{std::tuple{
+      Member{"bool", Value<bool>{}},
+      Member{"string", Value<std::string>{}, Presence::Optional, "value"}}}};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, parser.parser().get<0>());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
+  ASSERT_EQ("value", parser.parser().get<1>());
+
+  std::string value = parser.parser().pop<1>();
+  ASSERT_EQ("value", value);
 }

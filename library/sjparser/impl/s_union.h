@@ -31,42 +31,21 @@ SUnion<TypeMemberT, Ts...>::SUnion(
     TypeHolder<TypeMemberT> type,
     std::tuple<Member<TypeMemberT, Ts>...> members, CallbackT on_finish)
     : Union<TypeMemberT, Ts...>(type, std::move(members)),
-      _allow_default_value(false),
       _on_finish(std::move(on_finish)) {}
 
 template <typename TypeMemberT, typename... Ts>
 template <typename CallbackT>
 SUnion<TypeMemberT, Ts...>::SUnion(
     TypeHolder<TypeMemberT> type, std::string type_member,
-    std::tuple<Member<TypeMemberT, Ts>...> members, CallbackT on_finish,
-    std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
+    std::tuple<Member<TypeMemberT, Ts>...> members, CallbackT on_finish)
     : Union<TypeMemberT, Ts...>(type, std::move(type_member),
                                 std::move(members)),
-      _allow_default_value(false),
       _on_finish(std::move(on_finish)) {}
-
-template <typename TypeMemberT, typename... Ts>
-template <typename CallbackT>
-SUnion<TypeMemberT, Ts...>::SUnion(
-    TypeHolder<TypeMemberT> type, std::string type_member,
-    std::tuple<Member<TypeMemberT, Ts>...> members, Type default_value,
-    CallbackT on_finish)
-    : Union<TypeMemberT, Ts...>(type, std::move(type_member),
-                                std::move(members)),
-      _default_value(std::move(default_value)),
-      _allow_default_value(true),
-      _value(_default_value),
-      _on_finish(std::move(on_finish)) {
-  static_assert(std::is_constructible_v<Callback, CallbackT>,
-                "Invalid callback type");
-}
 
 template <typename TypeMemberT, typename... Ts>
 SUnion<TypeMemberT, Ts...>::SUnion(SUnion &&other) noexcept
     : Union<TypeMemberT, Ts...>(std::move(other)),
-      _default_value(std::move(other._default_value)),
-      _allow_default_value(other._allow_default_value),
-      _value(_default_value),
+      _value{Type{}},
       _on_finish(std::move(other._on_finish)) {}
 
 template <typename TypeMemberT, typename... Ts>
@@ -84,19 +63,24 @@ SUnion<TypeMemberT, Ts...>::get() const {
 template <typename TypeMemberT, typename... Ts>
 typename SUnion<TypeMemberT, Ts...>::Type &&SUnion<TypeMemberT, Ts...>::pop() {
   checkSet();
-  _set = false;
+  TokenParser::_set = false;
   return std::move(_value);
 }
 
 template <typename TypeMemberT, typename... Ts>
 void SUnion<TypeMemberT, Ts...>::finish() {
+  if (TokenParser::isEmpty()) {
+    TokenParser::_set = false;
+    return;
+  }
+
   try {
     ValueSetter<0, Ts...>(_value, *this);
   } catch (std::exception &e) {
-    _set = false;
+    TokenParser::_set = false;
     throw std::runtime_error(std::string("Can not set value: ") + e.what());
   } catch (...) {
-    _set = false;
+    TokenParser::_set = false;
     throw std::runtime_error("Can not set value: unknown exception");
   }
 
@@ -107,8 +91,8 @@ void SUnion<TypeMemberT, Ts...>::finish() {
 
 template <typename TypeMemberT, typename... Ts>
 void SUnion<TypeMemberT, Ts...>::reset() {
-  Union<TypeMemberT, Ts...>::KVParser::reset();
-  _value = _default_value;
+  Union<TypeMemberT, Ts...>::reset();
+  _value = Type{};
 }
 
 template <typename TypeMemberT, typename... Ts>
@@ -120,11 +104,21 @@ SUnion<TypeMemberT, Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
     return;
   }
 
-  if (auto &member_parser = parser.template parser<n>();
-      member_parser.isSet()) {
-    value = member_parser.pop();
-  } else if (!parser._allow_default_value) {
-    throw std::runtime_error("Empty storage union without a default value");
+  auto &member = parser._member_parsers.template get<n>();
+
+  if (member.parser.isSet()) {
+    value = member.parser.pop();
+  } else if (member.optional) {
+    if (!member.default_value.present) {
+      std::stringstream error;
+      error << "Optional member #" << n << " does not have a default value";
+      throw std::runtime_error(error.str());
+    }
+    value = member.default_value.value;
+  } else {
+    std::stringstream error;
+    error << "Mandatory member #" << n << " is not present";
+    throw std::runtime_error(error.str());
   }
 }
 }  // namespace SJParser

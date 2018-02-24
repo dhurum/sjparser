@@ -41,12 +41,15 @@ set_property(TARGET sjparser PROPERTY SJPARSER_HEADERS
   sjparser/impl/parser.h
   sjparser/impl/union.h
   sjparser/impl/member.h
+  sjparser/impl/yajl_parser.h
 
   sjparser/internals/key_value_parser.h
   sjparser/internals/ignore.h
   sjparser/internals/token_parser.h
+  sjparser/internals/traits.h
   sjparser/internals/dispatcher.h
   sjparser/internals/array_parser.h
+  sjparser/internals/default_value.h
   sjparser/internals/impl/key_value_parser.h
   sjparser/internals/impl/token_parser.h
   sjparser/internals/impl/dispatcher.h

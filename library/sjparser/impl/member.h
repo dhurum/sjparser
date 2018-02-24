@@ -25,10 +25,57 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
+namespace {  // NOLINT
+
 template <typename NameType, typename ParserType>
-Member<NameType, ParserType>::Member(NameType name, ParserType &&parser)
-    : name(std::move(name)), parser(std::forward<ParserType>(parser)) {
+void checkTemplateParameters() {
+  // Formatting disabled because of a bug in clang-format
+  // clang-format off
+  static_assert(
+      std::is_same_v<NameType, int64_t>
+      || std::is_same_v<NameType, bool>
+      || std::is_same_v<NameType, double>
+      || std::is_same_v<NameType, std::string>,
+      "Invalid type used for Member name, only int64_t, bool, double or "
+      "std::string are allowed");
+  // clang-format on
   static_assert(std::is_base_of_v<TokenParser, std::decay_t<ParserType>>,
                 "Invalid parser used in Member");
 }
+
+}  // namespace
+
+template <typename NameType, typename ParserType>
+Member<NameType, ParserType>::Member(NameType name, ParserType &&parser)
+    : name{std::move(name)}, parser{std::forward<ParserType>(parser)} {
+  checkTemplateParameters<NameType, ParserType>();
+}
+
+template <typename NameType, typename ParserType>
+Member<NameType, ParserType>::Member(NameType name, ParserType &&parser,
+                                     Presence /*presence*/)
+    : name{std::move(name)},
+      parser{std::forward<ParserType>(parser)},
+      optional{true} {
+  checkTemplateParameters<NameType, ParserType>();
+}
+
+template <typename NameType, typename ParserType>
+template <typename U>
+Member<NameType, ParserType>::Member(NameType name, ParserType &&parser,
+                                     Presence /*presence*/,
+                                     typename U::Type default_value)
+    : name{std::move(name)},
+      parser{std::forward<ParserType>(parser)},
+      optional{true},
+      default_value{true, std::move(default_value)} {
+  checkTemplateParameters<NameType, ParserType>();
+}
+
+template <typename NameType, typename ParserType>
+Member<NameType, ParserType>::Member(Member &&other) noexcept
+    : name(std::move(other.name)),
+      parser(std::forward<ParserType>(other.parser)),
+      optional(other.optional),
+      default_value(std::move(other.default_value)) {}
 }  // namespace SJParser

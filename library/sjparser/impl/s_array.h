@@ -50,7 +50,7 @@ template <typename T> const typename SArray<T>::Type &SArray<T>::get() const {
 
 template <typename T> typename SArray<T>::Type &&SArray<T>::pop() {
   checkSet();
-  _set = false;
+  TokenParser::_set = false;
   return std::move(_values);
 }
 
