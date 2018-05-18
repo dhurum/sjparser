@@ -49,18 +49,6 @@ TEST(Member, MandatoryWithConstCharName) {
   ASSERT_TRUE((std::is_same_v<decltype(member.name), std::string>));
 }
 
-TEST(Member, MandatoryWithIntName) {
-  Member member{10, Value<bool>{}};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), int64_t>));
-}
-
-TEST(Member, MandatoryWithFloatName) {
-  Member member{10.0f, Value<bool>{}};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), double>));
-}
-
 TEST(Member, MandatoryWithBoolName) {
   Member member{true, Value<bool>{}};
 
@@ -86,30 +74,6 @@ TEST(Member, OptionalWithLvalueParser) {
   ASSERT_TRUE(std::is_lvalue_reference_v<decltype(member.parser)>);
 }
 
-TEST(Member, OptionalWithConstCharName) {
-  Member member{"test", Value<bool>{}, Presence::Optional};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), std::string>));
-}
-
-TEST(Member, OptionalWithIntName) {
-  Member member{10, Value<bool>{}, Presence::Optional};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), int64_t>));
-}
-
-TEST(Member, OptionalWithFloatName) {
-  Member member{10.0f, Value<bool>{}, Presence::Optional};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), double>));
-}
-
-TEST(Member, OptionalWithBoolName) {
-  Member member{true, Value<bool>{}, Presence::Optional};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), bool>));
-}
-
 TEST(Member, DefaultWithRvalueParser) {
   Member member{"test", Value<int64_t>{}, Presence::Optional, 10};
 
@@ -129,28 +93,4 @@ TEST(Member, DefaultWithLvalueParser) {
   ASSERT_TRUE(member.default_value.present);
   ASSERT_EQ(member.default_value.value, 10);
   ASSERT_TRUE(std::is_lvalue_reference_v<decltype(member.parser)>);
-}
-
-TEST(Member, DefaultWithConstCharName) {
-  Member member{"test", Value<int64_t>{}, Presence::Optional, 10};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), std::string>));
-}
-
-TEST(Member, DefaultWithIntName) {
-  Member member{10, Value<int64_t>{}, Presence::Optional, 10};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), int64_t>));
-}
-
-TEST(Member, DefaultWithFloatName) {
-  Member member{10.0f, Value<int64_t>{}, Presence::Optional, 10};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), double>));
-}
-
-TEST(Member, DefaultWithBoolName) {
-  Member member{true, Value<int64_t>{}, Presence::Optional, 10};
-
-  ASSERT_TRUE((std::is_same_v<decltype(member.name), bool>));
 }

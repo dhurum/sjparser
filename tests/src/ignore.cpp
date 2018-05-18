@@ -122,77 +122,8 @@ TEST(Ignore, Object) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
-TEST(Ignore, ObjectofObjects) {
-  std::string buf(
-      R"(
-{
-  "object1": {
-    "string": "value",
-    "integer": 10
-  },
-  "object2": {
-    "integer": 1,
-    "string": "value2"
-  },
-  "object3": {
-    "boolean": true
-  }
-})");
-
-  Parser parser{Ignore{}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_TRUE(parser.parser().isSet());
-}
-
-TEST(Ignore, ObjectWithArray) {
-  std::string buf(
-      R"(
-{
-  "string": "value",
-  "integer": 10,
-  "array": [
-    "elt1",
-    "elt2",
-    "elt3"
-  ]
-})");
-
-  Parser parser{Ignore{}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_TRUE(parser.parser().isSet());
-}
-
 TEST(Ignore, Array) {
   std::string buf(R"(["value1", "value2"])");
-
-  Parser parser{Ignore{}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_TRUE(parser.parser().isSet());
-}
-
-TEST(Ignore, ArrayOfObjects) {
-  std::string buf(
-      R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
-
-  Parser parser{Ignore{}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_TRUE(parser.parser().isSet());
-}
-
-TEST(Ignore, ArrayOfSArrays) {
-  std::string buf(R"([[true, true], [false, false]])");
 
   Parser parser{Ignore{}};
 

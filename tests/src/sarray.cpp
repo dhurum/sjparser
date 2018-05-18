@@ -75,7 +75,7 @@ TEST(SArray, Reset) {
   ASSERT_TRUE(parser.parser().isEmpty());
 }
 
-TEST(SArray, SArrayOfBooleans) {
+TEST(SArray, SArrayWithValues) {
   std::string buf(R"([true, false])");
 
   Parser parser{SArray{Value<bool>{}}};
@@ -86,51 +86,6 @@ TEST(SArray, SArrayOfBooleans) {
   ASSERT_EQ(2, parser.parser().get().size());
   ASSERT_EQ(true, parser.parser().get()[0]);
   ASSERT_EQ(false, parser.parser().get()[1]);
-
-  ASSERT_TRUE(parser.parser().isSet());
-}
-
-TEST(SArray, SArrayOfIntegers) {
-  std::string buf(R"([10, 11])");
-
-  Parser parser{SArray{Value<int64_t>{}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ(10, parser.parser().get()[0]);
-  ASSERT_EQ(11, parser.parser().get()[1]);
-
-  ASSERT_TRUE(parser.parser().isSet());
-}
-
-TEST(SArray, SArrayOfDoubles) {
-  std::string buf(R"([10.5, 11.2])");
-
-  Parser parser{SArray{Value<double>{}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ(10.5, parser.parser().get()[0]);
-  ASSERT_EQ(11.2, parser.parser().get()[1]);
-
-  ASSERT_TRUE(parser.parser().isSet());
-}
-
-TEST(SArray, SArrayOfStrings) {
-  std::string buf(R"(["value1", "value2"])");
-
-  Parser parser{SArray{Value<std::string>{}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ("value1", parser.parser().get()[0]);
-  ASSERT_EQ("value2", parser.parser().get()[1]);
 
   ASSERT_TRUE(parser.parser().isSet());
 }
@@ -148,7 +103,7 @@ TEST(SArray, SArrayWithNull) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
-TEST(SArray, SArrayWithNullAndValuse) {
+TEST(SArray, SArrayWithNullAndValues) {
   std::string buf(R"([null, true, null, false])");
 
   Parser parser{SArray{Value<bool>{}}};
@@ -163,7 +118,7 @@ TEST(SArray, SArrayWithNullAndValuse) {
   ASSERT_TRUE(parser.parser().isSet());
 }
 
-TEST(SArray, UnexpectedBoolean) {
+TEST(SArray, UnexpectedType) {
   std::string buf(R"(true)");
 
   Parser parser{SArray{Value<bool>{}}};
@@ -186,69 +141,22 @@ TEST(SArray, UnexpectedBoolean) {
   }
 }
 
-TEST(SArray, UnexpectedInteger) {
-  std::string buf(R"(10)");
+TEST(SArray, UnexpectedMapStart) {
+  std::string buf(
+      R"({})");
 
-  Parser parser{SArray{Value<int64_t>{}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  try {
-    parser.finish();
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected token integer", e.sjparserError());
-
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-                                        10
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
-TEST(SArray, UnexpectedDouble) {
-  std::string buf(R"(10.5)");
-
-  Parser parser{SArray{Value<double>{}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  try {
-    parser.finish();
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected token double", e.sjparserError());
-
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-                                        10.5
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
-TEST(SArray, UnexpectedString) {
-  std::string buf(R"("value")");
-
-  Parser parser{SArray{Value<std::string>{}}};
+  Parser parser{SArray{Value<bool>{}}};
 
   try {
     parser.parse(buf);
     FAIL() << "No exception thrown";
   } catch (ParsingError &e) {
     ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected token string", e.sjparserError());
+    ASSERT_EQ("Unexpected token map start", e.sjparserError());
 
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
-                                 "value"
+                                       {}
                      (right here) ------^
 )",
         e.parserError());
@@ -257,7 +165,7 @@ TEST(SArray, UnexpectedString) {
   }
 }
 
-TEST(SArray, SArrayWithUnexpectedBoolean) {
+TEST(SArray, SArrayWithUnexpectedType) {
   std::string buf(R"([true])");
 
   Parser parser{SArray{Value<std::string>{}}};
@@ -272,75 +180,6 @@ TEST(SArray, SArrayWithUnexpectedBoolean) {
     ASSERT_EQ(
         R"(parse error: client cancelled parse via callback return value
                                    [true]
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
-TEST(SArray, SArrayWithUnexpectedInteger) {
-  std::string buf(R"([10])");
-
-  Parser parser{SArray{Value<bool>{}}};
-
-  try {
-    parser.parse(buf);
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected token integer", e.sjparserError());
-
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-                                     [10]
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
-TEST(SArray, SArrayWithUnexpectedDouble) {
-  std::string buf(R"([10.5])");
-
-  Parser parser{SArray{Value<bool>{}}};
-
-  try {
-    parser.parse(buf);
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected token double", e.sjparserError());
-
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-                                   [10.5]
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
-TEST(SArray, SArrayWithUnexpectedString) {
-  std::string buf(R"(["value"])");
-
-  Parser parser{SArray{Value<bool>{}}};
-
-  try {
-    parser.parse(buf);
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-    ASSERT_EQ("Unexpected token string", e.sjparserError());
-
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-                                ["value"]
                      (right here) ------^
 )",
         e.parserError());
@@ -426,55 +265,6 @@ TEST(SArray, SArrayWithCallbackError) {
   }
 }
 
-TEST(SArray, SArrayOfSCustomObjects) {
-  std::string buf(
-      R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
-
-  struct ObjectStruct {
-    std::string member1;
-    int64_t member2;
-  };
-
-  Parser parser{
-      SArray{SCustomObject{TypeHolder<ObjectStruct>{},
-                           std::tuple{Member{"key", Value<std::string>{}},
-                                      Member{"key2", Value<int64_t>{}}}}}};
-
-  auto objectCb = [&](decltype(parser)::ParserType::ParserType &parser,
-                      ObjectStruct &value) {
-    value = {parser.pop<0>(), parser.pop<1>()};
-    return true;
-  };
-
-  parser.parser().parser().setFinishCallback(objectCb);
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ("value", parser.parser().get()[0].member1);
-  ASSERT_EQ(10, parser.parser().get()[0].member2);
-  ASSERT_EQ("value2", parser.parser().get()[1].member1);
-  ASSERT_EQ(20, parser.parser().get()[1].member2);
-}
-
-TEST(SArray, SArrayOfSAutoObjects) {
-  std::string buf(
-      R"([{"key": "value", "key2": 10}, {"key": "value2", "key2": 20}])");
-
-  Parser parser{SArray{SAutoObject{std::tuple{
-      Member{"key", Value<std::string>{}}, Member{"key2", Value<int64_t>{}}}}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ("value", std::get<0>(parser.parser().get()[0]));
-  ASSERT_EQ(10, std::get<1>(parser.parser().get()[0]));
-  ASSERT_EQ("value2", std::get<0>(parser.parser().get()[1]));
-  ASSERT_EQ(20, std::get<1>(parser.parser().get()[1]));
-}
-
 TEST(SArray, SArrayOfSArrays) {
   std::string buf(R"([[true, true], [false, false]])");
 
@@ -491,52 +281,6 @@ TEST(SArray, SArrayOfSArrays) {
   ASSERT_EQ(2, parser.parser().get()[1].size());
   ASSERT_EQ(false, parser.parser().get()[1][0]);
   ASSERT_EQ(false, parser.parser().get()[1][1]);
-}
-
-TEST(SArray, SArrayOfStandaloneSUnions) {
-  std::string buf(
-      R"([{"type": "str", "key": "value"}, {"type": "int", "key": 10}])");
-
-  Parser parser{SArray{SUnion{
-      TypeHolder<std::string>{}, "type",
-      std::tuple{Member{"str", SAutoObject{std::tuple{
-                                   Member{"key", Value<std::string>{}}}}},
-                 Member{"int", SAutoObject{std::tuple{
-                                   Member{"key", Value<int64_t>{}}}}}}}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ("value", std::get<0>(std::get<0>(parser.parser().get()[0])));
-  ASSERT_EQ(10, std::get<0>(std::get<1>(parser.parser().get()[1])));
-}
-
-TEST(SArray, SArrayOfEmbeddedSUnions) {
-  std::string buf(
-      R"([{"id": 1, "type": "str", "key": "value"},
-          {"id": 2, "type": "int", "key": 10}])");
-
-  Parser parser{SArray{SAutoObject{std::tuple{
-      Member{"id", Value<int64_t>{}},
-      Member{"type",
-             SUnion{TypeHolder<std::string>{},
-                    std::tuple{
-                        Member{"str", SAutoObject{std::tuple{Member{
-                                          "key", Value<std::string>{}}}}},
-                        Member{"int", SAutoObject{std::tuple{Member{
-                                          "key", Value<int64_t>{}}}}}}}}}}}};
-
-  ASSERT_NO_THROW(parser.parse(buf));
-  ASSERT_NO_THROW(parser.finish());
-
-  ASSERT_EQ(2, parser.parser().get().size());
-  ASSERT_EQ(1, std::get<0>(parser.parser().get()[0]));
-  ASSERT_EQ(2, std::get<0>(parser.parser().get()[1]));
-  ASSERT_EQ("value",
-            std::get<0>(std::get<0>(std::get<1>(parser.parser().get()[0]))));
-  ASSERT_EQ(10,
-            std::get<0>(std::get<1>(std::get<1>(parser.parser().get()[1]))));
 }
 
 TEST(SArray, Move) {
@@ -572,4 +316,13 @@ TEST(SArray, SArrayWithParserReference) {
   ASSERT_EQ(16, parser.parser().get()[0][2]);
 
   ASSERT_EQ(&(parser.parser().parser()), &inner_sarray);
+}
+
+// Just check if the constructor compiles
+TEST(SArray, SArrayWithSArrayReference) {
+  SArray sarray{Value<int64_t>{}};
+
+  Parser parser{SArray{sarray}};
+
+  ASSERT_EQ(&(parser.parser().parser()), &sarray);
 }
