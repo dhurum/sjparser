@@ -51,7 +51,7 @@ template <typename T> class SArray : public Array<T> {
    *
    * @param [in] parser %Parser for array elements, can be an lvalue reference
    * or an rvalue. It must be one of the parsers that store values (Value,
-   * SArray, SAutoObject, SCustomObject, SUnion).
+   * SArray, SAutoObject, SCustomObject, SUnion, SMap).
    *
    * @param [in] on_finish (optional) Callback, that will be called after the
    * array is parsed.
@@ -88,6 +88,10 @@ template <typename T> class SArray : public Array<T> {
    */
   bool isEmpty();
 
+  /** @brief Elements value parser getter.
+   *
+   * @return Reference to the elements parser.
+   */
   T &parser();
 #endif
 

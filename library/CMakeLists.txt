@@ -20,6 +20,7 @@ set_property(TARGET sjparser PROPERTY SJPARSER_HEADERS
   sjparser/object.h
   sjparser/s_array.h
   sjparser/map.h
+  sjparser/s_map.h
   sjparser/type_holder.h
   sjparser/array.h
   sjparser/yajl_parser.h
@@ -35,6 +36,7 @@ set_property(TARGET sjparser PROPERTY SJPARSER_HEADERS
   sjparser/impl/object.h
   sjparser/impl/s_array.h
   sjparser/impl/map.h
+  sjparser/impl/s_map.h
   sjparser/impl/array.h
   sjparser/impl/s_auto_object.h
   sjparser/impl/s_union.h

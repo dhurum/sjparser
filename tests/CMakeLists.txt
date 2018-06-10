@@ -15,6 +15,7 @@ add_executable(sjparser_tests
   src/yajl_parser.cpp
   src/dispatcher.cpp
   src/map.cpp
+  src/smap.cpp
   src/ignore.cpp
   src/parser.cpp
   src/member.cpp

@@ -22,29 +22,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include <gtest/gtest.h>
-#include <map>
 #include "sjparser/sjparser.h"
 
 using namespace SJParser;
 
-TEST(Map, Empty) {
+TEST(SMap, Empty) {
   std::string buf(R"({})");
 
-  Parser parser{Map{Value<bool>{}}};
+  Parser parser{SMap{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(0, parser.parser().get().size());
 
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_TRUE(parser.parser().isEmpty());
 }
 
-TEST(Map, EmptyWithCallbacks) {
+TEST(SMap, EmptyWithCallbacks) {
   std::string buf(R"({})");
   bool key_callback_called = false;
   bool finish_callback_called = false;
 
-  Parser parser{Map{Value<bool>{}}};
+  Parser parser{SMap{Value<bool>{}}};
 
   auto elementCb = [&](const std::string &,
                        decltype(parser)::ParserType::ParserType &) {
@@ -63,16 +64,17 @@ TEST(Map, EmptyWithCallbacks) {
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
+  ASSERT_EQ(0, parser.parser().get().size());
   ASSERT_TRUE(parser.parser().isSet());
 
   ASSERT_FALSE(key_callback_called);
   ASSERT_TRUE(finish_callback_called);
 }
 
-TEST(Map, Null) {
+TEST(SMap, Null) {
   std::string buf(R"(null)");
 
-  Parser parser{Map{Value<bool>{}}};
+  Parser parser{SMap{Value<bool>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
@@ -81,13 +83,13 @@ TEST(Map, Null) {
   ASSERT_TRUE(parser.parser().isEmpty());
 }
 
-TEST(Map, Reset) {
+TEST(SMap, Reset) {
   std::string buf(
       R"({"1": true})");
 
   bool value = false;
 
-  Parser parser{Map{Value<bool>{}}};
+  Parser parser{SMap{Value<bool>{}}};
 
   auto elementCb = [&](const std::string &,
                        decltype(parser)::ParserType::ParserType &parser) {
@@ -105,6 +107,9 @@ TEST(Map, Reset) {
   ASSERT_TRUE(parser.parser().isSet());
   ASSERT_FALSE(parser.parser().isEmpty());
 
+  ASSERT_EQ(1, parser.parser().get().size());
+  ASSERT_EQ(true, parser.parser().get().at("1"));
+
   buf = R"(null)";
 
   ASSERT_NO_THROW(parser.parse(buf));
@@ -114,56 +119,21 @@ TEST(Map, Reset) {
   ASSERT_TRUE(parser.parser().isEmpty());
 }
 
-TEST(Map, SeveralKeys) {
+TEST(SMap, SeveralKeys) {
   std::string buf(
       R"({"1": 10, "2": 15})");
 
-  std::map<std::string, int64_t> values;
-
-  Parser parser{Map{Value<int64_t>{}}};
-
-  auto elementCb = [&](const std::string &key,
-                       decltype(parser)::ParserType::ParserType &parser) {
-    values[key] = parser.get();
-    return true;
-  };
-
-  parser.parser().setElementCallback(elementCb);
+  Parser parser{SMap{Value<int64_t>{}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(10, values["1"]);
-  ASSERT_EQ(15, values["2"]);
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ(10, parser.parser().get().at("1"));
+  ASSERT_EQ(15, parser.parser().get().at("2"));
 }
 
-TEST(Map, InternalCallbackError) {
-  std::string buf(
-      R"({"1": 10})");
-
-  auto internalCb = [&](const int64_t &) { return false; };
-
-  Parser parser{Map{Value<int64_t>{internalCb}}};
-
-  try {
-    parser.parse(buf);
-    FAIL() << "No exception thrown";
-  } catch (ParsingError &e) {
-    ASSERT_FALSE(parser.parser().isSet());
-
-    ASSERT_EQ("Callback returned false", e.sjparserError());
-    ASSERT_EQ(
-        R"(parse error: client cancelled parse via callback return value
-                                {"1": 10}
-                     (right here) ------^
-)",
-        e.parserError());
-  } catch (...) {
-    FAIL() << "Invalid exception thrown";
-  }
-}
-
-TEST(Map, KeyCallbackError) {
+TEST(SMap, KeyCallbackError) {
   std::string buf(
       R"({"1": 10})");
 
@@ -172,7 +142,7 @@ TEST(Map, KeyCallbackError) {
     return false;
   };
 
-  Parser parser{Map{Value<int64_t>{}, elementCb}};
+  Parser parser{SMap{Value<int64_t>{}, elementCb}};
 
   try {
     parser.parse(buf);
@@ -192,11 +162,11 @@ TEST(Map, KeyCallbackError) {
   }
 }
 
-TEST(Map, FinishCallbackError) {
+TEST(SMap, FinishCallbackError) {
   std::string buf(
       R"({"1": 10})");
 
-  Parser parser{Map{Value<int64_t>{}}};
+  Parser parser{SMap{Value<int64_t>{}}};
 
   auto finishCb = [&](decltype(parser)::ParserType &) { return false; };
 
@@ -220,7 +190,7 @@ TEST(Map, FinishCallbackError) {
   }
 }
 
-TEST(Map, MapOfMaps) {
+TEST(SMap, SMapOfSMaps) {
   std::string buf(
       R"({
   "1": {
@@ -233,82 +203,53 @@ TEST(Map, MapOfMaps) {
   }
 })");
 
-  std::map<std::string, std::map<std::string, std::vector<int64_t>>> values;
-  std::map<std::string, std::vector<int64_t>> tmp_values;
-
-  Parser parser{Map{Map{SArray{Value<int64_t>{}}}}};
-
-  auto innerElementCb =
-      [&](const std::string &key,
-          decltype(parser)::ParserType::ParserType::ParserType &parser) {
-        tmp_values[key] = parser.pop();
-        return true;
-      };
-
-  auto elementCb = [&](const std::string &key,
-                       decltype(parser)::ParserType::ParserType &) {
-    values[key] = tmp_values;
-    tmp_values.clear();
-    return true;
-  };
-
-  parser.parser().parser().setElementCallback(innerElementCb);
-
-  parser.parser().setElementCallback(elementCb);
+  Parser parser{SMap{SMap{SArray{Value<int64_t>{}}}}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(2, values["1"].size());
-  ASSERT_EQ(10, values["1"]["1"][0]);
-  ASSERT_EQ(20, values["1"]["1"][1]);
-  ASSERT_EQ(30, values["1"]["2"][0]);
-  ASSERT_EQ(40, values["1"]["2"][1]);
+  ASSERT_EQ(2, parser.parser().get().size());
 
-  ASSERT_EQ(2, values["2"].size());
-  ASSERT_EQ(11, values["2"]["1"][0]);
-  ASSERT_EQ(21, values["2"]["1"][1]);
-  ASSERT_EQ(31, values["2"]["2"][0]);
-  ASSERT_EQ(41, values["2"]["2"][1]);
+  ASSERT_EQ(2, parser.parser().get().at("1").size());
+  ASSERT_EQ(10, parser.parser().get().at("1").at("1")[0]);
+  ASSERT_EQ(20, parser.parser().get().at("1").at("1")[1]);
+  ASSERT_EQ(30, parser.parser().get().at("1").at("2")[0]);
+  ASSERT_EQ(40, parser.parser().get().at("1").at("2")[1]);
+
+  ASSERT_EQ(2, parser.parser().get().at("2").size());
+  ASSERT_EQ(11, parser.parser().get().at("2").at("1")[0]);
+  ASSERT_EQ(21, parser.parser().get().at("2").at("1")[1]);
+  ASSERT_EQ(31, parser.parser().get().at("2").at("2")[0]);
+  ASSERT_EQ(41, parser.parser().get().at("2").at("2")[1]);
 }
 
-TEST(Map, MapWithParserReference) {
+TEST(SMap, SMapWithParserReference) {
   std::string buf(R"({
   "1": [10, 20],
   "2": [30, 40]
 })");
 
-  std::map<std::string, std::vector<int64_t>> values;
-
   SArray sarray{Value<int64_t>{}};
 
-  Parser parser{Map{sarray}};
-
-  auto elementCb = [&](const std::string &key,
-                       decltype(parser)::ParserType::ParserType &parser) {
-    values[key] = parser.pop();
-    return true;
-  };
-
-  parser.parser().setElementCallback(elementCb);
+  Parser parser{SMap{sarray}};
 
   ASSERT_NO_THROW(parser.parse(buf));
   ASSERT_NO_THROW(parser.finish());
 
-  ASSERT_EQ(2, values.size());
-  ASSERT_EQ(10, values["1"][0]);
-  ASSERT_EQ(20, values["1"][1]);
-  ASSERT_EQ(30, values["2"][0]);
-  ASSERT_EQ(40, values["2"][1]);
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ(10, parser.parser().get().at("1")[0]);
+  ASSERT_EQ(20, parser.parser().get().at("1")[1]);
+  ASSERT_EQ(30, parser.parser().get().at("2")[0]);
+  ASSERT_EQ(40, parser.parser().get().at("2")[1]);
 
   ASSERT_EQ(&(parser.parser().parser()), &sarray);
 }
 
 // Just check if the constructor compiles
-TEST(Map, MapWithMapReference) {
-  Map array{Value<int64_t>{}};
+TEST(SMap, SMapWithMapReference) {
+  SMap array{Value<int64_t>{}};
 
-  Parser parser{Map{array}};
+  Parser parser{SMap{array}};
 
   ASSERT_EQ(&(parser.parser().parser()), &array);
 }

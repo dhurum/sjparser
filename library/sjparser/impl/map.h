@@ -44,6 +44,10 @@ Map<T>::Map(T &&parser, ElementCallbackT on_element, CallbackT on_finish)
       _on_finish(std::move(on_finish)) {
   static_assert(std::is_base_of_v<TokenParser, ParserType>,
                 "Invalid parser used in Map");
+  static_assert(std::is_constructible_v<ElementCallback, ElementCallbackT>,
+                "Invalid element callback type");
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
 }
 
 template <typename T>

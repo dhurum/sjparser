@@ -27,47 +27,68 @@ namespace SJParser {
 
 template <typename T>
 template <typename CallbackT>
-SArray<T>::SArray(T &&parser, CallbackT on_finish)
-    : Array<T>(std::forward<T>(parser)), _on_finish(std::move(on_finish)) {
+SMap<T>::SMap(
+    T &&parser, CallbackT on_finish,
+    std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
+    : Map<T>(std::forward<T>(parser)), _on_finish(std::move(on_finish)) {
   static_assert(std::is_base_of_v<TokenParser, ParserType>,
-                "Invalid parser used in SArray");
+                "Invalid parser used in Map");
+}
+
+template <typename T>
+template <typename ElementCallbackT, typename CallbackT>
+SMap<T>::SMap(T &&parser, ElementCallbackT on_element, CallbackT on_finish)
+    : Map<T>(std::forward<T>(parser)),
+      _on_element(std::move(on_element)),
+      _on_finish(std::move(on_finish)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in Map");
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
 }
 
 template <typename T>
-SArray<T>::SArray(SArray &&other) noexcept
-    : Array<T>(std::move(other)),
+SMap<T>::SMap(SMap &&other) noexcept
+    : Map<T>(std::move(other)),
       _values{},
+      _on_element(std::move(other._on_element)),
       _on_finish(std::move(other._on_finish)) {}
 
-template <typename T> void SArray<T>::setFinishCallback(Callback on_finish) {
+template <typename T>
+void SMap<T>::setElementCallback(ElementCallback on_element) {
+  _on_element = on_element;
+}
+
+template <typename T> void SMap<T>::setFinishCallback(Callback on_finish) {
   _on_finish = on_finish;
 }
 
-template <typename T> const typename SArray<T>::Type &SArray<T>::get() const {
+template <typename T> const typename SMap<T>::Type &SMap<T>::get() const {
   checkSet();
   return _values;
 }
 
-template <typename T> typename SArray<T>::Type &&SArray<T>::pop() {
+template <typename T> typename SMap<T>::Type &&SMap<T>::pop() {
   checkSet();
   TokenParser::_set = false;
   return std::move(_values);
 }
 
-template <typename T> void SArray<T>::childParsed() {
-  _values.push_back(Array<T>::_parser.pop());
+template <typename T> void SMap<T>::childParsed() {
+  if (_on_element && !_on_element(Map<T>::_current_key, Map<T>::_parser)) {
+    throw std::runtime_error("Element callback returned false");
+  }
+  _values.insert(std::pair(Map<T>::_current_key, Map<T>::_parser.pop()));
 }
 
-template <typename T> void SArray<T>::finish() {
-  if (_on_finish && !_on_finish(_values)) {
+template <typename T> void SMap<T>::finish() {
+  if (_on_finish && !_on_finish(*this)) {
     throw std::runtime_error("Callback returned false");
   }
 }
 
-template <typename T> void SArray<T>::reset() {
-  ArrayParser::reset();
+template <typename T> void SMap<T>::reset() {
+  TokenParser::reset();
   _values = Type();
 }
 }  // namespace SJParser

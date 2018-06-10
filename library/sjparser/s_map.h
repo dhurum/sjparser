@@ -23,38 +23,42 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "internals/dispatcher.h"
-#include "internals/token_parser.h"
+#include "map.h"
 
-#include <functional>
+#include <map>
 
 namespace SJParser {
 
-/** @brief %Map parser.
+/** @brief %Map parser, that stores the result in an std::map with std::string
+ * as a key and @ref SMap_T "T" as a value.
  *
- * Parses an object where each member value has type @ref Map_T "T", and member
+ * Parses an object where each member value has type @ref SMap_T "T", and member
  * name represents map key.
  *
  * @tparam T Element's value parser type.
- * @anchor Map_T
+ * @anchor SMap_T
  */
 
-template <typename T> class Map : public TokenParser {
+template <typename T> class SMap : public Map<T> {
  public:
   /** Element's value parser type. */
   using ParserType = std::decay_t<T>;
+
+  /** Stored value type */
+  using Type = std::map<std::string, typename ParserType::Type>;
 
   /** Element callback type. */
   using ElementCallback =
       std::function<bool(const std::string &, ParserType &)>;
 
   /** Finish callback type. */
-  using Callback = std::function<bool(Map<T> &)>;
+  using Callback = std::function<bool(SMap<T> &)>;
 
   /** @brief Constructor.
    *
    * @param [in] parser %Parser for map elements values, can be an lvalue
-   * reference or an rvalue.
+   * reference or an rvalue. It must be one of the parsers that store values
+   * (Value, SArray, SAutoObject, SCustomObject, SUnion, SMap).
    *
    * @param [in] on_finish (optional) Callback, that will be called after the
    * map is parsed.
@@ -62,15 +66,16 @@ template <typename T> class Map : public TokenParser {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  Map(T &&parser, CallbackT on_finish = nullptr,
-      std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
-          * /*unused*/
-      = 0);
+  SMap(T &&parser, CallbackT on_finish = nullptr,
+       std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
+           * /*unused*/
+       = 0);
 
   /** @brief Constructor.
    *
    * @param [in] parser %Parser for map elements values, can be an lvalue
-   * reference or an rvalue.
+   * reference or an rvalue. It must be one of the parsers that store values
+   * (Value, SArray, SAutoObject, SCustomObject, SUnion, SMap).
    *
    * @param [in] on_element Callback, that will be called after an element of
    * the map is parsed.
@@ -84,10 +89,10 @@ template <typename T> class Map : public TokenParser {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename ElementCallbackT, typename CallbackT = std::nullptr_t>
-  Map(T &&parser, ElementCallbackT on_element, CallbackT on_finish = nullptr);
+  SMap(T &&parser, ElementCallbackT on_element, CallbackT on_finish = nullptr);
 
   /** Move constructor. */
-  Map(Map &&other) noexcept;
+  SMap(SMap &&other) noexcept;
 
   /** @brief Element callback setter.
    *
@@ -108,39 +113,64 @@ template <typename T> class Map : public TokenParser {
    */
   void setFinishCallback(Callback on_finish);
 
+#ifdef DOXYGEN_ONLY
+  /** @brief Check if the parser has a value.
+   *
+   * @return True if the parser has some value stored or false otherwise.
+   */
+  bool isSet();
+
+  /** @brief Check if the parsed array was empy (null).
+   *
+   * @return True if the parsed array was empty (null) or false otherwise.
+   */
+  bool isEmpty();
+
   /** @brief Elements value parser getter.
    *
    * @return Reference to the elements parser.
    */
   T &parser();
+#endif
 
-  /** @cond INTERNAL Internal */
-  void setDispatcher(Dispatcher *dispatcher) noexcept override;
-  /** @endcond */
+  /** @brief Parsed value getter.
+   *
+   * @return Const reference to a parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
+   */
+  const Type &get() const;
 
- protected:
-  /** @cond INTERNAL Elements parser. */
-  T _parser;
-  std::string _current_key;
-  /** @endcond */
+  /** @brief Get the parsed value and unset the parser.
+   *
+   * Moves the parsed value out of the parser.
+   *
+   * @return Rvalue reference to the parsed value.
+   *
+   * @throw std::runtime_error Thrown if the value is unset (no value was
+   * parsed or #pop was called).
+   */
+  Type &&pop();
 
  private:
-  void on(MapStartT /*unused*/) override;
-  void on(MapKeyT key) override;
-  void on(MapEndT /*unused*/) override;
+  using TokenParser::checkSet;
 
   void childParsed() override;
   void finish() override;
+  void reset() override;
 
+  Type _values;
   ElementCallback _on_element;
   Callback _on_finish;
 };
 
-template <template <typename> typename U, typename T> Map(U<T> &&)->Map<U<T>>;
+template <template <typename> typename U, typename T> SMap(U<T> &&)->SMap<U<T>>;
 
-template <template <typename> typename U, typename T> Map(U<T> &)->Map<U<T> &>;
+template <template <typename> typename U, typename T>
+SMap(U<T> &)->SMap<U<T> &>;
 
-template <typename T> Map(T &&)->Map<T>;
+template <typename T> SMap(T &&)->SMap<T>;
 }  // namespace SJParser
 
-#include "impl/map.h"
+#include "impl/s_map.h"
