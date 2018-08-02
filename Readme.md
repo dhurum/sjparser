@@ -1,6 +1,6 @@
 [//]: # (start nodoc)
-[![Build Status](https://travis-ci.org/dhurum/sjparser.svg?branch=master)](https://travis-ci.org/dhurum/sjparser)
-[![Coverage Status](https://coveralls.io/repos/github/dhurum/sjparser/badge.svg)](https://coveralls.io/github/dhurum/sjparser)
+[![pipeline status](https://gitlab.com/dhurum/sjparser/badges/master/pipeline.svg)](https://gitlab.com/dhurum/sjparser/commits/master)
+[![coverage report](https://gitlab.com/dhurum/sjparser/badges/master/coverage.svg)](https://gitlab.com/dhurum/sjparser/commits/master)
 [![License](https://img.shields.io/:license-mit-blue.svg)](https://badges.mit-license.org)
 
 [//]: # (end nodoc)
@@ -15,9 +15,9 @@ This is an event-driven parser on steroids - you specify the expected json struc
 [//]: # (start nodoc)
 ## Documentation
 
-[Class reference](https://dhurum.github.io/sjparser/documentation/html/).  
+[Class reference](https://dhurum.gitlab.io/sjparser/).  
 
-[Tutorial](https://github.com/dhurum/sjparser_tutorial).  
+[Tutorial](https://gitlab.com/dhurum/sjparser_tutorial).  
 
 Also you can check the [Concepts](#concepts).
 
@@ -103,7 +103,7 @@ int main() {
 }
 ~~~
 
-For more examples, please see [tests](https://github.com/dhurum/sjparser/blob/master/tests).
+For more examples, please see [tests](https://gitlab.com/dhurum/sjparser/tree/master/tests/src).
 
 ## Building
 
@@ -112,7 +112,7 @@ For building sjparser you will need:
 - `cmake` 3.8 or higher;
 - `make`;
 - `yajl`;
-- c++ compiler with c++17 support (If you want to use SUnion, you can not use Clang with libstdc++ due to [https://bugs.llvm.org/show_bug.cgi?id=33222]());
+- c++ compiler with c++17 support (Currently gcc only, clang 6.0.1 has a bug in template deduction guides);
 
 ### CMake variables:
 - `SJPARSER_WITH_TESTS` - Build tests if the config is not Debug;
