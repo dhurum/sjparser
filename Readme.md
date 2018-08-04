@@ -170,7 +170,7 @@ The documentation will be available in `documentation/html`.
 For the coverage you will need:
 
 - `gcov`;
-- `lcov` with `genhtml`;
+- `gcovr`;
 
 ~~~bash
 cmake ../ -DCMAKE_BUILD_TYPE=Debug -DSJPARSER_WITH_COVERAGE=On

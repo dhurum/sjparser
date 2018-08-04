@@ -19,6 +19,7 @@ add_custom_target(coverage
   COMMAND ${GCOVR_BIN} --root ${CMAKE_SOURCE_DIR}
     --filter ${CMAKE_SOURCE_DIR}/library
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  DEPENDS sjparser_tests
 )
 
 add_custom_target(coverage-report
@@ -27,4 +28,5 @@ add_custom_target(coverage-report
     --filter ${CMAKE_SOURCE_DIR}/library
     --html --html-details -o ${OUTPUT_DIR}/report.html
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  DEPENDS sjparser_tests
 )
