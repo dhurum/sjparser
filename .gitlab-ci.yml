@@ -86,7 +86,6 @@ coverage:
   stage: test
   script:
     - cd build
-    - make test
     - make coverage
   coverage: '/^TOTAL.*\s+(\d+\%)$/'
   dependencies:
