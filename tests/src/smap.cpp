@@ -137,10 +137,7 @@ TEST(SMap, KeyCallbackError) {
   std::string buf(
       R"({"1": 10})");
 
-  auto elementCb = [&](const std::string &,
-                       Value<int64_t> &) {
-    return false;
-  };
+  auto elementCb = [&](const std::string &, Value<int64_t> &) { return false; };
 
   Parser parser{SMap{Value<int64_t>{}, elementCb}};
 
