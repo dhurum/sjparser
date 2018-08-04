@@ -1,4 +1,4 @@
-image: dhurum/basecpp:latest
+image: dhurum/sjparser-build:latest
 
 stages:
   - configure
@@ -50,11 +50,14 @@ build-coverage:
     paths:
       - build
 
-static_analyzer:
+checks:
   stage: build
   script:
     - cd build
     - make check
+    - make format
+    - git status -s
+    - '[[ -z $( git status -s ) ]]'
   dependencies:
     - configuration
 
