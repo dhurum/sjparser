@@ -98,11 +98,11 @@ template <typename T> class Array : public ArrayParser {
   Callback _on_finish;
 };
 
-template <template <typename> typename U, typename T>
-Array(U<T> &&)->Array<U<T>>;
+template <typename T>
+Array(Array<T> &&)->Array<Array<T>>;
 
-template <template <typename> typename U, typename T>
-Array(U<T> &)->Array<U<T> &>;
+template <typename T>
+Array(Array<T> &)->Array<Array<T> &>;
 
 template <typename T> Array(T &&)->Array<T>;
 }  // namespace SJParser

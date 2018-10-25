@@ -112,7 +112,7 @@ For building sjparser you will need:
 - `cmake` 3.8 or higher;
 - `make`;
 - `yajl`;
-- c++ compiler with c++17 support (Currently gcc only, clang 6.0.1 has a bug in template deduction guides);
+- c++ compiler with c++17 support (should work with gcc 8 and clang 7);
 
 ### CMake variables:
 - `SJPARSER_WITH_TESTS` - Build tests if the config is not Debug;

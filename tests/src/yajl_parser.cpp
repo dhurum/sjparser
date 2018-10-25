@@ -56,7 +56,7 @@ TEST(YajlParser, OnUnknownException) {
 class TestParser : public TokenParser {
  public:
   void finish() override {}
-  void on(NullT /*unused*/) {}
+  void on(NullT /*unused*/) override {}
   struct Args {};
 };
 

@@ -136,9 +136,9 @@ template <typename T> class Map : public TokenParser {
   Callback _on_finish;
 };
 
-template <template <typename> typename U, typename T> Map(U<T> &&)->Map<U<T>>;
+template <typename T> Map(Map<T> &&)->Map<Map<T>>;
 
-template <template <typename> typename U, typename T> Map(U<T> &)->Map<U<T> &>;
+template <typename T> Map(Map<T> &)->Map<Map<T> &>;
 
 template <typename T> Map(T &&)->Map<T>;
 }  // namespace SJParser
