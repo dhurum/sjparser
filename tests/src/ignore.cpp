@@ -111,8 +111,7 @@ TEST(Ignore, Reset) {
 }
 
 TEST(Ignore, Object) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   Parser parser{Ignore{}};
 

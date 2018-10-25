@@ -125,8 +125,7 @@ TEST(StandaloneUnion, Null) {
 }
 
 TEST(StandaloneUnion, Reset) {
-  std::string buf(
-      R"({"type": 1, "bool": true, "integer": 10})");
+  std::string buf(R"({"type": 1, "bool": true, "integer": 10})");
 
   Parser parser{Union{
       TypeHolder<int64_t>{}, "type",
@@ -156,8 +155,7 @@ TEST(StandaloneUnion, Reset) {
 }
 
 TEST(StandaloneUnion, AllValuesMembers) {
-  std::string buf(
-      R"({"type": 1, "bool": true, "integer": 10})");
+  std::string buf(R"({"type": 1, "bool": true, "integer": 10})");
 
   Parser parser{Union{
       TypeHolder<int64_t>{}, "type",

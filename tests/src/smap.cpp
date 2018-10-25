@@ -84,8 +84,7 @@ TEST(SMap, Null) {
 }
 
 TEST(SMap, Reset) {
-  std::string buf(
-      R"({"1": true})");
+  std::string buf(R"({"1": true})");
 
   bool value = false;
 
@@ -120,8 +119,7 @@ TEST(SMap, Reset) {
 }
 
 TEST(SMap, SeveralKeys) {
-  std::string buf(
-      R"({"1": 10, "2": 15})");
+  std::string buf(R"({"1": 10, "2": 15})");
 
   Parser parser{SMap{Value<int64_t>{}}};
 
@@ -134,8 +132,7 @@ TEST(SMap, SeveralKeys) {
 }
 
 TEST(SMap, KeyCallbackError) {
-  std::string buf(
-      R"({"1": 10})");
+  std::string buf(R"({"1": 10})");
 
   auto elementCb = [&](const std::string &, Value<int64_t> &) { return false; };
 
@@ -160,8 +157,7 @@ TEST(SMap, KeyCallbackError) {
 }
 
 TEST(SMap, FinishCallbackError) {
-  std::string buf(
-      R"({"1": 10})");
+  std::string buf(R"({"1": 10})");
 
   Parser parser{SMap{Value<int64_t>{}}};
 

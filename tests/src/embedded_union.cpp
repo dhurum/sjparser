@@ -99,8 +99,7 @@ TEST(EmbeddedUnion, OptionalMemberWithDefaultValue) {
 }
 
 TEST(EmbeddedUnion, Reset) {
-  std::string buf(
-      R"({"type": 1, "bool": true, "integer": 10})");
+  std::string buf(R"({"type": 1, "bool": true, "integer": 10})");
 
   Parser parser{Object{std::tuple{Member{
       "type",
@@ -132,8 +131,7 @@ TEST(EmbeddedUnion, Reset) {
 }
 
 TEST(EmbeddedUnion, AllValuesMembers) {
-  std::string buf(
-      R"({"type": 1, "bool": true, "integer": 10})");
+  std::string buf(R"({"type": 1, "bool": true, "integer": 10})");
 
   Parser parser{Object{std::tuple{Member{
       "type",

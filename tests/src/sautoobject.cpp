@@ -53,8 +53,7 @@ TEST(SAutoObject, Null) {
 }
 
 TEST(SAutoObject, Reset) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   Parser parser{SAutoObject{std::tuple{
       Member{"bool", Value<bool>{}}, Member{"string", Value<std::string>{}}}}};
@@ -112,8 +111,7 @@ TEST(SAutoObject, IgnoredUnexpectedMember) {
 }
 
 TEST(SAutoObject, MembersWithCallbackError) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   auto boolCb = [&](const bool &) { return false; };
 
@@ -142,8 +140,7 @@ TEST(SAutoObject, MembersWithCallbackError) {
 }
 
 TEST(SAutoObject, SAutoObjectWithCallback) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   using ValueType = std::tuple<bool, std::string>;
   ValueType value;
@@ -165,8 +162,7 @@ TEST(SAutoObject, SAutoObjectWithCallback) {
 }
 
 TEST(SAutoObject, SAutoObjectWithCallbackError) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   auto objectCb = [&](const std::tuple<bool, std::string> &) { return false; };
 

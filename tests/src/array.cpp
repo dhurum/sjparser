@@ -355,8 +355,7 @@ TEST(Array, ArrayOfObjects) {
 }
 
 TEST(Array, UnexpectedMapStart) {
-  std::string buf(
-      R"({})");
+  std::string buf(R"({})");
 
   Parser parser{Array{Value<bool>{}}};
 

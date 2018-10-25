@@ -82,8 +82,7 @@ TEST(Map, Null) {
 }
 
 TEST(Map, Reset) {
-  std::string buf(
-      R"({"1": true})");
+  std::string buf(R"({"1": true})");
 
   bool value = false;
 
@@ -115,8 +114,7 @@ TEST(Map, Reset) {
 }
 
 TEST(Map, SeveralKeys) {
-  std::string buf(
-      R"({"1": 10, "2": 15})");
+  std::string buf(R"({"1": 10, "2": 15})");
 
   std::map<std::string, int64_t> values;
 
@@ -138,8 +136,7 @@ TEST(Map, SeveralKeys) {
 }
 
 TEST(Map, InternalCallbackError) {
-  std::string buf(
-      R"({"1": 10})");
+  std::string buf(R"({"1": 10})");
 
   auto internalCb = [&](const int64_t &) { return false; };
 
@@ -164,8 +161,7 @@ TEST(Map, InternalCallbackError) {
 }
 
 TEST(Map, KeyCallbackError) {
-  std::string buf(
-      R"({"1": 10})");
+  std::string buf(R"({"1": 10})");
 
   auto elementCb = [&](const std::string &, Value<int64_t> &) { return false; };
 
@@ -190,8 +186,7 @@ TEST(Map, KeyCallbackError) {
 }
 
 TEST(Map, FinishCallbackError) {
-  std::string buf(
-      R"({"1": 10})");
+  std::string buf(R"({"1": 10})");
 
   Parser parser{Map{Value<int64_t>{}}};
 

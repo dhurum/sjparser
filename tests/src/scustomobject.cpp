@@ -65,8 +65,7 @@ TEST(SCustomObject, Null) {
 }
 
 TEST(SCustomObject, Reset) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   struct ObjectStruct {
     bool bool_value;
@@ -161,8 +160,7 @@ TEST(SCustomObject, IgnoredUnexpectedMember) {
 }
 
 TEST(SCustomObject, MembersWithCallbackError) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   auto boolCb = [&](const bool &) { return false; };
 
@@ -195,8 +193,7 @@ TEST(SCustomObject, MembersWithCallbackError) {
 }
 
 TEST(SCustomObject, SCustomObjectWithCallbackError) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   struct ObjectStruct {
     bool bool_value;
@@ -231,8 +228,7 @@ TEST(SCustomObject, SCustomObjectWithCallbackError) {
 }
 
 TEST(SCustomObject, PopValue) {
-  std::string buf(
-      R"({"string": "value", "integer": 10})");
+  std::string buf(R"({"string": "value", "integer": 10})");
 
   struct ObjectStruct {
     std::string str_value;

@@ -142,8 +142,7 @@ TEST(StandaloneSUnion, Null) {
 }
 
 TEST(StandaloneSUnion, Reset) {
-  std::string buf(
-      R"({"type": 1, "bool": true, "integer": 10})");
+  std::string buf(R"({"type": 1, "bool": true, "integer": 10})");
 
   Parser parser{SUnion{
       TypeHolder<int64_t>{}, "type",
@@ -175,8 +174,7 @@ TEST(StandaloneSUnion, Reset) {
 }
 
 TEST(StandaloneSUnion, AllValuesMembers) {
-  std::string buf(
-      R"({"type": 1, "bool": true, "integer": 10})");
+  std::string buf(R"({"type": 1, "bool": true, "integer": 10})");
 
   Parser parser{SUnion{
       TypeHolder<int64_t>{}, "type",
@@ -581,8 +579,7 @@ template <typename Member1, typename Member2>
 bool MoveStruct<Member1, Member2>::copy_used = false;
 
 TEST(StandaloneSUnion, Move) {
-  std::string buf(
-      R"({"type": 1, "bool": true, "integer": 10})");
+  std::string buf(R"({"type": 1, "bool": true, "integer": 10})");
 
   using ObjectStruct1 = MoveStruct<bool, int64_t>;
   using ObjectStruct2 = MoveStruct<double, std::string>;
@@ -658,8 +655,7 @@ TEST(StandaloneSUnion, Move) {
 }
 
 TEST(StandaloneSUnion, UnknownExceptionInValueSetter) {
-  std::string buf(
-      R"({"type": 1, "bool": true})");
+  std::string buf(R"({"type": 1, "bool": true})");
 
   struct ObjectStruct {
     bool throw_on_assign = false;

@@ -126,11 +126,9 @@ template <typename T> class SArray : public Array<T> {
   Callback _on_finish;
 };
 
-template <typename T>
-SArray(SArray<T> &&)->SArray<SArray<T>>;
+template <typename T> SArray(SArray<T> &&)->SArray<SArray<T>>;
 
-template <typename T>
-SArray(SArray<T> &)->SArray<SArray<T> &>;
+template <typename T> SArray(SArray<T> &)->SArray<SArray<T> &>;
 
 template <typename T> SArray(T &&)->SArray<T>;
 }  // namespace SJParser

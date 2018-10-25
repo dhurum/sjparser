@@ -54,8 +54,7 @@ TEST(Object, Null) {
 }
 
 TEST(Object, Reset) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   Parser parser{Object{std::tuple{Member{"bool", Value<bool>{}},
                                   Member{"string", Value<std::string>{}}}}};
@@ -113,8 +112,7 @@ TEST(Object, IgnoredUnexpectedMember) {
 }
 
 TEST(Object, MembersWithCallbackError) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   auto boolCb = [&](const bool &) { return false; };
 
@@ -143,8 +141,7 @@ TEST(Object, MembersWithCallbackError) {
 }
 
 TEST(Object, ObjectWithCallback) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
   bool bool_value = false;
   std::string str_value;
 
@@ -170,8 +167,7 @@ TEST(Object, ObjectWithCallback) {
 }
 
 TEST(Object, ObjectWithOptionsAndCallback) {
-  std::string buf(
-      R"({"error": true, "bool": true, "string": "value"})");
+  std::string buf(R"({"error": true, "bool": true, "string": "value"})");
   bool bool_value = false;
   std::string str_value;
 
@@ -197,8 +193,7 @@ TEST(Object, ObjectWithOptionsAndCallback) {
 }
 
 TEST(Object, ObjectWithCallbackError) {
-  std::string buf(
-      R"({"bool": true, "string": "value"})");
+  std::string buf(R"({"bool": true, "string": "value"})");
 
   using ObjectParser = Object<Value<bool>, Value<std::string>>;
 

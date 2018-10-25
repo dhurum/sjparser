@@ -142,8 +142,7 @@ TEST(SArray, UnexpectedType) {
 }
 
 TEST(SArray, UnexpectedMapStart) {
-  std::string buf(
-      R"({})");
+  std::string buf(R"({})");
 
   Parser parser{SArray{Value<bool>{}}};
 
