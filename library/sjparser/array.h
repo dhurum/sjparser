@@ -103,6 +103,39 @@ template <typename T> Array(Array<T> &&)->Array<Array<T>>;
 template <typename T> Array(Array<T> &)->Array<Array<T> &>;
 
 template <typename T> Array(T &&)->Array<T>;
-}  // namespace SJParser
 
-#include "impl/array.h"
+/****************************** Implementations *******************************/
+
+template <typename T>
+template <typename CallbackT>
+Array<T>::Array(T&& parser, CallbackT on_finish)
+    : _parser(std::forward<T>(parser)), _on_finish(std::move(on_finish)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in Array");
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+  _parser_ptr = &_parser;
+}
+
+template <typename T>
+Array<T>::Array(Array&& other) noexcept
+    : _parser(std::forward<T>(other._parser)),
+      _on_finish(std::move(other._on_finish)) {
+  _parser_ptr = &_parser;
+}
+
+template <typename T> void Array<T>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
+
+template <typename T> T& Array<T>::parser() {
+  return _parser;
+}
+
+template <typename T> void Array<T>::finish() {
+  if (_on_finish && !_on_finish(*this)) {
+    throw std::runtime_error("Callback returned false");
+  }
+}
+
+}  // namespace SJParser

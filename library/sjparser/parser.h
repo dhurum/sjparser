@@ -65,6 +65,19 @@ class Parser : public ImplHolder::Type {
 };
 
 template <typename T> Parser(T &&)->Parser<T>;
-}  // namespace SJParser
 
-#include "impl/parser.h"
+/****************************** Implementations *******************************/
+
+template <typename T, typename ImplHolder>
+Parser<T, ImplHolder>::Parser(T &&parser, ImplHolder /*implementation*/)
+    : _parser(std::forward<T>(parser)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in Parser");
+  this->setTokenParser(&_parser);
+}
+
+template <typename T, typename ImplHolder> T &Parser<T, ImplHolder>::parser() {
+  return _parser;
+}
+
+}  // namespace SJParser

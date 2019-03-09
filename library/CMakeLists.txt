@@ -31,20 +31,6 @@ set_property(TARGET sjparser PROPERTY SJPARSER_HEADERS
   sjparser/member.h
   sjparser/options.h
 
-  sjparser/impl/s_custom_object.h
-  sjparser/impl/value.h
-  sjparser/impl/object.h
-  sjparser/impl/s_array.h
-  sjparser/impl/map.h
-  sjparser/impl/s_map.h
-  sjparser/impl/array.h
-  sjparser/impl/s_auto_object.h
-  sjparser/impl/s_union.h
-  sjparser/impl/parser.h
-  sjparser/impl/union.h
-  sjparser/impl/member.h
-  sjparser/impl/yajl_parser.h
-
   sjparser/internals/key_value_parser.h
   sjparser/internals/ignore.h
   sjparser/internals/token_parser.h
@@ -52,9 +38,6 @@ set_property(TARGET sjparser PROPERTY SJPARSER_HEADERS
   sjparser/internals/dispatcher.h
   sjparser/internals/array_parser.h
   sjparser/internals/default_value.h
-  sjparser/internals/impl/key_value_parser.h
-  sjparser/internals/impl/token_parser.h
-  sjparser/internals/impl/dispatcher.h
 )
 set_target_properties(sjparser PROPERTIES OUTPUT_NAME sjparser_static)
 

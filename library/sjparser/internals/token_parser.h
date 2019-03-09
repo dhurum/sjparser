@@ -81,6 +81,25 @@ class TokenParser {
 
   inline void unexpectedToken(const std::string &type);
 };
-}  // namespace SJParser
 
-#include "impl/token_parser.h"
+/****************************** Implementations *******************************/
+
+bool TokenParser::isSet() const noexcept {
+  return _set;
+}
+
+bool TokenParser::isEmpty() const noexcept {
+  return _empty;
+}
+
+void TokenParser::checkSet() const {
+  if (!isSet()) {
+    throw std::runtime_error("Can't get value, parser is unset");
+  }
+}
+
+void TokenParser::unexpectedToken(const std::string &type) {
+  throw std::runtime_error("Unexpected token " + type);
+}
+
+}  // namespace SJParser

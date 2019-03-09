@@ -131,6 +131,53 @@ template <typename T> SArray(SArray<T> &&)->SArray<SArray<T>>;
 template <typename T> SArray(SArray<T> &)->SArray<SArray<T> &>;
 
 template <typename T> SArray(T &&)->SArray<T>;
-}  // namespace SJParser
 
-#include "impl/s_array.h"
+/****************************** Implementations *******************************/
+
+template <typename T>
+template <typename CallbackT>
+SArray<T>::SArray(T &&parser, CallbackT on_finish)
+    : Array<T>(std::forward<T>(parser)), _on_finish(std::move(on_finish)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in SArray");
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
+
+template <typename T>
+SArray<T>::SArray(SArray &&other) noexcept
+    : Array<T>(std::move(other)),
+      _values{},
+      _on_finish(std::move(other._on_finish)) {}
+
+template <typename T> void SArray<T>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
+
+template <typename T> const typename SArray<T>::Type &SArray<T>::get() const {
+  checkSet();
+  return _values;
+}
+
+template <typename T> typename SArray<T>::Type &&SArray<T>::pop() {
+  checkSet();
+  TokenParser::_set = false;
+  return std::move(_values);
+}
+
+template <typename T> void SArray<T>::childParsed() {
+  _values.push_back(Array<T>::_parser.pop());
+}
+
+template <typename T> void SArray<T>::finish() {
+  if (_on_finish && !_on_finish(_values)) {
+    throw std::runtime_error("Callback returned false");
+  }
+}
+
+template <typename T> void SArray<T>::reset() {
+  ArrayParser::reset();
+  _values = Type();
+}
+
+}  // namespace SJParser

@@ -106,6 +106,52 @@ template <typename T> class Value : public TokenParser {
   Type _value;
   Callback _on_finish;
 };
-}  // namespace SJParser
 
-#include "impl/value.h"
+/****************************** Implementations *******************************/
+
+template <typename T>
+Value<T>::Value(Callback on_finish) : _on_finish(std::move(on_finish)) {
+  // Formatting disabled because of a bug in clang-format
+  // clang-format off
+  static_assert(
+      std::is_same_v<T, int64_t>
+      || std::is_same_v<T, bool>
+      || std::is_same_v<T, double>
+      || std::is_same_v<T, std::string>,
+      "Invalid type used in Value, only int64_t, bool, double or std::string"
+      " are allowed");
+  // clang-format on
+}
+
+template <typename T>
+Value<T>::Value(Value &&other) noexcept
+    : _on_finish(std::move(other._on_finish)) {}
+
+template <typename T> void Value<T>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
+
+template <typename T> void Value<T>::on(TokenType<T> value) {
+  TokenParser::_empty = false;
+  _value = value;
+  endParsing();
+}
+
+template <typename T> void Value<T>::finish() {
+  if (_on_finish && !_on_finish(_value)) {
+    throw std::runtime_error("Callback returned false");
+  }
+}
+
+template <typename T> const T &Value<T>::get() const {
+  checkSet();
+  return _value;
+}
+
+template <typename T> T &&Value<T>::pop() {
+  checkSet();
+  _set = false;
+  return std::move(_value);
+}
+
+}  // namespace SJParser

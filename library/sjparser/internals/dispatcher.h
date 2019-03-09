@@ -47,6 +47,14 @@ class Dispatcher {
   std::function<void()> _on_completion;
   std::string _error;
 };
-}  // namespace SJParser
 
-#include "impl/dispatcher.h"
+/****************************** Implementations *******************************/
+
+template <typename T> void Dispatcher::on(T value) {
+  if (_parsers.empty()) {
+    throw std::runtime_error("Parsers stack is empty");
+  }
+  _parsers.back()->on(value);
+}
+
+}  // namespace SJParser

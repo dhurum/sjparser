@@ -222,6 +222,76 @@ class SCustomObject : public Object<Ts...> {
   Type _value;
   Callback _on_finish;
 };
-}  // namespace SJParser
 
-#include "impl/s_custom_object.h"
+/****************************** Implementations *******************************/
+
+template <typename TypeT, typename... Ts>
+template <typename CallbackT>
+SCustomObject<TypeT, Ts...>::SCustomObject(
+    TypeHolder<TypeT> /*type*/, std::tuple<Member<std::string, Ts>...> members,
+    CallbackT on_finish,
+    std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
+    : Object<Ts...>(std::move(members), {}), _on_finish(std::move(on_finish)) {}
+
+template <typename TypeT, typename... Ts>
+template <typename CallbackT>
+SCustomObject<TypeT, Ts...>::SCustomObject(
+    TypeHolder<TypeT> /*type*/, std::tuple<Member<std::string, Ts>...> members,
+    ObjectOptions options, CallbackT on_finish)
+    : Object<Ts...>(std::move(members), options),
+      _on_finish(std::move(on_finish)) {
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
+
+template <typename TypeT, typename... Ts>
+SCustomObject<TypeT, Ts...>::SCustomObject(SCustomObject &&other) noexcept
+    : Object<Ts...>(std::move(other)),
+      _on_finish(std::move(other._on_finish)) {}
+
+template <typename TypeT, typename... Ts>
+void SCustomObject<TypeT, Ts...>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
+
+template <typename TypeT, typename... Ts>
+const typename SCustomObject<TypeT, Ts...>::Type &
+SCustomObject<TypeT, Ts...>::get() const {
+  checkSet();
+  return _value;
+}
+
+template <typename TypeT, typename... Ts>
+typename SCustomObject<TypeT, Ts...>::Type &&
+SCustomObject<TypeT, Ts...>::pop() {
+  checkSet();
+  TokenParser::_set = false;
+  return std::move(_value);
+}
+
+template <typename TypeT, typename... Ts>
+void SCustomObject<TypeT, Ts...>::finish() {
+  if (TokenParser::isEmpty()) {
+    TokenParser::_set = false;
+    return;
+  }
+
+  try {
+    typename Object<Ts...>::template MemberChecker<0, Ts...>(*this);
+  } catch (std::exception &e) {
+    TokenParser::_set = false;
+    throw;
+  }
+
+  if (_on_finish && !_on_finish(*this, _value)) {
+    throw std::runtime_error("Callback returned false");
+  }
+}
+
+template <typename TypeT, typename... Ts>
+void SCustomObject<TypeT, Ts...>::reset() {
+  Object<Ts...>::KVParser::reset();
+  _value = Type();
+}
+
+}  // namespace SJParser

@@ -141,6 +141,82 @@ template <typename T> Map(Map<T> &&)->Map<Map<T>>;
 template <typename T> Map(Map<T> &)->Map<Map<T> &>;
 
 template <typename T> Map(T &&)->Map<T>;
-}  // namespace SJParser
 
-#include "impl/map.h"
+/****************************** Implementations *******************************/
+
+template <typename T>
+template <typename CallbackT>
+Map<T>::Map(
+    T &&parser, CallbackT on_finish,
+    std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
+    : _parser(std::forward<T>(parser)), _on_finish(std::move(on_finish)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in Map");
+}
+
+template <typename T>
+template <typename ElementCallbackT, typename CallbackT>
+Map<T>::Map(T &&parser, ElementCallbackT on_element, CallbackT on_finish)
+    : _parser(std::forward<T>(parser)),
+      _on_element(std::move(on_element)),
+      _on_finish(std::move(on_finish)) {
+  static_assert(std::is_base_of_v<TokenParser, ParserType>,
+                "Invalid parser used in Map");
+  static_assert(std::is_constructible_v<ElementCallback, ElementCallbackT>,
+                "Invalid element callback type");
+  static_assert(std::is_constructible_v<Callback, CallbackT>,
+                "Invalid callback type");
+}
+
+template <typename T>
+Map<T>::Map(Map &&other) noexcept
+    : _parser(std::forward<T>(other._parser)),
+      _on_element(std::move(other._on_element)),
+      _on_finish(std::move(other._on_finish)) {}
+
+template <typename T>
+void Map<T>::setElementCallback(ElementCallback on_element) {
+  _on_element = on_element;
+}
+
+template <typename T> void Map<T>::setFinishCallback(Callback on_finish) {
+  _on_finish = on_finish;
+}
+
+template <typename T> T &Map<T>::parser() {
+  return _parser;
+}
+
+template <typename T>
+void Map<T>::setDispatcher(Dispatcher *dispatcher) noexcept {
+  TokenParser::setDispatcher(dispatcher);
+  _parser.setDispatcher(dispatcher);
+}
+
+template <typename T> void Map<T>::on(MapStartT /*unused*/) {
+  reset();
+}
+
+template <typename T> void Map<T>::on(MapKeyT key) {
+  TokenParser::_empty = false;
+  _dispatcher->pushParser(&_parser);
+  _current_key = key.key;
+}
+
+template <typename T> void Map<T>::on(MapEndT /*unused*/) {
+  endParsing();
+}
+
+template <typename T> void Map<T>::childParsed() {
+  if (_on_element && !_on_element(_current_key, _parser)) {
+    throw std::runtime_error("Element callback returned false");
+  }
+}
+
+template <typename T> void Map<T>::finish() {
+  if (_on_finish && !_on_finish(*this)) {
+    throw std::runtime_error("Callback returned false");
+  }
+}
+
+}  // namespace SJParser
