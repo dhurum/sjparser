@@ -34,6 +34,7 @@ set(CHECKS
   # clang-tidy and clang-format seems to disagree
   -llvm-include-order
   -fuchsia-default-arguments
+  -fuchsia-trailing-return
 )
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")
