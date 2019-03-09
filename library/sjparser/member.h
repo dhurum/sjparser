@@ -97,6 +97,9 @@ template <typename NameType, typename ParserType> struct Member {
 
   /** Move constructor. */
   Member(Member &&other) noexcept;
+
+ private:
+  constexpr void checkTemplateParameters();
 };
 
 template <typename ParserType>
@@ -139,10 +142,42 @@ Member(NameType, ParserType &&, Presence, ValueType)
 
 /****************************** Implementations *******************************/
 
-namespace {  // NOLINT
+template <typename NameType, typename ParserType>
+Member<NameType, ParserType>::Member(NameType name, ParserType &&parser)
+    : name{std::move(name)}, parser{std::forward<ParserType>(parser)} {
+  checkTemplateParameters();
+}
 
 template <typename NameType, typename ParserType>
-void checkTemplateParameters() {
+Member<NameType, ParserType>::Member(NameType name, ParserType &&parser,
+                                     Presence /*presence*/)
+    : name{std::move(name)},
+      parser{std::forward<ParserType>(parser)},
+      optional{true} {
+  checkTemplateParameters();
+}
+
+template <typename NameType, typename ParserType>
+template <typename U>
+Member<NameType, ParserType>::Member(NameType name, ParserType &&parser,
+                                     Presence /*presence*/,
+                                     typename U::Type default_value)
+    : name{std::move(name)},
+      parser{std::forward<ParserType>(parser)},
+      optional{true},
+      default_value{true, std::move(default_value)} {
+  checkTemplateParameters();
+}
+
+template <typename NameType, typename ParserType>
+Member<NameType, ParserType>::Member(Member &&other) noexcept
+    : name(std::move(other.name)),
+      parser(std::forward<ParserType>(other.parser)),
+      optional(other.optional),
+      default_value(std::move(other.default_value)) {}
+
+template <typename NameType, typename ParserType>
+constexpr void Member<NameType, ParserType>::checkTemplateParameters() {
   // Formatting disabled because of a bug in clang-format
   // clang-format off
   static_assert(
@@ -156,41 +191,5 @@ void checkTemplateParameters() {
   static_assert(std::is_base_of_v<TokenParser, std::decay_t<ParserType>>,
                 "Invalid parser used in Member");
 }
-
-}  // namespace
-
-template <typename NameType, typename ParserType>
-Member<NameType, ParserType>::Member(NameType name, ParserType &&parser)
-    : name{std::move(name)}, parser{std::forward<ParserType>(parser)} {
-  checkTemplateParameters<NameType, ParserType>();
-}
-
-template <typename NameType, typename ParserType>
-Member<NameType, ParserType>::Member(NameType name, ParserType &&parser,
-                                     Presence /*presence*/)
-    : name{std::move(name)},
-      parser{std::forward<ParserType>(parser)},
-      optional{true} {
-  checkTemplateParameters<NameType, ParserType>();
-}
-
-template <typename NameType, typename ParserType>
-template <typename U>
-Member<NameType, ParserType>::Member(NameType name, ParserType &&parser,
-                                     Presence /*presence*/,
-                                     typename U::Type default_value)
-    : name{std::move(name)},
-      parser{std::forward<ParserType>(parser)},
-      optional{true},
-      default_value{true, std::move(default_value)} {
-  checkTemplateParameters<NameType, ParserType>();
-}
-
-template <typename NameType, typename ParserType>
-Member<NameType, ParserType>::Member(Member &&other) noexcept
-    : name(std::move(other.name)),
-      parser(std::forward<ParserType>(other.parser)),
-      optional(other.optional),
-      default_value(std::move(other.default_value)) {}
 
 }  // namespace SJParser
