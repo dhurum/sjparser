@@ -47,11 +47,11 @@ namespace SJParser {
  * constructor of this type will be used if possible.
  * @anchor SCustomObject_TypeT
  *
- * @tparam Ts A list of member parsers types.
+ * @tparam ParserTs A list of member parsers types.
  */
 
-template <typename TypeT, typename... Ts>
-class SCustomObject : public Object<Ts...> {
+template <typename TypeT, typename... ParserTs>
+class SCustomObject : public Object<ParserTs...> {
  public:
 #ifdef DOXYGEN_ONLY
   /** @brief %Member parser type.
@@ -70,7 +70,8 @@ class SCustomObject : public Object<Ts...> {
   using Type = TypeT;
 
   /** Finish callback type. */
-  using Callback = std::function<bool(SCustomObject<Type, Ts...> &, Type &)>;
+  using Callback =
+      std::function<bool(SCustomObject<Type, ParserTs...> &, Type &)>;
 
   /** @brief Constructor.
    *
@@ -87,7 +88,7 @@ class SCustomObject : public Object<Ts...> {
    */
   template <typename CallbackT = std::nullptr_t>
   SCustomObject(TypeHolder<Type> type,
-                std::tuple<Member<std::string, Ts>...> members,
+                std::tuple<Member<std::string, ParserTs>...> members,
                 CallbackT on_finish = nullptr,
                 std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
                     * /*unused*/
@@ -110,7 +111,7 @@ class SCustomObject : public Object<Ts...> {
    */
   template <typename CallbackT = std::nullptr_t>
   SCustomObject(TypeHolder<Type> type,
-                std::tuple<Member<std::string, Ts>...> members,
+                std::tuple<Member<std::string, ParserTs>...> members,
                 ObjectOptions options, CallbackT on_finish = nullptr);
 
   /** Move constructor. */
@@ -163,9 +164,9 @@ class SCustomObject : public Object<Ts...> {
    *
    * @return Reference to n-th member parser.
    */
-  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
 #endif
-  using Object<Ts...>::get;
+  using Object<ParserTs...>::get;
 
   /** @brief Parsed value getter.
    *
@@ -188,9 +189,10 @@ class SCustomObject : public Object<Ts...> {
    * @throw std::runtime_error thrown if the member parser value is unset (no
    * value was parsed or #pop was called for the member parser).
    */
-  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
+  template <size_t n>
+  typename NthTypes<n, ParserTs...>::template ValueType<> &&pop();
 #endif
-  using Object<Ts...>::pop;
+  using Object<ParserTs...>::pop;
 
   /** @brief Get the parsed value and unset the parser.
    *
@@ -225,59 +227,61 @@ class SCustomObject : public Object<Ts...> {
 
 /****************************** Implementations *******************************/
 
-template <typename TypeT, typename... Ts>
+template <typename TypeT, typename... ParserTs>
 template <typename CallbackT>
-SCustomObject<TypeT, Ts...>::SCustomObject(
-    TypeHolder<TypeT> /*type*/, std::tuple<Member<std::string, Ts>...> members,
-    CallbackT on_finish,
+SCustomObject<TypeT, ParserTs...>::SCustomObject(
+    TypeHolder<TypeT> /*type*/,
+    std::tuple<Member<std::string, ParserTs>...> members, CallbackT on_finish,
     std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
-    : Object<Ts...>(std::move(members), {}), _on_finish(std::move(on_finish)) {}
+    : Object<ParserTs...>(std::move(members), {}),
+      _on_finish(std::move(on_finish)) {}
 
-template <typename TypeT, typename... Ts>
+template <typename TypeT, typename... ParserTs>
 template <typename CallbackT>
-SCustomObject<TypeT, Ts...>::SCustomObject(
-    TypeHolder<TypeT> /*type*/, std::tuple<Member<std::string, Ts>...> members,
-    ObjectOptions options, CallbackT on_finish)
-    : Object<Ts...>(std::move(members), options),
+SCustomObject<TypeT, ParserTs...>::SCustomObject(
+    TypeHolder<TypeT> /*type*/,
+    std::tuple<Member<std::string, ParserTs>...> members, ObjectOptions options,
+    CallbackT on_finish)
+    : Object<ParserTs...>(std::move(members), options),
       _on_finish(std::move(on_finish)) {
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
 }
 
-template <typename TypeT, typename... Ts>
-SCustomObject<TypeT, Ts...>::SCustomObject(SCustomObject &&other) noexcept
-    : Object<Ts...>(std::move(other)),
+template <typename TypeT, typename... ParserTs>
+SCustomObject<TypeT, ParserTs...>::SCustomObject(SCustomObject &&other) noexcept
+    : Object<ParserTs...>(std::move(other)),
       _on_finish(std::move(other._on_finish)) {}
 
-template <typename TypeT, typename... Ts>
-void SCustomObject<TypeT, Ts...>::setFinishCallback(Callback on_finish) {
+template <typename TypeT, typename... ParserTs>
+void SCustomObject<TypeT, ParserTs...>::setFinishCallback(Callback on_finish) {
   _on_finish = on_finish;
 }
 
-template <typename TypeT, typename... Ts>
-const typename SCustomObject<TypeT, Ts...>::Type &
-SCustomObject<TypeT, Ts...>::get() const {
+template <typename TypeT, typename... ParserTs>
+const typename SCustomObject<TypeT, ParserTs...>::Type &
+SCustomObject<TypeT, ParserTs...>::get() const {
   checkSet();
   return _value;
 }
 
-template <typename TypeT, typename... Ts>
-typename SCustomObject<TypeT, Ts...>::Type &&
-SCustomObject<TypeT, Ts...>::pop() {
+template <typename TypeT, typename... ParserTs>
+typename SCustomObject<TypeT, ParserTs...>::Type &&
+SCustomObject<TypeT, ParserTs...>::pop() {
   checkSet();
   TokenParser::_set = false;
   return std::move(_value);
 }
 
-template <typename TypeT, typename... Ts>
-void SCustomObject<TypeT, Ts...>::finish() {
+template <typename TypeT, typename... ParserTs>
+void SCustomObject<TypeT, ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
     TokenParser::_set = false;
     return;
   }
 
   try {
-    typename Object<Ts...>::template MemberChecker<0, Ts...>(*this);
+    typename Object<ParserTs...>::template MemberChecker<0, ParserTs...>(*this);
   } catch (std::exception &e) {
     TokenParser::_set = false;
     throw;
@@ -288,9 +292,9 @@ void SCustomObject<TypeT, Ts...>::finish() {
   }
 }
 
-template <typename TypeT, typename... Ts>
-void SCustomObject<TypeT, Ts...>::reset() {
-  Object<Ts...>::KVParser::reset();
+template <typename TypeT, typename... ParserTs>
+void SCustomObject<TypeT, ParserTs...>::reset() {
+  Object<ParserTs...>::KVParser::reset();
   _value = Type();
 }
 

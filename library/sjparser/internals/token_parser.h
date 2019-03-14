@@ -38,13 +38,14 @@ struct MapEndT {};
 struct ArrayStartT {};
 struct ArrayEndT {};
 
-template <typename T> struct TokenTypeResolver { using Type = T; };
+template <typename TokenT> struct TokenTypeResolver { using Type = TokenT; };
 
 template <> struct TokenTypeResolver<std::string> {
   using Type = std::string_view;
 };
 
-template <typename T> using TokenType = typename TokenTypeResolver<T>::Type;
+template <typename TokenT>
+using TokenType = typename TokenTypeResolver<TokenT>::Type;
 
 class Dispatcher;
 

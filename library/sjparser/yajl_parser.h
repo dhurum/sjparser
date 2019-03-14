@@ -108,7 +108,7 @@ class YajlParser {
   void checkDispatcherStack();
   void throwParsingError();
 
-  template <typename T> int on(T token) noexcept;
+  template <typename TokenT> int on(TokenT token) noexcept;
 
   static int yajlOnNull(void *ctx);
   static int yajlOnBool(void *ctx, int value);
@@ -136,7 +136,7 @@ class YajlParser {
 
 /****************************** Implementations *******************************/
 
-template <typename T> int YajlParser::on(T token) noexcept {
+template <typename TokenT> int YajlParser::on(TokenT token) noexcept {
   try {
     _dispatcher->on(token);
   } catch (std::exception &e) {

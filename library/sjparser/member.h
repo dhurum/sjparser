@@ -40,21 +40,21 @@ enum class Presence {
  * This structure holds a specification of individual member for object and
  * union parsers.
  *
- * @tparam NameType Type of member name
+ * @tparam NameT Type of member name
  *
- * @tparam ParserType Type of member parser
+ * @tparam ParserT Type of member parser
  */
-template <typename NameType, typename ParserType> struct Member {
+template <typename NameT, typename ParserT> struct Member {
   /** Member name */
-  NameType name;
+  NameT name;
   /** Member parser */
-  ParserType parser;
+  ParserT parser;
 
   /** Is this member optional */
   bool optional = false;
 
   /** Default value */
-  DefaultValue<ParserType, IsStorageParser<ParserType>> default_value;
+  DefaultValue<ParserT, IsStorageParser<ParserT>> default_value;
 
   /** @brief Constructor
    *
@@ -62,7 +62,7 @@ template <typename NameType, typename ParserType> struct Member {
    *
    * @param [in] parser Member parser, can be an lvalue reference or an rvalue.
    */
-  Member(NameType name, ParserType &&parser);
+  Member(NameT name, ParserT &&parser);
 
   /** @brief Constructor
    *
@@ -75,7 +75,7 @@ template <typename NameType, typename ParserType> struct Member {
    * @param [in] presence Presence enum, indicates that this is an optional
    * member.
    */
-  Member(NameType name, ParserType &&parser, Presence presence);
+  Member(NameT name, ParserT &&parser, Presence presence);
 
   /** @brief Constructor
    *
@@ -91,9 +91,9 @@ template <typename NameType, typename ParserType> struct Member {
    *
    * @param [in] default_value Default value.
    */
-  template <typename U = std::decay_t<ParserType>>
-  Member(NameType name, ParserType &&parser, Presence presence,
-         typename U::Type default_value);
+  template <typename ParserU = std::decay_t<ParserT>>
+  Member(NameT name, ParserT &&parser, Presence presence,
+         typename ParserU::Type default_value);
 
   /** Move constructor. */
   Member(Member &&other) noexcept;
@@ -102,93 +102,90 @@ template <typename NameType, typename ParserType> struct Member {
   constexpr void checkTemplateParameters();
 };
 
-template <typename ParserType>
-Member(const char *, ParserType &&)->Member<std::string, ParserType>;
+template <typename ParserT>
+Member(const char *, ParserT &&)->Member<std::string, ParserT>;
 
-template <typename ParserType>
-Member(int, ParserType &&)->Member<int64_t, ParserType>;
+template <typename ParserT> Member(int, ParserT &&)->Member<int64_t, ParserT>;
 
-template <typename ParserType>
-Member(float, ParserType &&)->Member<double, ParserType>;
+template <typename ParserT> Member(float, ParserT &&)->Member<double, ParserT>;
 
-template <typename NameType, typename ParserType>
-Member(NameType, ParserType &&)->Member<NameType, ParserType>;
+template <typename NameT, typename ParserT>
+Member(NameT, ParserT &&)->Member<NameT, ParserT>;
 
-template <typename ParserType>
-Member(const char *, ParserType &&, Presence)->Member<std::string, ParserType>;
+template <typename ParserT>
+Member(const char *, ParserT &&, Presence)->Member<std::string, ParserT>;
 
-template <typename ParserType>
-Member(int, ParserType &&, Presence)->Member<int64_t, ParserType>;
+template <typename ParserT>
+Member(int, ParserT &&, Presence)->Member<int64_t, ParserT>;
 
-template <typename ParserType>
-Member(float, ParserType &&, Presence)->Member<double, ParserType>;
+template <typename ParserT>
+Member(float, ParserT &&, Presence)->Member<double, ParserT>;
 
-template <typename NameType, typename ParserType>
-Member(NameType, ParserType &&, Presence)->Member<NameType, ParserType>;
+template <typename NameT, typename ParserT>
+Member(NameT, ParserT &&, Presence)->Member<NameT, ParserT>;
 
-template <typename ParserType, typename ValueType>
-Member(const char *, ParserType &&, Presence, ValueType)
-    ->Member<std::string, ParserType>;
+template <typename ParserT, typename ValueT>
+Member(const char *, ParserT &&, Presence, ValueT)
+    ->Member<std::string, ParserT>;
 
-template <typename ParserType, typename ValueType>
-Member(int, ParserType &&, Presence, ValueType)->Member<int64_t, ParserType>;
+template <typename ParserT, typename ValueT>
+Member(int, ParserT &&, Presence, ValueT)->Member<int64_t, ParserT>;
 
-template <typename ParserType, typename ValueType>
-Member(float, ParserType &&, Presence, ValueType)->Member<double, ParserType>;
+template <typename ParserT, typename ValueT>
+Member(float, ParserT &&, Presence, ValueT)->Member<double, ParserT>;
 
-template <typename NameType, typename ParserType, typename ValueType>
-Member(NameType, ParserType &&, Presence, ValueType)
-    ->Member<NameType, ParserType>;
+template <typename NameT, typename ParserT, typename ValueT>
+Member(NameT, ParserT &&, Presence, ValueT)->Member<NameT, ParserT>;
 
 /****************************** Implementations *******************************/
 
-template <typename NameType, typename ParserType>
-Member<NameType, ParserType>::Member(NameType name, ParserType &&parser)
-    : name{std::move(name)}, parser{std::forward<ParserType>(parser)} {
+template <typename NameT, typename ParserT>
+Member<NameT, ParserT>::Member(NameT name, ParserT &&parser)
+    : name{std::move(name)}, parser{std::forward<ParserT>(parser)} {
   checkTemplateParameters();
 }
 
-template <typename NameType, typename ParserType>
-Member<NameType, ParserType>::Member(NameType name, ParserType &&parser,
-                                     Presence /*presence*/)
+template <typename NameT, typename ParserT>
+Member<NameT, ParserT>::Member(NameT name, ParserT &&parser,
+                               Presence /*presence*/)
     : name{std::move(name)},
-      parser{std::forward<ParserType>(parser)},
+      parser{std::forward<ParserT>(parser)},
       optional{true} {
   checkTemplateParameters();
 }
 
-template <typename NameType, typename ParserType>
-template <typename U>
-Member<NameType, ParserType>::Member(NameType name, ParserType &&parser,
-                                     Presence /*presence*/,
-                                     typename U::Type default_value)
+template <typename NameT, typename ParserT>
+template <typename ParserU>
+Member<NameT, ParserT>::Member(NameT name, ParserT &&parser,
+                               Presence /*presence*/,
+                               typename ParserU::Type default_value)
     : name{std::move(name)},
-      parser{std::forward<ParserType>(parser)},
+      parser{std::forward<ParserT>(parser)},
       optional{true},
       default_value{true, std::move(default_value)} {
   checkTemplateParameters();
 }
 
-template <typename NameType, typename ParserType>
-Member<NameType, ParserType>::Member(Member &&other) noexcept
+template <typename NameT, typename ParserT>
+Member<NameT, ParserT>::Member(Member &&other) noexcept
     : name(std::move(other.name)),
-      parser(std::forward<ParserType>(other.parser)),
+      parser(std::forward<ParserT>(other.parser)),
       optional(other.optional),
       default_value(std::move(other.default_value)) {}
 
-template <typename NameType, typename ParserType>
-constexpr void Member<NameType, ParserType>::checkTemplateParameters() {
+template <typename NameT, typename ParserT>
+constexpr void Member<NameT, ParserT>::checkTemplateParameters() {
   // Formatting disabled because of a bug in clang-format
   // clang-format off
   static_assert(
-      std::is_same_v<NameType, int64_t>
-      || std::is_same_v<NameType, bool>
-      || std::is_same_v<NameType, double>
-      || std::is_same_v<NameType, std::string>,
+      std::is_same_v<NameT, int64_t>
+      || std::is_same_v<NameT, bool>
+      || std::is_same_v<NameT, double>
+      || std::is_same_v<NameT, std::string>,
       "Invalid type used for Member name, only int64_t, bool, double or "
       "std::string are allowed");
   // clang-format on
-  static_assert(std::is_base_of_v<TokenParser, std::decay_t<ParserType>>,
+  static_assert(std::is_base_of_v<TokenParser, std::decay_t<ParserT>>,
                 "Invalid parser used in Member");
 }
 

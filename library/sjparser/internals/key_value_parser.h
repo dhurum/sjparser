@@ -38,12 +38,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-template <typename NameType, typename... Ts>
+template <typename NameT, typename... ParserTs>
 class KeyValueParser : public TokenParser {
  public:
-  using InternalNameType = TokenType<NameType>;
+  using InternalNameType = TokenType<NameT>;
 
-  KeyValueParser(std::tuple<Member<NameType, Ts>...> members,
+  KeyValueParser(std::tuple<Member<NameT, ParserTs>...> members,
                  ObjectOptions options = {});
   KeyValueParser(KeyValueParser &&other) noexcept;
 
@@ -55,9 +55,9 @@ class KeyValueParser : public TokenParser {
 
   void onMember(InternalNameType member);
 
-  template <size_t n, typename T, typename... TDs> struct NthTypes {
+  template <size_t n, typename ParserT, typename... ParserTDs> struct NthTypes {
    private:
-    using NextLevel = NthTypes<n - 1, TDs...>;
+    using NextLevel = NthTypes<n - 1, ParserTDs...>;
 
    public:
     using ParserType = typename NextLevel::ParserType;
@@ -68,81 +68,85 @@ class KeyValueParser : public TokenParser {
     static constexpr bool has_value_type = NextLevel::has_value_type;
   };
 
-  template <typename T, typename... TDs> struct NthTypes<0, T, TDs...> {
-    using ParserType = std::decay_t<T>;
+  template <typename ParserT, typename... ParserTDs>
+  struct NthTypes<0, ParserT, ParserTDs...> {
+    using ParserType = std::decay_t<ParserT>;
 
     template <typename U = ParserType> using ValueType = typename U::Type;
 
-    static constexpr bool has_value_type = IsStorageParser<T>;
+    static constexpr bool has_value_type = IsStorageParser<ParserT>;
   };
 
   template <size_t n>
-  using ParserType = typename NthTypes<n, Ts...>::ParserType;
+  using ParserType = typename NthTypes<n, ParserTs...>::ParserType;
 
-  // Returns NthTypes<n, Ts...>::template ValueType<> if it is available,
-  // otherwise NthTypes<n, Ts...>::ParserType
+  // Returns NthTypes<n, ParserTs...>::template ValueType<> if it is
+  // available, otherwise NthTypes<n, ParserTs...>::ParserType
   template <size_t n> auto &get();
 
-  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
 
-  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> pop();
+  template <size_t n>
+  typename NthTypes<n, ParserTs...>::template ValueType<> pop();
 
  protected:
   template <size_t, typename...> struct MemberParser {
     MemberParser(
-        std::array<TokenParser *, sizeof...(Ts)> & /*parsers_array*/,
+        std::array<TokenParser *, sizeof...(ParserTs)> & /*parsers_array*/,
         std::unordered_map<InternalNameType, TokenParser *> & /*parsers_map*/,
-        std::tuple<Member<NameType, Ts>...> & /*members*/) {}
+        std::tuple<Member<NameT, ParserTs>...> & /*members*/) {}
 
     MemberParser(
-        std::array<TokenParser *, sizeof...(Ts)> & /*parsers_array*/,
+        std::array<TokenParser *, sizeof...(ParserTs)> & /*parsers_array*/,
         std::unordered_map<InternalNameType, TokenParser *> & /*parsers_map*/,
         MemberParser && /*other*/) {}
   };
 
-  template <size_t n, typename T, typename... TDs>
-  struct MemberParser<n, T, TDs...> : private MemberParser<n + 1, TDs...> {
+  template <size_t n, typename ParserT, typename... ParserTDs>
+  struct MemberParser<n, ParserT, ParserTDs...>
+      : private MemberParser<n + 1, ParserTDs...> {
     MemberParser(
-        std::array<TokenParser *, sizeof...(Ts)> &parsers_array,
+        std::array<TokenParser *, sizeof...(ParserTs)> &parsers_array,
         std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
-        std::tuple<Member<NameType, Ts>...> &members);
+        std::tuple<Member<NameT, ParserTs>...> &members);
 
     MemberParser(
-        std::array<TokenParser *, sizeof...(Ts)> &parsers_array,
+        std::array<TokenParser *, sizeof...(ParserTs)> &parsers_array,
         std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
         MemberParser &&other);
 
     template <size_t index> auto &get();
 
-    T parser;
-    NameType name;
+    ParserT parser;
+    NameT name;
     bool optional;
-    DefaultValue<T, IsStorageParser<T>> default_value;
+    DefaultValue<ParserT, IsStorageParser<ParserT>> default_value;
   };
 
-  std::array<TokenParser *, sizeof...(Ts)> _parsers_array;
+  std::array<TokenParser *, sizeof...(ParserTs)> _parsers_array;
   std::unordered_map<InternalNameType, TokenParser *> _parsers_map;
-  MemberParser<0, Ts...> _member_parsers;
+  MemberParser<0, ParserTs...> _member_parsers;
   Ignore _ignore_parser;
   ObjectOptions _options;
 };
 
 /****************************** Implementations *******************************/
 
-template <typename NameType, typename... Ts>
-KeyValueParser<NameType, Ts...>::KeyValueParser(
-    std::tuple<Member<NameType, Ts>...> members, ObjectOptions options)
+template <typename NameT, typename... ParserTs>
+KeyValueParser<NameT, ParserTs...>::KeyValueParser(
+    std::tuple<Member<NameT, ParserTs>...> members, ObjectOptions options)
     : _member_parsers(_parsers_array, _parsers_map, members),
       _options(options) {}
 
-template <typename NameType, typename... Ts>
-KeyValueParser<NameType, Ts...>::KeyValueParser(KeyValueParser &&other) noexcept
+template <typename NameT, typename... ParserTs>
+KeyValueParser<NameT, ParserTs...>::KeyValueParser(
+    KeyValueParser &&other) noexcept
     : _member_parsers(_parsers_array, _parsers_map,
                       std::move(other._member_parsers)),
       _options(other._options) {}
 
-template <typename NameType, typename... Ts>
-void KeyValueParser<NameType, Ts...>::setDispatcher(
+template <typename NameT, typename... ParserTs>
+void KeyValueParser<NameT, ParserTs...>::setDispatcher(
     Dispatcher *dispatcher) noexcept {
   TokenParser::setDispatcher(dispatcher);
   for (auto &member : _parsers_map) {
@@ -152,8 +156,8 @@ void KeyValueParser<NameType, Ts...>::setDispatcher(
   _ignore_parser.setDispatcher(dispatcher);
 }
 
-template <typename NameType, typename... Ts>
-void KeyValueParser<NameType, Ts...>::reset() {
+template <typename NameT, typename... ParserTs>
+void KeyValueParser<NameT, ParserTs...>::reset() {
   TokenParser::reset();
 
   for (auto &member : _parsers_map) {
@@ -163,18 +167,18 @@ void KeyValueParser<NameType, Ts...>::reset() {
   _ignore_parser.reset();
 }
 
-template <typename NameType, typename... Ts>
-void KeyValueParser<NameType, Ts...>::on(MapStartT /*unused*/) {
+template <typename NameT, typename... ParserTs>
+void KeyValueParser<NameT, ParserTs...>::on(MapStartT /*unused*/) {
   reset();
 }
 
-template <typename NameType, typename... Ts>
-void KeyValueParser<NameType, Ts...>::on(MapEndT /*unused*/) {
+template <typename NameT, typename... ParserTs>
+void KeyValueParser<NameT, ParserTs...>::on(MapEndT /*unused*/) {
   endParsing();
 }
 
-template <typename NameType, typename... Ts>
-void KeyValueParser<NameType, Ts...>::onMember(TokenType<NameType> member) {
+template <typename NameT, typename... ParserTs>
+void KeyValueParser<NameT, ParserTs...>::onMember(TokenType<NameT> member) {
   TokenParser::_empty = false;
 
   if (auto parser_it = _parsers_map.find(member);
@@ -192,12 +196,12 @@ void KeyValueParser<NameType, Ts...>::onMember(TokenType<NameType> member) {
   _dispatcher->pushParser(&_ignore_parser);
 }
 
-template <typename NameType, typename... Ts>
+template <typename NameT, typename... ParserTs>
 template <size_t n>
-auto &KeyValueParser<NameType, Ts...>::get() {
+auto &KeyValueParser<NameT, ParserTs...>::get() {
   auto &member = _member_parsers.template get<n>();
 
-  if constexpr (NthTypes<n, Ts...>::has_value_type) {
+  if constexpr (NthTypes<n, ParserTs...>::has_value_type) {
     if (!member.parser.isSet() && member.default_value.present) {
       return static_cast<const decltype(member.default_value.value) &>(
           member.default_value.value);
@@ -208,19 +212,19 @@ auto &KeyValueParser<NameType, Ts...>::get() {
   }
 }
 
-template <typename NameType, typename... Ts>
+template <typename NameT, typename... ParserTs>
 template <size_t n>
-typename KeyValueParser<NameType, Ts...>::template NthTypes<n,
-                                                            Ts...>::ParserType &
-KeyValueParser<NameType, Ts...>::parser() {
+typename KeyValueParser<NameT, ParserTs...>::template NthTypes<
+    n, ParserTs...>::ParserType &
+KeyValueParser<NameT, ParserTs...>::parser() {
   return _member_parsers.template get<n>().parser;
 }
 
-template <typename NameType, typename... Ts>
+template <typename NameT, typename... ParserTs>
 template <size_t n>
-typename KeyValueParser<NameType, Ts...>::template NthTypes<
-    n, Ts...>::template ValueType<>
-KeyValueParser<NameType, Ts...>::pop() {
+typename KeyValueParser<NameT, ParserTs...>::template NthTypes<
+    n, ParserTs...>::template ValueType<>
+KeyValueParser<NameT, ParserTs...>::pop() {
   auto &member = _member_parsers.template get<n>();
 
   if (!member.parser.isSet() && member.default_value.present) {
@@ -234,14 +238,15 @@ KeyValueParser<NameType, Ts...>::pop() {
   return std::move(member.parser.pop());
 }
 
-template <typename NameType, typename... Ts>
-template <size_t n, typename T, typename... TDs>
-KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::MemberParser(
-    std::array<TokenParser *, sizeof...(Ts)> &parsers_array,
-    std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
-    std::tuple<Member<NameType, Ts>...> &members)
-    : MemberParser<n + 1, TDs...>(parsers_array, parsers_map, members),
-      parser(std::forward<T>(std::get<n>(members).parser)),
+template <typename NameT, typename... ParserTs>
+template <size_t n, typename ParserT, typename... ParserTDs>
+KeyValueParser<NameT, ParserTs...>::MemberParser<n, ParserT, ParserTDs...>::
+    MemberParser(
+        std::array<TokenParser *, sizeof...(ParserTs)> &parsers_array,
+        std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
+        std::tuple<Member<NameT, ParserTs>...> &members)
+    : MemberParser<n + 1, ParserTDs...>(parsers_array, parsers_map, members),
+      parser(std::forward<ParserT>(std::get<n>(members).parser)),
       name(std::move(std::get<n>(members).name)),
       optional(std::get<n>(members).optional),
       default_value(std::move(std::get<n>(members).default_value)) {
@@ -256,14 +261,16 @@ KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::MemberParser(
   }
 }
 
-template <typename NameType, typename... Ts>
-template <size_t n, typename T, typename... TDs>
-KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::MemberParser(
-    std::array<TokenParser *, sizeof...(Ts)> &parsers_array,
-    std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
-    MemberParser &&other)
-    : MemberParser<n + 1, TDs...>(parsers_array, parsers_map, std::move(other)),
-      parser(std::forward<T>(other.parser)),
+template <typename NameT, typename... ParserTs>
+template <size_t n, typename ParserT, typename... ParserTDs>
+KeyValueParser<NameT, ParserTs...>::MemberParser<n, ParserT, ParserTDs...>::
+    MemberParser(
+        std::array<TokenParser *, sizeof...(ParserTs)> &parsers_array,
+        std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
+        MemberParser &&other)
+    : MemberParser<n + 1, ParserTDs...>(parsers_array, parsers_map,
+                                        std::move(other)),
+      parser(std::forward<ParserT>(other.parser)),
       name(std::move(other.name)),
       optional(other.optional),
       default_value(std::move(other.default_value)) {
@@ -271,14 +278,15 @@ KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::MemberParser(
   parsers_map[name] = &parser;
 }
 
-template <typename NameType, typename... Ts>
-template <size_t n, typename T, typename... TDs>
+template <typename NameT, typename... ParserTs>
+template <size_t n, typename ParserT, typename... ParserTDs>
 template <size_t index>
-auto &KeyValueParser<NameType, Ts...>::MemberParser<n, T, TDs...>::get() {
+auto &KeyValueParser<NameT, ParserTs...>::MemberParser<n, ParserT,
+                                                       ParserTDs...>::get() {
   if constexpr (index == n) {
     return *this;
   } else {  // NOLINT
-    return MemberParser<n + 1, TDs...>::template get<index>();
+    return MemberParser<n + 1, ParserTDs...>::template get<index>();
   }
 }
 

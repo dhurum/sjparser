@@ -30,8 +30,8 @@ namespace SJParser {
 
 /** @brief Main parser.
  *
- * @tparam T Root parser (Value, Object, SAutoObject, SCustomObject Union,
- * SUnion, Array, SArray)
+ * @tparam ParserT Root parser (Value, Object, SAutoObject, SCustomObject
+ * Union, SUnion, Array, SArray)
  * @anchor Parser_T
  *
  * @tparam ImplHolder Underlying parser implementation, the default one is
@@ -39,11 +39,11 @@ namespace SJParser {
  * implementation, so please refer to it's documentation for API details.
  */
 
-template <typename T, typename ImplHolder = TypeHolder<YajlParser>>
+template <typename ParserT, typename ImplHolder = TypeHolder<YajlParser>>
 class Parser : public ImplHolder::Type {
  public:
   /** Root parser type. */
-  using ParserType = std::decay_t<T>;
+  using ParserType = std::decay_t<ParserT>;
 
   /** @brief Constructor.
    *
@@ -52,31 +52,35 @@ class Parser : public ImplHolder::Type {
    * @param [in] implementation Implementation class, please use a TypeHolder
    * wrapper for it.
    */
-  Parser(T &&parser, ImplHolder implementation = TypeHolder<YajlParser>{});
+  Parser(ParserT &&parser,
+         ImplHolder implementation = TypeHolder<YajlParser>{});
 
   /** @brief Root parser getter.
    *
-   * @return A reference to the root parser (@ref Parser_T "T").
+   * @return A reference to the root parser (@ref Parser_T "ParserT").
    */
-  T &parser();
+  ParserType &parser();
 
  private:
-  T _parser;
+  ParserT _parser;
 };
 
-template <typename T> Parser(T &&)->Parser<T>;
+template <typename ParserT> Parser(ParserT &&)->Parser<ParserT>;
 
 /****************************** Implementations *******************************/
 
-template <typename T, typename ImplHolder>
-Parser<T, ImplHolder>::Parser(T &&parser, ImplHolder /*implementation*/)
-    : _parser(std::forward<T>(parser)) {
+template <typename ParserT, typename ImplHolder>
+Parser<ParserT, ImplHolder>::Parser(ParserT &&parser,
+                                    ImplHolder /*implementation*/)
+    : _parser(std::forward<ParserT>(parser)) {
   static_assert(std::is_base_of_v<TokenParser, ParserType>,
                 "Invalid parser used in Parser");
   this->setTokenParser(&_parser);
 }
 
-template <typename T, typename ImplHolder> T &Parser<T, ImplHolder>::parser() {
+template <typename ParserT, typename ImplHolder>
+typename Parser<ParserT, ImplHolder>::ParserType &
+Parser<ParserT, ImplHolder>::parser() {
   return _parser;
 }
 

@@ -30,16 +30,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace SJParser {
 
 /** @brief %Array parser, that stores the result in an std::vector of
- * @ref SArray_T "T" values.
+ * @ref SArray_T "ParserT" values.
  *
- * @tparam T Underlying parser type.
+ * @tparam ParserT Underlying parser type.
  * @anchor SArray_T
  */
 
-template <typename T> class SArray : public Array<T> {
+template <typename ParserT> class SArray : public Array<ParserT> {
  public:
   /** Underlying parser type */
-  using ParserType = std::decay_t<T>;
+  using ParserType = std::decay_t<ParserT>;
 
   /** Stored value type */
   using Type = std::vector<typename ParserType::Type>;
@@ -59,7 +59,7 @@ template <typename T> class SArray : public Array<T> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  SArray(T &&parser, CallbackT on_finish = nullptr);
+  SArray(ParserT &&parser, CallbackT on_finish = nullptr);
 
   /** Move constructor. */
   SArray(SArray &&other) noexcept;
@@ -92,7 +92,7 @@ template <typename T> class SArray : public Array<T> {
    *
    * @return Reference to the elements parser.
    */
-  T &parser();
+  ParserType &parser();
 #endif
 
   /** @brief Parsed value getter.
@@ -126,56 +126,61 @@ template <typename T> class SArray : public Array<T> {
   Callback _on_finish;
 };
 
-template <typename T> SArray(SArray<T> &&)->SArray<SArray<T>>;
+template <typename ParserT> SArray(SArray<ParserT> &&)->SArray<SArray<ParserT>>;
 
-template <typename T> SArray(SArray<T> &)->SArray<SArray<T> &>;
+template <typename ParserT>
+SArray(SArray<ParserT> &)->SArray<SArray<ParserT> &>;
 
-template <typename T> SArray(T &&)->SArray<T>;
+template <typename ParserT> SArray(ParserT &&)->SArray<ParserT>;
 
 /****************************** Implementations *******************************/
 
-template <typename T>
+template <typename ParserT>
 template <typename CallbackT>
-SArray<T>::SArray(T &&parser, CallbackT on_finish)
-    : Array<T>(std::forward<T>(parser)), _on_finish(std::move(on_finish)) {
+SArray<ParserT>::SArray(ParserT &&parser, CallbackT on_finish)
+    : Array<ParserT>(std::forward<ParserT>(parser)),
+      _on_finish(std::move(on_finish)) {
   static_assert(std::is_base_of_v<TokenParser, ParserType>,
                 "Invalid parser used in SArray");
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
 }
 
-template <typename T>
-SArray<T>::SArray(SArray &&other) noexcept
-    : Array<T>(std::move(other)),
+template <typename ParserT>
+SArray<ParserT>::SArray(SArray &&other) noexcept
+    : Array<ParserT>(std::move(other)),
       _values{},
       _on_finish(std::move(other._on_finish)) {}
 
-template <typename T> void SArray<T>::setFinishCallback(Callback on_finish) {
+template <typename ParserT>
+void SArray<ParserT>::setFinishCallback(Callback on_finish) {
   _on_finish = on_finish;
 }
 
-template <typename T> const typename SArray<T>::Type &SArray<T>::get() const {
+template <typename ParserT>
+const typename SArray<ParserT>::Type &SArray<ParserT>::get() const {
   checkSet();
   return _values;
 }
 
-template <typename T> typename SArray<T>::Type &&SArray<T>::pop() {
+template <typename ParserT>
+typename SArray<ParserT>::Type &&SArray<ParserT>::pop() {
   checkSet();
   TokenParser::_set = false;
   return std::move(_values);
 }
 
-template <typename T> void SArray<T>::childParsed() {
-  _values.push_back(Array<T>::_parser.pop());
+template <typename ParserT> void SArray<ParserT>::childParsed() {
+  _values.push_back(Array<ParserT>::_parser.pop());
 }
 
-template <typename T> void SArray<T>::finish() {
+template <typename ParserT> void SArray<ParserT>::finish() {
   if (_on_finish && !_on_finish(_values)) {
     throw std::runtime_error("Callback returned false");
   }
 }
 
-template <typename T> void SArray<T>::reset() {
+template <typename ParserT> void SArray<ParserT>::reset() {
   ArrayParser::reset();
   _values = Type();
 }

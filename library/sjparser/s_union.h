@@ -33,8 +33,8 @@ namespace SJParser {
 /** @brief %Union of @ref Object "Objects" parser, that stores the result in an
  * std::variant of member parser types.
  *
- * Parses an object from @ref SUnion_Ts "Ts" list based on a value of the type
- * member.
+ * Parses an object from @ref SUnion_Ts "ParserTs" list based on a value of
+ * the type member.
  *
  * You can use it standalone (in this case the first member of an object must
  * be a type member) or embedded in an object (in this case object members after
@@ -50,12 +50,12 @@ namespace SJParser {
  * @tparam TypeMemberT A type of the type member. Can be int64_t, bool, double
  * or std::string.
  *
- * @tparam Ts A list of object parsers.
+ * @tparam ParserTs A list of object parsers.
  * @anchor SUnion_Ts
  */
 
-template <typename TypeMemberT, typename... Ts>
-class SUnion : public Union<TypeMemberT, Ts...> {
+template <typename TypeMemberT, typename... ParserTs>
+class SUnion : public Union<TypeMemberT, ParserTs...> {
  public:
 #ifdef DOXYGEN_ONLY
   /** @brief %Member parser type.
@@ -66,12 +66,12 @@ class SUnion : public Union<TypeMemberT, Ts...> {
    */
   template <size_t n> struct ParserType {
     /** n-th member parser type */
-    using ParserType = NthTypes<n, TDs...>::ParserType;
+    using ParserType = NthTypes<n, ParserTDs...>::ParserType;
   };
 #endif
 
   /** Stored value type */
-  using Type = std::variant<typename std::decay_t<Ts>::Type...>;
+  using Type = std::variant<typename std::decay_t<ParserTs>::Type...>;
 
   /** Finish callback type. */
   using Callback = std::function<bool(const Type &)>;
@@ -95,7 +95,7 @@ class SUnion : public Union<TypeMemberT, Ts...> {
    */
   template <typename CallbackT = std::nullptr_t>
   SUnion(TypeHolder<TypeMemberT> type,
-         std::tuple<Member<TypeMemberT, Ts>...> members,
+         std::tuple<Member<TypeMemberT, ParserTs>...> members,
          CallbackT on_finish = nullptr);
 
   /** @brief Standalone mode constructor.
@@ -119,7 +119,7 @@ class SUnion : public Union<TypeMemberT, Ts...> {
    */
   template <typename CallbackT = std::nullptr_t>
   SUnion(TypeHolder<TypeMemberT> type, std::string type_member,
-         std::tuple<Member<TypeMemberT, Ts>...> members,
+         std::tuple<Member<TypeMemberT, ParserTs>...> members,
          CallbackT on_finish = nullptr);
 
   /** Move constructor. */
@@ -164,7 +164,7 @@ class SUnion : public Union<TypeMemberT, Ts...> {
    *
    * @return Reference to n-th member parser.
    */
-  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
 #endif
 
   /** @brief Get the parsed value and unset the parser.
@@ -190,17 +190,19 @@ class SUnion : public Union<TypeMemberT, Ts...> {
 
   // This is placed in the private section because the ValueSetter uses pop on
   // all members, so they are always unset after parsing.
-  using Union<TypeMemberT, Ts...>::get;
-  using Union<TypeMemberT, Ts...>::pop;
-  using Union<TypeMemberT, Ts...>::currentMemberId;
+  using Union<TypeMemberT, ParserTs...>::get;
+  using Union<TypeMemberT, ParserTs...>::pop;
+  using Union<TypeMemberT, ParserTs...>::currentMemberId;
 
   template <size_t, typename...> struct ValueSetter {
-    ValueSetter(Type & /*value*/, SUnion<TypeMemberT, Ts...> & /*parser*/) {}
+    ValueSetter(Type & /*value*/,
+                SUnion<TypeMemberT, ParserTs...> & /*parser*/) {}
   };
 
-  template <size_t n, typename T, typename... TDs>
-  struct ValueSetter<n, T, TDs...> : private ValueSetter<n + 1, TDs...> {
-    ValueSetter(Type &value, SUnion<TypeMemberT, Ts...> &parser);
+  template <size_t n, typename ParserT, typename... ParserTDs>
+  struct ValueSetter<n, ParserT, ParserTDs...>
+      : private ValueSetter<n + 1, ParserTDs...> {
+    ValueSetter(Type &value, SUnion<TypeMemberT, ParserTs...> &parser);
   };
 
   Type _value;
@@ -209,57 +211,58 @@ class SUnion : public Union<TypeMemberT, Ts...> {
 
 /****************************** Implementations *******************************/
 
-template <typename TypeMemberT, typename... Ts>
+template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>
-SUnion<TypeMemberT, Ts...>::SUnion(
+SUnion<TypeMemberT, ParserTs...>::SUnion(
     TypeHolder<TypeMemberT> type,
-    std::tuple<Member<TypeMemberT, Ts>...> members, CallbackT on_finish)
-    : Union<TypeMemberT, Ts...>(type, std::move(members)),
+    std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
+    : Union<TypeMemberT, ParserTs...>(type, std::move(members)),
       _on_finish(std::move(on_finish)) {}
 
-template <typename TypeMemberT, typename... Ts>
+template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>
-SUnion<TypeMemberT, Ts...>::SUnion(
+SUnion<TypeMemberT, ParserTs...>::SUnion(
     TypeHolder<TypeMemberT> type, std::string type_member,
-    std::tuple<Member<TypeMemberT, Ts>...> members, CallbackT on_finish)
-    : Union<TypeMemberT, Ts...>(type, std::move(type_member),
-                                std::move(members)),
+    std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
+    : Union<TypeMemberT, ParserTs...>(type, std::move(type_member),
+                                      std::move(members)),
       _on_finish(std::move(on_finish)) {}
 
-template <typename TypeMemberT, typename... Ts>
-SUnion<TypeMemberT, Ts...>::SUnion(SUnion &&other) noexcept
-    : Union<TypeMemberT, Ts...>(std::move(other)),
+template <typename TypeMemberT, typename... ParserTs>
+SUnion<TypeMemberT, ParserTs...>::SUnion(SUnion &&other) noexcept
+    : Union<TypeMemberT, ParserTs...>(std::move(other)),
       _value{Type{}},
       _on_finish(std::move(other._on_finish)) {}
 
-template <typename TypeMemberT, typename... Ts>
-void SUnion<TypeMemberT, Ts...>::setFinishCallback(Callback on_finish) {
+template <typename TypeMemberT, typename... ParserTs>
+void SUnion<TypeMemberT, ParserTs...>::setFinishCallback(Callback on_finish) {
   _on_finish = on_finish;
 }
 
-template <typename TypeMemberT, typename... Ts>
-const typename SUnion<TypeMemberT, Ts...>::Type &
-SUnion<TypeMemberT, Ts...>::get() const {
+template <typename TypeMemberT, typename... ParserTs>
+const typename SUnion<TypeMemberT, ParserTs...>::Type &
+SUnion<TypeMemberT, ParserTs...>::get() const {
   checkSet();
   return _value;
 }
 
-template <typename TypeMemberT, typename... Ts>
-typename SUnion<TypeMemberT, Ts...>::Type &&SUnion<TypeMemberT, Ts...>::pop() {
+template <typename TypeMemberT, typename... ParserTs>
+typename SUnion<TypeMemberT, ParserTs...>::Type &&
+SUnion<TypeMemberT, ParserTs...>::pop() {
   checkSet();
   TokenParser::_set = false;
   return std::move(_value);
 }
 
-template <typename TypeMemberT, typename... Ts>
-void SUnion<TypeMemberT, Ts...>::finish() {
+template <typename TypeMemberT, typename... ParserTs>
+void SUnion<TypeMemberT, ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
     TokenParser::_set = false;
     return;
   }
 
   try {
-    ValueSetter<0, Ts...>(_value, *this);
+    ValueSetter<0, ParserTs...>(_value, *this);
   } catch (std::exception &e) {
     TokenParser::_set = false;
     throw std::runtime_error(std::string("Can not set value: ") + e.what());
@@ -273,17 +276,17 @@ void SUnion<TypeMemberT, Ts...>::finish() {
   }
 }
 
-template <typename TypeMemberT, typename... Ts>
-void SUnion<TypeMemberT, Ts...>::reset() {
-  Union<TypeMemberT, Ts...>::reset();
+template <typename TypeMemberT, typename... ParserTs>
+void SUnion<TypeMemberT, ParserTs...>::reset() {
+  Union<TypeMemberT, ParserTs...>::reset();
   _value = Type{};
 }
 
-template <typename TypeMemberT, typename... Ts>
-template <size_t n, typename T, typename... TDs>
-SUnion<TypeMemberT, Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
-    Type &value, SUnion<TypeMemberT, Ts...> &parser)
-    : ValueSetter<n + 1, TDs...>(value, parser) {
+template <typename TypeMemberT, typename... ParserTs>
+template <size_t n, typename ParserT, typename... ParserTDs>
+SUnion<TypeMemberT, ParserTs...>::ValueSetter<n, ParserT, ParserTDs...>::
+    ValueSetter(Type &value, SUnion<TypeMemberT, ParserTs...> &parser)
+    : ValueSetter<n + 1, ParserTDs...>(value, parser) {
   if (parser.currentMemberId() != n) {
     return;
   }

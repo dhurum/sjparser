@@ -38,10 +38,10 @@ namespace SJParser {
  *
  * Empty object will be parsed and marked as unset.
  *
- * @tparam Ts A list of member parsers types.
+ * @tparam ParserTs A list of member parsers types.
  */
 
-template <typename... Ts> class SAutoObject : public Object<Ts...> {
+template <typename... ParserTs> class SAutoObject : public Object<ParserTs...> {
  public:
 #ifdef DOXYGEN_ONLY
   /** @brief %Member parser type.
@@ -52,12 +52,12 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    */
   template <size_t n> struct ParserType {
     /** n-th member parser type */
-    using ParserType = NthTypes<n, TDs...>::ParserType;
+    using ParserType = NthTypes<n, ParserTDs...>::ParserType;
   };
 #endif
 
   /** Stored value type */
-  using Type = std::tuple<typename std::decay_t<Ts>::Type...>;
+  using Type = std::tuple<typename std::decay_t<ParserTs>::Type...>;
 
   /** Finish callback type. */
   using Callback = std::function<bool(const Type &)>;
@@ -73,7 +73,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  SAutoObject(std::tuple<Member<std::string, Ts>...> members,
+  SAutoObject(std::tuple<Member<std::string, ParserTs>...> members,
               CallbackT on_finish = nullptr,
               std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
                   * /*unused*/
@@ -92,7 +92,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  SAutoObject(std::tuple<Member<std::string, Ts>...> members,
+  SAutoObject(std::tuple<Member<std::string, ParserTs>...> members,
               ObjectOptions options, CallbackT on_finish = nullptr);
 
   /** Move constructor. */
@@ -153,7 +153,7 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
    *
    * @return Reference to n-th member parser.
    */
-  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
 #endif
 
  private:
@@ -164,16 +164,17 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
 
   // This is placed in the private section because the ValueSetter uses pop on
   // all members, so they are always unset after parsing.
-  using Object<Ts...>::get;
-  using Object<Ts...>::pop;
+  using Object<ParserTs...>::get;
+  using Object<ParserTs...>::pop;
 
   template <size_t, typename...> struct ValueSetter {
-    ValueSetter(Type & /*value*/, SAutoObject<Ts...> & /*parser*/) {}
+    ValueSetter(Type & /*value*/, SAutoObject<ParserTs...> & /*parser*/) {}
   };
 
-  template <size_t n, typename T, typename... TDs>
-  struct ValueSetter<n, T, TDs...> : private ValueSetter<n + 1, TDs...> {
-    ValueSetter(Type &value, SAutoObject<Ts...> &parser);
+  template <size_t n, typename ParserT, typename... ParserTDs>
+  struct ValueSetter<n, ParserT, ParserTDs...>
+      : private ValueSetter<n + 1, ParserTDs...> {
+    ValueSetter(Type &value, SAutoObject<ParserTs...> &parser);
   };
 
   Type _value;
@@ -182,55 +183,58 @@ template <typename... Ts> class SAutoObject : public Object<Ts...> {
 
 /****************************** Implementations *******************************/
 
-template <typename... Ts>
+template <typename... ParserTs>
 template <typename CallbackT>
-SAutoObject<Ts...>::SAutoObject(
-    std::tuple<Member<std::string, Ts>...> members, CallbackT on_finish,
+SAutoObject<ParserTs...>::SAutoObject(
+    std::tuple<Member<std::string, ParserTs>...> members, CallbackT on_finish,
     std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
-    : Object<Ts...>(std::move(members), {}), _on_finish(std::move(on_finish)) {}
+    : Object<ParserTs...>(std::move(members), {}),
+      _on_finish(std::move(on_finish)) {}
 
-template <typename... Ts>
+template <typename... ParserTs>
 template <typename CallbackT>
-SAutoObject<Ts...>::SAutoObject(std::tuple<Member<std::string, Ts>...> members,
-                                ObjectOptions options, CallbackT on_finish)
-    : Object<Ts...>(std::move(members), options),
+SAutoObject<ParserTs...>::SAutoObject(
+    std::tuple<Member<std::string, ParserTs>...> members, ObjectOptions options,
+    CallbackT on_finish)
+    : Object<ParserTs...>(std::move(members), options),
       _on_finish(std::move(on_finish)) {
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
 }
 
-template <typename... Ts>
-SAutoObject<Ts...>::SAutoObject(SAutoObject &&other) noexcept
-    : Object<Ts...>(std::move(other)),
+template <typename... ParserTs>
+SAutoObject<ParserTs...>::SAutoObject(SAutoObject &&other) noexcept
+    : Object<ParserTs...>(std::move(other)),
       _value{},
       _on_finish(std::move(other._on_finish)) {}
 
-template <typename... Ts>
-void SAutoObject<Ts...>::setFinishCallback(Callback on_finish) {
+template <typename... ParserTs>
+void SAutoObject<ParserTs...>::setFinishCallback(Callback on_finish) {
   _on_finish = on_finish;
 }
 
-template <typename... Ts>
-const typename SAutoObject<Ts...>::Type &SAutoObject<Ts...>::get() const {
+template <typename... ParserTs>
+const typename SAutoObject<ParserTs...>::Type &SAutoObject<ParserTs...>::get()
+    const {
   checkSet();
   return _value;
 }
 
-template <typename... Ts>
-typename SAutoObject<Ts...>::Type &&SAutoObject<Ts...>::pop() {
+template <typename... ParserTs>
+typename SAutoObject<ParserTs...>::Type &&SAutoObject<ParserTs...>::pop() {
   checkSet();
   TokenParser::_set = false;
   return std::move(_value);
 }
 
-template <typename... Ts> void SAutoObject<Ts...>::finish() {
+template <typename... ParserTs> void SAutoObject<ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
     TokenParser::_set = false;
     return;
   }
 
   try {
-    ValueSetter<0, Ts...>(_value, *this);
+    ValueSetter<0, ParserTs...>(_value, *this);
   } catch (std::exception &e) {
     TokenParser::_set = false;
     throw std::runtime_error(std::string("Can not set value: ") + e.what());
@@ -244,16 +248,16 @@ template <typename... Ts> void SAutoObject<Ts...>::finish() {
   }
 }
 
-template <typename... Ts> void SAutoObject<Ts...>::reset() {
-  Object<Ts...>::KVParser::reset();
+template <typename... ParserTs> void SAutoObject<ParserTs...>::reset() {
+  Object<ParserTs...>::KVParser::reset();
   _value = {};
 }
 
-template <typename... Ts>
-template <size_t n, typename T, typename... TDs>
-SAutoObject<Ts...>::ValueSetter<n, T, TDs...>::ValueSetter(
-    Type &value, SAutoObject<Ts...> &parser)
-    : ValueSetter<n + 1, TDs...>(value, parser) {
+template <typename... ParserTs>
+template <size_t n, typename ParserT, typename... ParserTDs>
+SAutoObject<ParserTs...>::ValueSetter<n, ParserT, ParserTDs...>::ValueSetter(
+    Type &value, SAutoObject<ParserTs...> &parser)
+    : ValueSetter<n + 1, ParserTDs...>(value, parser) {
   auto &member = parser._member_parsers.template get<n>();
 
   if (member.parser.isSet()) {

@@ -39,7 +39,7 @@ class Dispatcher {
   bool emptyParsersStack();
   void reset();
 
-  template <typename T> void on(T value);
+  template <typename TokenT> void on(TokenT value);
 
  protected:
   std::deque<TokenParser *> _parsers;
@@ -50,7 +50,7 @@ class Dispatcher {
 
 /****************************** Implementations *******************************/
 
-template <typename T> void Dispatcher::on(T value) {
+template <typename TokenT> void Dispatcher::on(TokenT value) {
   if (_parsers.empty()) {
     throw std::runtime_error("Parsers stack is empty");
   }

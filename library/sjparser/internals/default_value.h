@@ -25,10 +25,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-template <typename U, bool = false> struct DefaultValue {};
+template <typename ParserT, bool = false> struct DefaultValue {};
 
-template <typename U> struct DefaultValue<U, true> {
+template <typename ParserT> struct DefaultValue<ParserT, true> {
   bool present = false;
-  typename std::decay_t<U>::Type value;
+  typename std::decay_t<ParserT>::Type value;
 };
 }  // namespace SJParser

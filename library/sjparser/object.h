@@ -40,14 +40,14 @@ namespace SJParser {
  *
  * Empty object will be parsed and marked as unset.
  *
- * @tparam Ts A list of member parsers types.
+ * @tparam ParserTs A list of member parsers types.
  */
 
-template <typename... Ts>
-class Object : public KeyValueParser<std::string, Ts...> {
+template <typename... ParserTs>
+class Object : public KeyValueParser<std::string, ParserTs...> {
  protected:
   /** @cond INTERNAL Internal typedef */
-  using KVParser = KeyValueParser<std::string, Ts...>;
+  using KVParser = KeyValueParser<std::string, ParserTs...>;
   /** @endcond */
 
  public:
@@ -60,12 +60,12 @@ class Object : public KeyValueParser<std::string, Ts...> {
    */
   template <size_t n> struct ParserType {
     /** n-th member parser type */
-    using ParserType = NthTypes<n, TDs...>::ParserType;
+    using ParserType = NthTypes<n, ParserTDs...>::ParserType;
   };
 #endif
 
   /** Finish callback type. */
-  using Callback = std::function<bool(Object<Ts...> &)>;
+  using Callback = std::function<bool(Object<ParserTs...> &)>;
 
   /** @brief Constructor.
    *
@@ -78,7 +78,7 @@ class Object : public KeyValueParser<std::string, Ts...> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  Object(std::tuple<Member<std::string, Ts>...> members,
+  Object(std::tuple<Member<std::string, ParserTs>...> members,
          CallbackT on_finish = nullptr,
          std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
              * /*unused*/
@@ -97,8 +97,8 @@ class Object : public KeyValueParser<std::string, Ts...> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  Object(std::tuple<Member<std::string, Ts>...> members, ObjectOptions options,
-         CallbackT on_finish = nullptr);
+  Object(std::tuple<Member<std::string, ParserTs>...> members,
+         ObjectOptions options, CallbackT on_finish = nullptr);
 
   /** Move constructor. */
   Object(Object &&other) noexcept;
@@ -147,7 +147,7 @@ class Object : public KeyValueParser<std::string, Ts...> {
    *
    * @return Reference to n-th member parser.
    */
-  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
 
   /** @brief Get the member parsed value and unset the member parser.
    *
@@ -161,17 +161,19 @@ class Object : public KeyValueParser<std::string, Ts...> {
    * @throw std::runtime_error thrown if the member parser value is unset (no
    * value was parsed or #pop was called for the member parser).
    */
-  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
+  template <size_t n>
+  typename NthTypes<n, ParserTs...>::template ValueType<> &&pop();
 #endif
 
  protected:
   template <size_t, typename...> struct MemberChecker {
-    MemberChecker(Object<Ts...> & /*parser*/) {}
+    MemberChecker(Object<ParserTs...> & /*parser*/) {}
   };
 
-  template <size_t n, typename T, typename... TDs>
-  struct MemberChecker<n, T, TDs...> : private MemberChecker<n + 1, TDs...> {
-    MemberChecker(Object<Ts...> &parser);
+  template <size_t n, typename ParserT, typename... ParserTDs>
+  struct MemberChecker<n, ParserT, ParserTDs...>
+      : private MemberChecker<n + 1, ParserTDs...> {
+    MemberChecker(Object<ParserTs...> &parser);
   };
 
  private:
@@ -185,43 +187,44 @@ class Object : public KeyValueParser<std::string, Ts...> {
 
 /****************************** Implementations *******************************/
 
-template <typename... Ts>
+template <typename... ParserTs>
 template <typename CallbackT>
-Object<Ts...>::Object(
-    std::tuple<Member<std::string, Ts>...> members, CallbackT on_finish,
+Object<ParserTs...>::Object(
+    std::tuple<Member<std::string, ParserTs>...> members, CallbackT on_finish,
     std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
     : KVParser(std::move(members), {}), _on_finish(std::move(on_finish)) {}
 
-template <typename... Ts>
+template <typename... ParserTs>
 template <typename CallbackT>
-Object<Ts...>::Object(std::tuple<Member<std::string, Ts>...> members,
-                      ObjectOptions options, CallbackT on_finish)
+Object<ParserTs...>::Object(
+    std::tuple<Member<std::string, ParserTs>...> members, ObjectOptions options,
+    CallbackT on_finish)
     : KVParser(std::move(members), options), _on_finish(std::move(on_finish)) {
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
 }
 
-template <typename... Ts>
-Object<Ts...>::Object(Object &&other) noexcept
+template <typename... ParserTs>
+Object<ParserTs...>::Object(Object &&other) noexcept
     : KVParser(std::move(other)), _on_finish(std::move(other._on_finish)) {}
 
-template <typename... Ts>
-void Object<Ts...>::setFinishCallback(Callback on_finish) {
+template <typename... ParserTs>
+void Object<ParserTs...>::setFinishCallback(Callback on_finish) {
   _on_finish = on_finish;
 }
 
-template <typename... Ts> void Object<Ts...>::on(MapKeyT key) {
+template <typename... ParserTs> void Object<ParserTs...>::on(MapKeyT key) {
   KVParser::onMember(key.key);
 }
 
-template <typename... Ts> void Object<Ts...>::finish() {
+template <typename... ParserTs> void Object<ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
     TokenParser::_set = false;
     return;
   }
 
   try {
-    MemberChecker<0, Ts...>(*this);
+    MemberChecker<0, ParserTs...>(*this);
   } catch (std::exception &e) {
     TokenParser::_set = false;
     throw;
@@ -232,10 +235,11 @@ template <typename... Ts> void Object<Ts...>::finish() {
   }
 }
 
-template <typename... Ts>
-template <size_t n, typename T, typename... TDs>
-Object<Ts...>::MemberChecker<n, T, TDs...>::MemberChecker(Object<Ts...> &parser)
-    : MemberChecker<n + 1, TDs...>(parser) {
+template <typename... ParserTs>
+template <size_t n, typename ParserT, typename... ParserTDs>
+Object<ParserTs...>::MemberChecker<n, ParserT, ParserTDs...>::MemberChecker(
+    Object<ParserTs...> &parser)
+    : MemberChecker<n + 1, ParserTDs...>(parser) {
   auto &member = parser._member_parsers.template get<n>();
 
   if (!member.parser.isSet() && !member.optional) {

@@ -32,8 +32,8 @@ namespace SJParser {
 
 /** @brief %Union of @ref Object "Objects" parser.
  *
- * Parses an object from @ref Union_Ts "Ts" list based on a value of the type
- * member.
+ * Parses an object from @ref Union_Ts "ParserTs" list based on a value of
+ * the type member.
  *
  * You can use it standalone (in this case the first member of an object must
  * be a type member) or embedded in an object (in this case object members after
@@ -51,15 +51,15 @@ namespace SJParser {
  * @tparam TypeMemberT A type of the type member. Can be int64_t, bool, double
  * or std::string.
  *
- * @tparam Ts A list of object parsers.
+ * @tparam ParserTs A list of object parsers.
  * @anchor Union_Ts
  */
 
-template <typename TypeMemberT, typename... Ts>
-class Union : public KeyValueParser<TypeMemberT, Ts...> {
+template <typename TypeMemberT, typename... ParserTs>
+class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
  protected:
   /** @cond INTERNAL Internal typedef */
-  using KVParser = KeyValueParser<TypeMemberT, Ts...>;
+  using KVParser = KeyValueParser<TypeMemberT, ParserTs...>;
   /** @endcond */
 
  public:
@@ -72,12 +72,12 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
    */
   template <size_t n> struct ParserType {
     /** n-th member parser type */
-    using ParserType = NthTypes<n, TDs...>::ParserType;
+    using ParserType = NthTypes<n, ParserTDs...>::ParserType;
   };
 #endif
 
   /** Finish callback type. */
-  using Callback = std::function<bool(Union<TypeMemberT, Ts...> &)>;
+  using Callback = std::function<bool(Union<TypeMemberT, ParserTs...> &)>;
 
   /** @brief Embedded mode constructor.
    *
@@ -98,7 +98,7 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
    */
   template <typename CallbackT = std::nullptr_t>
   Union(TypeHolder<TypeMemberT> type,
-        std::tuple<Member<TypeMemberT, Ts>...> members,
+        std::tuple<Member<TypeMemberT, ParserTs>...> members,
         CallbackT on_finish = nullptr);
 
   /** @brief Standalone mode constructor.
@@ -122,7 +122,7 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
    */
   template <typename CallbackT = std::nullptr_t>
   Union(TypeHolder<TypeMemberT> type, std::string type_member,
-        std::tuple<Member<TypeMemberT, Ts>...> members,
+        std::tuple<Member<TypeMemberT, ParserTs>...> members,
         CallbackT on_finish = nullptr);
 
   /** Move constructor. */
@@ -180,7 +180,7 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
    *
    * @return Reference to n-th member parser.
    */
-  template <size_t n> typename NthTypes<n, Ts...>::ParserType &parser();
+  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
 
   /** @brief Get the member parsed value and unset the member parser.
    *
@@ -193,7 +193,8 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
    * @throw std::runtime_error thrown if the member parser value is unset (no
    * value was parsed or #pop was called for the member parser).
    */
-  template <size_t n> typename NthTypes<n, Ts...>::template ValueType<> &&pop();
+  template <size_t n>
+  typename NthTypes<n, ParserTs...>::template ValueType<> &&pop();
 #endif
 
  protected:
@@ -214,12 +215,13 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
   void finish() override;
 
   template <size_t, typename...> struct MemberChecker {
-    MemberChecker(Union<TypeMemberT, Ts...> & /*parser*/) {}
+    MemberChecker(Union<TypeMemberT, ParserTs...> & /*parser*/) {}
   };
 
-  template <size_t n, typename T, typename... TDs>
-  struct MemberChecker<n, T, TDs...> : private MemberChecker<n + 1, TDs...> {
-    MemberChecker(Union<TypeMemberT, Ts...> &parser);
+  template <size_t n, typename ParserT, typename... ParserTDs>
+  struct MemberChecker<n, ParserT, ParserTDs...>
+      : private MemberChecker<n + 1, ParserTDs...> {
+    MemberChecker(Union<TypeMemberT, ParserTs...> &parser);
   };
 
   std::string _type_member;
@@ -230,11 +232,11 @@ class Union : public KeyValueParser<TypeMemberT, Ts...> {
 
 /****************************** Implementations *******************************/
 
-template <typename TypeMemberT, typename... Ts>
+template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>
-Union<TypeMemberT, Ts...>::Union(TypeHolder<TypeMemberT> /*type*/,
-                                 std::tuple<Member<TypeMemberT, Ts>...> members,
-                                 CallbackT on_finish)
+Union<TypeMemberT, ParserTs...>::Union(
+    TypeHolder<TypeMemberT> /*type*/,
+    std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
     : KVParser(std::move(members), {}),
       _on_finish(std::move(on_finish)),
       _current_member_id(0) {
@@ -243,12 +245,11 @@ Union<TypeMemberT, Ts...>::Union(TypeHolder<TypeMemberT> /*type*/,
   setupIdsMap();
 }
 
-template <typename TypeMemberT, typename... Ts>
+template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>
-Union<TypeMemberT, Ts...>::Union(TypeHolder<TypeMemberT> /*type*/,
-                                 std::string type_member,
-                                 std::tuple<Member<TypeMemberT, Ts>...> members,
-                                 CallbackT on_finish)
+Union<TypeMemberT, ParserTs...>::Union(
+    TypeHolder<TypeMemberT> /*type*/, std::string type_member,
+    std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
     : KVParser(std::move(members), {}),
       _type_member(std::move(type_member)),
       _on_finish(std::move(on_finish)),
@@ -258,8 +259,8 @@ Union<TypeMemberT, Ts...>::Union(TypeHolder<TypeMemberT> /*type*/,
   setupIdsMap();
 }
 
-template <typename TypeMemberT, typename... Ts>
-Union<TypeMemberT, Ts...>::Union(Union &&other) noexcept
+template <typename TypeMemberT, typename... ParserTs>
+Union<TypeMemberT, ParserTs...>::Union(Union &&other) noexcept
     : KVParser(std::move(other)),
       _type_member(std::move(other._type_member)),
       _on_finish(std::move(other._on_finish)),
@@ -267,40 +268,40 @@ Union<TypeMemberT, Ts...>::Union(Union &&other) noexcept
   setupIdsMap();
 }
 
-template <typename TypeMemberT, typename... Ts>
-void Union<TypeMemberT, Ts...>::setupIdsMap() {
+template <typename TypeMemberT, typename... ParserTs>
+void Union<TypeMemberT, ParserTs...>::setupIdsMap() {
   _members_ids_map.clear();
   for (size_t i = 0; i < KVParser::_parsers_array.size(); ++i) {
     _members_ids_map[KVParser::_parsers_array[i]] = i;
   }
 }
 
-template <typename TypeMemberT, typename... Ts>
-void Union<TypeMemberT, Ts...>::setFinishCallback(Callback on_finish) {
+template <typename TypeMemberT, typename... ParserTs>
+void Union<TypeMemberT, ParserTs...>::setFinishCallback(Callback on_finish) {
   _on_finish = on_finish;
 }
 
-template <typename TypeMemberT, typename... Ts>
-size_t Union<TypeMemberT, Ts...>::currentMemberId() {
+template <typename TypeMemberT, typename... ParserTs>
+size_t Union<TypeMemberT, ParserTs...>::currentMemberId() {
   checkSet();
   return _current_member_id;
 }
 
-template <typename TypeMemberT, typename... Ts>
-void Union<TypeMemberT, Ts...>::reset() {
+template <typename TypeMemberT, typename... ParserTs>
+void Union<TypeMemberT, ParserTs...>::reset() {
   _current_member_id = 0;
   KVParser::reset();
 }
 
-template <typename TypeMemberT, typename... Ts>
-void Union<TypeMemberT, Ts...>::on(TokenType<TypeMemberT> value) {
+template <typename TypeMemberT, typename... ParserTs>
+void Union<TypeMemberT, ParserTs...>::on(TokenType<TypeMemberT> value) {
   reset();
   KVParser::onMember(value);
   _current_member_id = _members_ids_map[KVParser::_parsers_map[value]];
 }
 
-template <typename TypeMemberT, typename... Ts>
-void Union<TypeMemberT, Ts...>::on(MapStartT /*unused*/) {
+template <typename TypeMemberT, typename... ParserTs>
+void Union<TypeMemberT, ParserTs...>::on(MapStartT /*unused*/) {
   if (_type_member.empty()) {
     throw std::runtime_error(
         "Union with an empty type member can't parse this");
@@ -308,8 +309,8 @@ void Union<TypeMemberT, Ts...>::on(MapStartT /*unused*/) {
   reset();
 }
 
-template <typename TypeMemberT, typename... Ts>
-void Union<TypeMemberT, Ts...>::on(MapKeyT key) {
+template <typename TypeMemberT, typename... ParserTs>
+void Union<TypeMemberT, ParserTs...>::on(MapKeyT key) {
   if (_type_member.empty()) {
     throw std::runtime_error(
         "Union with an empty type member can't parse this");
@@ -321,8 +322,8 @@ void Union<TypeMemberT, Ts...>::on(MapKeyT key) {
   }
 }
 
-template <typename TypeMemberT, typename... Ts>
-void Union<TypeMemberT, Ts...>::childParsed() {
+template <typename TypeMemberT, typename... ParserTs>
+void Union<TypeMemberT, ParserTs...>::childParsed() {
   KVParser::endParsing();
   if (_type_member.empty()) {
     // The union embedded into an object must propagate the end event to the
@@ -331,15 +332,15 @@ void Union<TypeMemberT, Ts...>::childParsed() {
   }
 }
 
-template <typename TypeMemberT, typename... Ts>
-void Union<TypeMemberT, Ts...>::finish() {
+template <typename TypeMemberT, typename... ParserTs>
+void Union<TypeMemberT, ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
     TokenParser::_set = false;
     return;
   }
 
   try {
-    MemberChecker<0, Ts...>(*this);
+    MemberChecker<0, ParserTs...>(*this);
   } catch (std::exception &e) {
     TokenParser::_set = false;
     throw;
@@ -350,11 +351,11 @@ void Union<TypeMemberT, Ts...>::finish() {
   }
 }
 
-template <typename TypeMemberT, typename... Ts>
-template <size_t n, typename T, typename... TDs>
-Union<TypeMemberT, Ts...>::MemberChecker<n, T, TDs...>::MemberChecker(
-    Union<TypeMemberT, Ts...> &parser)
-    : MemberChecker<n + 1, TDs...>(parser) {
+template <typename TypeMemberT, typename... ParserTs>
+template <size_t n, typename ParserT, typename... ParserTDs>
+Union<TypeMemberT, ParserTs...>::MemberChecker<n, ParserT, ParserTDs...>::
+    MemberChecker(Union<TypeMemberT, ParserTs...> &parser)
+    : MemberChecker<n + 1, ParserTDs...>(parser) {
   if (parser.currentMemberId() != n) {
     return;
   }

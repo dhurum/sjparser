@@ -31,16 +31,16 @@ namespace SJParser {
 
 /** @brief %Array parser.
  *
- * @tparam T Elements parser type.
+ * @tparam ParserT Elements parser type.
  */
 
-template <typename T> class Array : public ArrayParser {
+template <typename ParserT> class Array : public ArrayParser {
  public:
   /** Elements parser type. */
-  using ParserType = std::decay_t<T>;
+  using ParserType = std::decay_t<ParserT>;
 
   /** Finish callback type. */
-  using Callback = std::function<bool(Array<T> &)>;
+  using Callback = std::function<bool(Array<ParserT> &)>;
 
   /** @brief Constructor.
    *
@@ -53,7 +53,7 @@ template <typename T> class Array : public ArrayParser {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  Array(T &&parser, CallbackT on_finish = nullptr);
+  Array(ParserT &&parser, CallbackT on_finish = nullptr);
 
   /** Move constructor. */
   Array(Array &&other) noexcept;
@@ -85,11 +85,11 @@ template <typename T> class Array : public ArrayParser {
    *
    * @return Reference to the elements parser.
    */
-  T &parser();
+  ParserType &parser();
 
  protected:
   /** @cond INTERNAL Elements parser. */
-  T _parser;
+  ParserT _parser;
   /** @endcond */
 
  private:
@@ -98,18 +98,18 @@ template <typename T> class Array : public ArrayParser {
   Callback _on_finish;
 };
 
-template <typename T> Array(Array<T> &&)->Array<Array<T>>;
+template <typename ParserT> Array(Array<ParserT> &&)->Array<Array<ParserT>>;
 
-template <typename T> Array(Array<T> &)->Array<Array<T> &>;
+template <typename ParserT> Array(Array<ParserT> &)->Array<Array<ParserT> &>;
 
-template <typename T> Array(T &&)->Array<T>;
+template <typename ParserT> Array(ParserT &&)->Array<ParserT>;
 
 /****************************** Implementations *******************************/
 
-template <typename T>
+template <typename ParserT>
 template <typename CallbackT>
-Array<T>::Array(T&& parser, CallbackT on_finish)
-    : _parser(std::forward<T>(parser)), _on_finish(std::move(on_finish)) {
+Array<ParserT>::Array(ParserT &&parser, CallbackT on_finish)
+    : _parser(std::forward<ParserT>(parser)), _on_finish(std::move(on_finish)) {
   static_assert(std::is_base_of_v<TokenParser, ParserType>,
                 "Invalid parser used in Array");
   static_assert(std::is_constructible_v<Callback, CallbackT>,
@@ -117,22 +117,24 @@ Array<T>::Array(T&& parser, CallbackT on_finish)
   _parser_ptr = &_parser;
 }
 
-template <typename T>
-Array<T>::Array(Array&& other) noexcept
-    : _parser(std::forward<T>(other._parser)),
+template <typename ParserT>
+Array<ParserT>::Array(Array &&other) noexcept
+    : _parser(std::forward<ParserT>(other._parser)),
       _on_finish(std::move(other._on_finish)) {
   _parser_ptr = &_parser;
 }
 
-template <typename T> void Array<T>::setFinishCallback(Callback on_finish) {
+template <typename ParserT>
+void Array<ParserT>::setFinishCallback(Callback on_finish) {
   _on_finish = on_finish;
 }
 
-template <typename T> T& Array<T>::parser() {
+template <typename ParserT>
+typename Array<ParserT>::ParserType &Array<ParserT>::parser() {
   return _parser;
 }
 
-template <typename T> void Array<T>::finish() {
+template <typename ParserT> void Array<ParserT>::finish() {
   if (_on_finish && !_on_finish(*this)) {
     throw std::runtime_error("Callback returned false");
   }

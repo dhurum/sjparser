@@ -28,11 +28,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace SJParser {
 
 template <typename, typename = std::void_t<>>
-struct IsStorageParserT : public std::false_type {};
-template <typename T>
-struct IsStorageParserT<T, std::void_t<typename std::decay_t<T>::Type>>
+struct IsStorageParserTest : public std::false_type {};
+template <typename ParserT>
+struct IsStorageParserTest<ParserT,
+                           std::void_t<typename std::decay_t<ParserT>::Type>>
     : public std::true_type {};
 
-template <typename T>
-constexpr bool IsStorageParser = IsStorageParserT<T>::value;
+template <typename ParserT>
+constexpr bool IsStorageParser = IsStorageParserTest<ParserT>::value;
 }  // namespace SJParser
