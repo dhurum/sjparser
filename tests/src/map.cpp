@@ -304,3 +304,24 @@ TEST(Map, MapWithMapReference) {
 
   ASSERT_EQ(&(parser.parser().parser()), &array);
 }
+
+TEST(Map, MoveAssignment) {
+  std::string buf(R"({"1": 10, "2": 15})");
+  std::map<std::string, int64_t> values;
+
+  auto elementCb = [&](const std::string &key, Value<int64_t> &parser) {
+    values[key] = parser.get();
+    return true;
+  };
+  auto map_parser_src = Map{Value<int64_t>{}, elementCb};
+  auto map_parser = Map{Value<int64_t>{}};
+  map_parser = std::move(map_parser_src);
+
+  Parser parser{map_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(10, values["1"]);
+  ASSERT_EQ(15, values["2"]);
+}

@@ -44,7 +44,9 @@ namespace SJParser {
  *
  * @tparam TypeT Stored value type. It must have a default constructor and a
  * copy constructor. If you want to include this parser into SArray, a move
- * constructor of this type will be used if possible.
+ * constructor of this type will be used if possible. If you want to use move
+ * assignment operator on this parser, this type should have copy of move
+ * assignment operator.
  * @anchor SCustomObject_TypeT
  *
  * @tparam ParserTs A list of member parsers types.
@@ -116,6 +118,15 @@ class SCustomObject : public Object<ParserTs...> {
 
   /** Move constructor. */
   SCustomObject(SCustomObject &&other) noexcept;
+
+  /** Move assignment operator */
+  SCustomObject<TypeT, ParserTs...> &operator=(SCustomObject &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~SCustomObject() override = default;
+  SCustomObject(const SCustomObject &) = delete;
+  SCustomObject &operator=(const SCustomObject &) = delete;
+  /** @endcond */
 
   /** @brief Finish callback setter.
    *
@@ -251,7 +262,18 @@ SCustomObject<TypeT, ParserTs...>::SCustomObject(
 template <typename TypeT, typename... ParserTs>
 SCustomObject<TypeT, ParserTs...>::SCustomObject(SCustomObject &&other) noexcept
     : Object<ParserTs...>(std::move(other)),
+      _value(std::move(other._value)),
       _on_finish(std::move(other._on_finish)) {}
+
+template <typename TypeT, typename... ParserTs>
+SCustomObject<TypeT, ParserTs...> &SCustomObject<TypeT, ParserTs...>::operator=(
+    SCustomObject &&other) noexcept {
+  Object<ParserTs...>::operator=(std::move(other));
+  _value = std::move(other._value);
+  _on_finish = std::move(other._on_finish);
+
+  return *this;
+}
 
 template <typename TypeT, typename... ParserTs>
 void SCustomObject<TypeT, ParserTs...>::setFinishCallback(Callback on_finish) {

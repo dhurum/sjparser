@@ -743,3 +743,39 @@ TEST(StandaloneSUnion, StandaloneSUnionWithParserReference) {
 
   ASSERT_EQ(&(parser.parser().parser<0>()), &sautoobject);
 }
+
+TEST(StandaloneSUnion, MoveAssignment) {
+  std::string buf(R"({"type": 1, "bool": true, "integer": 10})");
+
+  auto sunion_parser_src = SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{Member{1, SAutoObject{std::tuple{
+                               Member{"bool", Value<bool>{}},
+                               Member{"integer", Value<int64_t>{}}}}},
+                 Member{2, SAutoObject{std::tuple{
+                               Member{"double", Value<double>{}},
+                               Member{"string", Value<std::string>{}}}}}}};
+  auto sunion_parser = SUnion{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{Member{1, SAutoObject{std::tuple{
+                               Member{"bool_", Value<bool>{}},
+                               Member{"integer_", Value<int64_t>{}}}}},
+                 Member{2, SAutoObject{std::tuple{
+                               Member{"double_", Value<double>{}},
+                               Member{"string_", Value<std::string>{}}}}}}};
+  sunion_parser = std::move(sunion_parser_src);
+
+  Parser parser{sunion_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  auto variant = parser.parser().get();
+
+  ASSERT_EQ(0, variant.index());
+
+  auto object = std::get<0>(variant);
+
+  ASSERT_EQ(true, std::get<0>(object));
+  ASSERT_EQ(10, std::get<1>(object));
+}

@@ -52,8 +52,8 @@ class Parser : public ImplHolder::Type {
    * @param [in] implementation Implementation class, please use a TypeHolder
    * wrapper for it.
    */
-  Parser(ParserT &&parser,
-         ImplHolder implementation = TypeHolder<YajlParser>{});
+  explicit Parser(ParserT &&parser,
+                  ImplHolder implementation = TypeHolder<YajlParser>{});
 
   /** @brief Root parser getter.
    *

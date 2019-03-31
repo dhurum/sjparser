@@ -41,13 +41,13 @@ void YajlParser::setTokenParser(TokenParser *parser) {
 void YajlParser::resetYajlHandle() {
   freeYajlHandle();
   _yajl_handle = yajl_alloc(&_parser_yajl_callbacks, nullptr, this);
-  if (!_yajl_handle) {
+  if (_yajl_handle == nullptr) {
     throw std::runtime_error("Can not allocate YAJL handle");  // LCOV_EXCL_LINE
   }
 }
 
 void YajlParser::freeYajlHandle() {
-  if (!_yajl_handle) {
+  if (_yajl_handle == nullptr) {
     return;
   }
   yajl_free(_yajl_handle);
@@ -115,7 +115,8 @@ int YajlParser::yajlOnBool(void *ctx, int value) {
   return reinterpret_cast<YajlParser *>(ctx)->on(static_cast<bool>(value));
 }
 
-int YajlParser::yajlOnInt(void *ctx, long long value) {
+// Disable google-runtime-int long long -> int64_t
+int YajlParser::yajlOnInt(void *ctx, long long value) {  // NOLINT
   return reinterpret_cast<YajlParser *>(ctx)->on(static_cast<int64_t>(value));
 }
 

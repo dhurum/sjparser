@@ -325,3 +325,22 @@ TEST(SArray, SArrayWithSArrayReference) {
 
   ASSERT_EQ(&(parser.parser().parser()), &sarray);
 }
+
+TEST(SArray, MoveAssignment) {
+  std::string buf(R"([10, 11])");
+
+  auto sarray_parser_src = SArray{Value<int64_t>{}};
+  auto sarray_parser = SArray{Value<int64_t>{}};
+  sarray_parser = std::move(sarray_parser_src);
+
+  Parser parser{sarray_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ(10, parser.parser().get()[0]);
+  ASSERT_EQ(11, parser.parser().get()[1]);
+
+  ASSERT_TRUE(parser.parser().isSet());
+}

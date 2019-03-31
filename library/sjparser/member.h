@@ -98,6 +98,15 @@ template <typename NameT, typename ParserT> struct Member {
   /** Move constructor. */
   Member(Member &&other) noexcept;
 
+  /** Move assignment operator */
+  Member<NameT, ParserT> &operator=(Member &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~Member() = default;
+  Member(const Member &) = delete;
+  Member &operator=(const Member &) = delete;
+  /** @endcond */
+
  private:
   constexpr void checkTemplateParameters();
 };
@@ -172,6 +181,17 @@ Member<NameT, ParserT>::Member(Member &&other) noexcept
       parser(std::forward<ParserT>(other.parser)),
       optional(other.optional),
       default_value(std::move(other.default_value)) {}
+
+template <typename NameT, typename ParserT>
+Member<NameT, ParserT> &Member<NameT, ParserT>::operator=(
+    Member &&other) noexcept {
+  name = std::move(other.name);
+  parser = std::forward<ParserT>(other.parser);
+  optional = other.optional;
+  default_value = std::move(other.default_value);
+
+  return *this;
+}
 
 template <typename NameT, typename ParserT>
 constexpr void Member<NameT, ParserT>::checkTemplateParameters() {

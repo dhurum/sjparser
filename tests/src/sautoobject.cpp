@@ -432,3 +432,21 @@ TEST(SAutoObject, OptionalMemberWithDefaultValue) {
   ASSERT_FALSE(parser.parser().parser<1>().isSet());
   ASSERT_EQ("value", std::get<1>(parser.parser().get()));
 }
+
+TEST(SAutoObject, MoveAssignment) {
+  std::string buf(R"({"bool": true, "string": "value"})");
+
+  auto sauto_object_parser_src = SAutoObject{std::tuple{
+      Member{"bool", Value<bool>{}}, Member{"string", Value<std::string>{}}}};
+  auto sauto_object_parser = SAutoObject{std::tuple{
+      Member{"bool", Value<bool>{}}, Member{"string", Value<std::string>{}}}};
+  sauto_object_parser = std::move(sauto_object_parser_src);
+
+  Parser parser{sauto_object_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, std::get<0>(parser.parser().get()));
+  ASSERT_EQ("value", std::get<1>(parser.parser().get()));
+}

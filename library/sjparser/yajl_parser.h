@@ -43,6 +43,13 @@ class YajlParser {
   /** Destructor */
   ~YajlParser();
 
+  /** @cond INTERNAL Boilerplate. */
+  YajlParser(const YajlParser &) = delete;
+  YajlParser &operator=(const YajlParser &) = delete;
+  YajlParser(YajlParser &&) = delete;
+  YajlParser &operator=(YajlParser &&) = delete;
+  /** @endcond */
+
   /** @brief Parses a piece of JSON from an std::string.
    *
    * @param [in] data String to parse.
@@ -112,7 +119,8 @@ class YajlParser {
 
   static int yajlOnNull(void *ctx);
   static int yajlOnBool(void *ctx, int value);
-  static int yajlOnInt(void *ctx, long long value);
+  // Disable google-runtime-int long long -> int64_t
+  static int yajlOnInt(void *ctx, long long value);  // NOLINT
   static int yajlOnDouble(void *ctx, double value);
   static int yajlOnString(void *ctx, const unsigned char *value, size_t len);
   static int yajlOnMapStart(void *ctx);

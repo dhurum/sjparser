@@ -542,3 +542,27 @@ TEST(Array, ArrayWithArrayReference) {
 
   ASSERT_EQ(&(parser.parser().parser()), &array);
 }
+
+TEST(Array, MoveAssignment) {
+  std::string buf(R"([10, 11])");
+  std::vector<int64_t> values;
+
+  auto elementCb = [&](const int64_t &value) {
+    values.push_back(value);
+    return true;
+  };
+  auto array_parser_src = Array{Value<int64_t>{elementCb}};
+  auto array_parser = Array{Value<int64_t>{}};
+  array_parser = std::move(array_parser_src);
+
+  Parser parser{array_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(2, values.size());
+  ASSERT_EQ(10, values[0]);
+  ASSERT_EQ(11, values[1]);
+
+  ASSERT_TRUE(parser.parser().isSet());
+}

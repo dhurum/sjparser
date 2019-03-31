@@ -20,19 +20,15 @@ setup_compilation_options(dummy)
 
 set(CHECKS
   *
+  # Dealing with C api requires lots of reinterpret casts
   -cppcoreguidelines-pro-type-reinterpret-cast
-  -readability-implicit-bool-cast
-  -readability-implicit-bool-conversion
-  -google-runtime-int
-  -google-explicit-constructor
-  -cppcoreguidelines-special-member-functions
-  -hicpp-special-member-functions
-  -hicpp-explicit-conversions
+  # Google style specific check
   -google-readability-todo
   # For some reason, it does not play well with comments before pragma once
   -llvm-header-guard
   # clang-tidy and clang-format seems to disagree
   -llvm-include-order
+  # Project-specific checks, not useful in this case
   -fuchsia-default-arguments
   -fuchsia-trailing-return
 )

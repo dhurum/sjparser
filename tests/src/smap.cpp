@@ -246,3 +246,20 @@ TEST(SMap, SMapWithMapReference) {
 
   ASSERT_EQ(&(parser.parser().parser()), &array);
 }
+
+TEST(SMap, MoveAssignment) {
+  std::string buf(R"({"1": 10, "2": 15})");
+
+  auto smap_parser_src = SMap{Value<int64_t>{}};
+  auto smap_parser = SMap{Value<int64_t>{}};
+  smap_parser = std::move(smap_parser_src);
+
+  Parser parser{smap_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(2, parser.parser().get().size());
+  ASSERT_EQ(10, parser.parser().get().at("1"));
+  ASSERT_EQ(15, parser.parser().get().at("2"));
+}

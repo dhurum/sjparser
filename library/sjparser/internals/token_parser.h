@@ -71,7 +71,13 @@ class TokenParser {
 
   virtual void childParsed();
 
+  TokenParser() = default;
   virtual ~TokenParser() = default;
+
+  TokenParser(const TokenParser &) = default;
+  TokenParser &operator=(const TokenParser &) = default;
+  TokenParser(TokenParser &&) = default;
+  TokenParser &operator=(TokenParser &&) = default;
 
  protected:
   Dispatcher *_dispatcher = nullptr;

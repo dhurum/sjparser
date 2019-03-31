@@ -51,10 +51,19 @@ template <typename ValueT> class Value : public TokenParser {
    * argument.
    * If the callback returns false, parsing will be stopped with an error.
    */
-  Value(Callback on_finish = nullptr);
+  explicit Value(Callback on_finish = nullptr);
 
   /** Move constructor. */
   Value(Value &&other) noexcept;
+
+  /** Move assignment operator */
+  Value<ValueT> &operator=(Value &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~Value() override = default;
+  Value(const Value &) = delete;
+  Value &operator=(const Value &) = delete;
+  /** @endcond */
 
   /** @brief Finish callback setter.
    *
@@ -126,7 +135,18 @@ Value<ValueT>::Value(Callback on_finish) : _on_finish(std::move(on_finish)) {
 
 template <typename ValueT>
 Value<ValueT>::Value(Value &&other) noexcept
-    : _on_finish(std::move(other._on_finish)) {}
+    : TokenParser(std::move(other)),
+      _value(std::move(other._value)),
+      _on_finish(std::move(other._on_finish)) {}
+
+template <typename ValueT>
+Value<ValueT> &Value<ValueT>::operator=(Value &&other) noexcept {
+  TokenParser::operator=(std::move(other));
+  _value = std::move(other._value);
+  _on_finish = std::move(other._on_finish);
+
+  return *this;
+}
 
 template <typename ValueT>
 void Value<ValueT>::setFinishCallback(Callback on_finish) {

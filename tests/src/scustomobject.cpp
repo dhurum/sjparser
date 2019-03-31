@@ -445,3 +445,37 @@ TEST(SCustomObject, OptionalMemberWithDefaultValue) {
   ASSERT_FALSE(parser.parser().parser<1>().isSet());
   ASSERT_EQ("value", parser.parser().get<1>());
 }
+
+TEST(SCustomObject, MoveAssignmenteset) {
+  std::string buf(R"({"bool": true, "string": "value"})");
+
+  struct ObjectStruct {
+    bool bool_value;
+    std::string str_value;
+  };
+
+  auto objectCb = [&](auto &parser, ObjectStruct &value) {
+    value.bool_value = parser.template get<0>();
+    value.str_value = parser.template get<1>();
+    return true;
+  };
+
+  auto scustom_object_parser_src =
+      SCustomObject{TypeHolder<ObjectStruct>{},
+                    std::tuple{Member{"bool", Value<bool>{}},
+                               Member{"string", Value<std::string>{}}},
+                    objectCb};
+  auto scustom_object_parser =
+      SCustomObject{TypeHolder<ObjectStruct>{},
+                    std::tuple{Member{"bool_", Value<bool>{}},
+                               Member{"string_", Value<std::string>{}}}};
+  scustom_object_parser = std::move(scustom_object_parser_src);
+
+  Parser parser{scustom_object_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, parser.parser().get().bool_value);
+  ASSERT_EQ("value", parser.parser().get().str_value);
+}

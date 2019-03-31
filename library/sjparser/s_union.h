@@ -125,6 +125,15 @@ class SUnion : public Union<TypeMemberT, ParserTs...> {
   /** Move constructor. */
   SUnion(SUnion &&other) noexcept;
 
+  /** Move assignment operator */
+  SUnion<TypeMemberT, ParserTs...> &operator=(SUnion &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~SUnion() override = default;
+  SUnion(const SUnion &) = delete;
+  SUnion &operator=(const SUnion &) = delete;
+  /** @endcond */
+
   /** @brief Finish callback setter.
    *
    * @param [in] on_finish Callback, that will be called after the
@@ -231,8 +240,18 @@ SUnion<TypeMemberT, ParserTs...>::SUnion(
 template <typename TypeMemberT, typename... ParserTs>
 SUnion<TypeMemberT, ParserTs...>::SUnion(SUnion &&other) noexcept
     : Union<TypeMemberT, ParserTs...>(std::move(other)),
-      _value{Type{}},
+      _value(std::move(other._value)),
       _on_finish(std::move(other._on_finish)) {}
+
+template <typename TypeMemberT, typename... ParserTs>
+SUnion<TypeMemberT, ParserTs...> &SUnion<TypeMemberT, ParserTs...>::operator=(
+    SUnion &&other) noexcept {
+  Union<TypeMemberT, ParserTs...>::operator=(std::move(other));
+  _value = std::move(other._value);
+  _on_finish = std::move(other._on_finish);
+
+  return *this;
+}
 
 template <typename TypeMemberT, typename... ParserTs>
 void SUnion<TypeMemberT, ParserTs...>::setFinishCallback(Callback on_finish) {

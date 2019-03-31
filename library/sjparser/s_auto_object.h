@@ -73,11 +73,12 @@ template <typename... ParserTs> class SAutoObject : public Object<ParserTs...> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  SAutoObject(std::tuple<Member<std::string, ParserTs>...> members,
-              CallbackT on_finish = nullptr,
-              std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
-                  * /*unused*/
-              = 0);
+  explicit SAutoObject(
+      std::tuple<Member<std::string, ParserTs>...> members,
+      CallbackT on_finish = nullptr,
+      std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
+          * /*unused*/
+      = 0);
 
   /** @brief Constructor.
    *
@@ -97,6 +98,15 @@ template <typename... ParserTs> class SAutoObject : public Object<ParserTs...> {
 
   /** Move constructor. */
   SAutoObject(SAutoObject &&other) noexcept;
+
+  /** Move assignment operator */
+  SAutoObject<ParserTs...> &operator=(SAutoObject &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~SAutoObject() override = default;
+  SAutoObject(const SAutoObject &) = delete;
+  SAutoObject &operator=(const SAutoObject &) = delete;
+  /** @endcond */
 
   /** @brief Finish callback setter.
    *
@@ -205,8 +215,18 @@ SAutoObject<ParserTs...>::SAutoObject(
 template <typename... ParserTs>
 SAutoObject<ParserTs...>::SAutoObject(SAutoObject &&other) noexcept
     : Object<ParserTs...>(std::move(other)),
-      _value{},
+      _value(std::move(other._value)),
       _on_finish(std::move(other._on_finish)) {}
+
+template <typename... ParserTs>
+SAutoObject<ParserTs...> &SAutoObject<ParserTs...>::operator=(
+    SAutoObject &&other) noexcept {
+  Object<ParserTs...>::operator=(std::move(other));
+  _value = std::move(other._value);
+  _on_finish = std::move(other._on_finish);
+
+  return *this;
+}
 
 template <typename... ParserTs>
 void SAutoObject<ParserTs...>::setFinishCallback(Callback on_finish) {

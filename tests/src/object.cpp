@@ -448,3 +448,21 @@ TEST(Object, OptionalMemberWithDefaultValue) {
   std::string value = parser.parser().pop<1>();
   ASSERT_EQ("value", value);
 }
+
+TEST(Object, MoveAssignment) {
+  std::string buf(R"({"bool": true, "string": "value"})");
+
+  auto object_parser_src = Object{std::tuple{
+      Member{"bool", Value<bool>{}}, Member{"string", Value<std::string>{}}}};
+  auto object_parser = Object{std::tuple{
+      Member{"bool_", Value<bool>{}}, Member{"string_", Value<std::string>{}}}};
+  object_parser = std::move(object_parser_src);
+
+  Parser parser{object_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_EQ(true, parser.parser().get<0>());
+  ASSERT_EQ("value", parser.parser().get<1>());
+}

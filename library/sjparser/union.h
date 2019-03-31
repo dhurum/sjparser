@@ -128,6 +128,15 @@ class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
   /** Move constructor. */
   Union(Union &&other) noexcept;
 
+  /** Move assignment operator */
+  Union<TypeMemberT, ParserTs...> &operator=(Union &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~Union() override = default;
+  Union(const Union &) = delete;
+  Union &operator=(const Union &) = delete;
+  /** @endcond */
+
   /** @brief Finish callback setter.
    *
    * @param [in] on_finish Callback, that will be called after the
@@ -215,13 +224,13 @@ class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
   void finish() override;
 
   template <size_t, typename...> struct MemberChecker {
-    MemberChecker(Union<TypeMemberT, ParserTs...> & /*parser*/) {}
+    explicit MemberChecker(Union<TypeMemberT, ParserTs...> & /*parser*/) {}
   };
 
   template <size_t n, typename ParserT, typename... ParserTDs>
   struct MemberChecker<n, ParserT, ParserTDs...>
       : private MemberChecker<n + 1, ParserTDs...> {
-    MemberChecker(Union<TypeMemberT, ParserTs...> &parser);
+    explicit MemberChecker(Union<TypeMemberT, ParserTs...> &parser);
   };
 
   std::string _type_member;
@@ -264,8 +273,20 @@ Union<TypeMemberT, ParserTs...>::Union(Union &&other) noexcept
     : KVParser(std::move(other)),
       _type_member(std::move(other._type_member)),
       _on_finish(std::move(other._on_finish)),
-      _current_member_id(0) {
+      _current_member_id(other._current_member_id) {
   setupIdsMap();
+}
+
+template <typename TypeMemberT, typename... ParserTs>
+Union<TypeMemberT, ParserTs...> &Union<TypeMemberT, ParserTs...>::operator=(
+    Union &&other) noexcept {
+  KVParser::operator=(std::move(other));
+  _type_member = std::move(other._type_member);
+  _on_finish = std::move(other._on_finish);
+  _current_member_id = other._current_member_id;
+  setupIdsMap();
+
+  return *this;
 }
 
 template <typename TypeMemberT, typename... ParserTs>

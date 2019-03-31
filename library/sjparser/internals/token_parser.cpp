@@ -39,7 +39,7 @@ void TokenParser::endParsing() {
   _set = true;
   finish();
 
-  if (_dispatcher) {
+  if (_dispatcher != nullptr) {
     _dispatcher->popParser();
   }
 }
@@ -47,7 +47,7 @@ void TokenParser::endParsing() {
 void TokenParser::on(NullT /*unused*/) {
   reset();
 
-  if (_dispatcher) {
+  if (_dispatcher != nullptr) {
     _dispatcher->popParser();
   }
 }

@@ -38,7 +38,8 @@ class ParsingError : public std::exception {
    *
    * @param [in] parser_error Sets underlying parser error.
    */
-  ParsingError(std::string sjparser_error, std::string parser_error = "");
+  explicit ParsingError(std::string sjparser_error,
+                        std::string parser_error = "");
 
   /** @brief Error getter.
    *

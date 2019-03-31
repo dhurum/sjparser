@@ -33,7 +33,7 @@ namespace SJParser {
 
 class Dispatcher {
  public:
-  Dispatcher(TokenParser *parser);
+  explicit Dispatcher(TokenParser *parser);
   void pushParser(TokenParser *parser);
   void popParser();
   bool emptyParsersStack();

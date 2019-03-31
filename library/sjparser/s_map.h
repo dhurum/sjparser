@@ -66,10 +66,10 @@ template <typename ParserT> class SMap : public Map<ParserT> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  SMap(ParserT &&parser, CallbackT on_finish = nullptr,
-       std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
-           * /*unused*/
-       = 0);
+  explicit SMap(ParserT &&parser, CallbackT on_finish = nullptr,
+                std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
+                    * /*unused*/
+                = 0);
 
   /** @brief Constructor.
    *
@@ -94,6 +94,15 @@ template <typename ParserT> class SMap : public Map<ParserT> {
 
   /** Move constructor. */
   SMap(SMap &&other) noexcept;
+
+  /** Move assignment operator */
+  SMap<ParserT> &operator=(SMap &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~SMap() override = default;
+  SMap(const SMap &) = delete;
+  SMap &operator=(const SMap &) = delete;
+  /** @endcond */
 
   /** @brief Element callback setter.
    *
@@ -201,9 +210,19 @@ SMap<ParserT>::SMap(ParserT &&parser, ElementCallbackT on_element,
 template <typename ParserT>
 SMap<ParserT>::SMap(SMap &&other) noexcept
     : Map<ParserT>(std::move(other)),
-      _values{},
+      _values(std::move(other._values)),
       _on_element(std::move(other._on_element)),
       _on_finish(std::move(other._on_finish)) {}
+
+template <typename ParserT>
+SMap<ParserT> &SMap<ParserT>::operator=(SMap &&other) noexcept {
+  Map<ParserT>::operator=(std::move(other));
+  _values = std::move(other._values);
+  _on_element = std::move(other._on_element);
+  _on_finish = std::move(other._on_finish);
+
+  return *this;
+}
 
 template <typename ParserT>
 void SMap<ParserT>::setElementCallback(ElementCallback on_element) {

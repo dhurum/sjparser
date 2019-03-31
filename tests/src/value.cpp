@@ -380,3 +380,20 @@ TEST(Value, ValueWithCallbackError) {
     FAIL() << "Invalid exception thrown";
   }
 }
+
+TEST(Value, MoveAssignment) {
+  std::string buf(R"(10)");
+
+  auto value_parser_src = Value<int64_t>{};
+  auto value_parser = Value<int64_t>{};
+  value_parser = std::move(value_parser_src);
+
+  Parser parser{value_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_TRUE(parser.parser().isSet());
+  ASSERT_FALSE(parser.parser().isEmpty());
+  ASSERT_EQ(10, parser.parser().get());
+}

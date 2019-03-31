@@ -94,3 +94,15 @@ TEST(Member, DefaultWithLvalueParser) {
   ASSERT_EQ(member.default_value.value, 10);
   ASSERT_TRUE(std::is_lvalue_reference_v<decltype(member.parser)>);
 }
+
+TEST(Member, MoveAssignment) {
+  Member member_src{"test", Value<int64_t>{}, Presence::Optional, 10};
+  Member member{"test", Value<int64_t>{}};
+  member = std::move(member_src);
+
+  ASSERT_EQ(member.name, "test");
+  ASSERT_TRUE(member.optional);
+  ASSERT_TRUE(member.default_value.present);
+  ASSERT_EQ(member.default_value.value, 10);
+  ASSERT_FALSE(std::is_reference_v<decltype(member.parser)>);
+}

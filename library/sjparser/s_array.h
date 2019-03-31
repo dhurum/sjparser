@@ -59,10 +59,19 @@ template <typename ParserT> class SArray : public Array<ParserT> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  SArray(ParserT &&parser, CallbackT on_finish = nullptr);
+  explicit SArray(ParserT &&parser, CallbackT on_finish = nullptr);
 
   /** Move constructor. */
   SArray(SArray &&other) noexcept;
+
+  /** Move assignment operator */
+  SArray<ParserT> &operator=(SArray &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~SArray() override = default;
+  SArray(const SArray &) = delete;
+  SArray &operator=(const SArray &) = delete;
+  /** @endcond */
 
   /** @brief Finish callback setter.
    *
@@ -149,8 +158,17 @@ SArray<ParserT>::SArray(ParserT &&parser, CallbackT on_finish)
 template <typename ParserT>
 SArray<ParserT>::SArray(SArray &&other) noexcept
     : Array<ParserT>(std::move(other)),
-      _values{},
+      _values(std::move(other._values)),
       _on_finish(std::move(other._on_finish)) {}
+
+template <typename ParserT>
+SArray<ParserT> &SArray<ParserT>::operator=(SArray &&other) noexcept {
+  Array<ParserT>::operator=(std::move(other));
+  _values = std::move(other._values);
+  _on_finish = std::move(other._on_finish);
+
+  return *this;
+}
 
 template <typename ParserT>
 void SArray<ParserT>::setFinishCallback(Callback on_finish) {

@@ -53,10 +53,19 @@ template <typename ParserT> class Array : public ArrayParser {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  Array(ParserT &&parser, CallbackT on_finish = nullptr);
+  explicit Array(ParserT &&parser, CallbackT on_finish = nullptr);
 
   /** Move constructor. */
   Array(Array &&other) noexcept;
+
+  /** Move assignment operator */
+  Array<ParserT> &operator=(Array &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~Array() override = default;
+  Array(const Array &) = delete;
+  Array &operator=(const Array &) = delete;
+  /** @endcond */
 
   /** @brief Finish callback setter.
    *
@@ -119,9 +128,20 @@ Array<ParserT>::Array(ParserT &&parser, CallbackT on_finish)
 
 template <typename ParserT>
 Array<ParserT>::Array(Array &&other) noexcept
-    : _parser(std::forward<ParserT>(other._parser)),
+    : ArrayParser(std::move(other)),
+      _parser(std::forward<ParserT>(other._parser)),
       _on_finish(std::move(other._on_finish)) {
   _parser_ptr = &_parser;
+}
+
+template <typename ParserT>
+Array<ParserT> &Array<ParserT>::operator=(Array &&other) noexcept {
+  ArrayParser::operator=(std::move(other));
+  _parser = std::forward<ParserT>(other._parser);
+  _parser_ptr = &_parser;
+  _on_finish = std::move(other._on_finish);
+
+  return *this;
 }
 
 template <typename ParserT>

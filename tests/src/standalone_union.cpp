@@ -557,3 +557,37 @@ TEST(StandaloneUnion, StandaloneUnionWithParserReference) {
 
   ASSERT_EQ(&(parser.parser().parser<0>()), &sautoobject);
 }
+
+TEST(StandaloneUnion, MoveAssignment) {
+  std::string buf(R"({"type": 1, "bool": true, "integer": 10})");
+
+  auto union_parser_src = Union{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, Object{std::tuple{Member{"bool", Value<bool>{}},
+                                      Member{"integer", Value<int64_t>{}}}}},
+          Member{2,
+                 Object{std::tuple{Member{"double", Value<double>{}},
+                                   Member{"string", Value<std::string>{}}}}}}};
+  auto union_parser = Union{
+      TypeHolder<int64_t>{}, "type",
+      std::tuple{
+          Member{1, Object{std::tuple{Member{"bool_", Value<bool>{}},
+                                      Member{"integer_", Value<int64_t>{}}}}},
+          Member{2,
+                 Object{std::tuple{Member{"double_", Value<double>{}},
+                                   Member{"string_", Value<std::string>{}}}}}}};
+  union_parser = std::move(union_parser_src);
+
+  Parser parser{union_parser};
+
+  ASSERT_NO_THROW(parser.parse(buf));
+  ASSERT_NO_THROW(parser.finish());
+
+  ASSERT_TRUE(parser.parser().parser<0>().isSet());
+  ASSERT_FALSE(parser.parser().parser<1>().isSet());
+  ASSERT_EQ(0, parser.parser().currentMemberId());
+
+  ASSERT_EQ(true, parser.parser().get<0>().get<0>());
+  ASSERT_EQ(10, parser.parser().get<0>().get<1>());
+}

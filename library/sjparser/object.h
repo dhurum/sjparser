@@ -78,11 +78,11 @@ class Object : public KeyValueParser<std::string, ParserTs...> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  Object(std::tuple<Member<std::string, ParserTs>...> members,
-         CallbackT on_finish = nullptr,
-         std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
-             * /*unused*/
-         = 0);
+  explicit Object(std::tuple<Member<std::string, ParserTs>...> members,
+                  CallbackT on_finish = nullptr,
+                  std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
+                      * /*unused*/
+                  = 0);
 
   /** @brief Constructor.
    *
@@ -102,6 +102,15 @@ class Object : public KeyValueParser<std::string, ParserTs...> {
 
   /** Move constructor. */
   Object(Object &&other) noexcept;
+
+  /** Move assignment operator */
+  Object<ParserTs...> &operator=(Object &&other) noexcept;
+
+  /** @cond INTERNAL Boilerplate. */
+  ~Object() override = default;
+  Object(const Object &) = delete;
+  Object &operator=(const Object &) = delete;
+  /** @endcond */
 
   /** @brief Finish callback setter.
    *
@@ -167,13 +176,13 @@ class Object : public KeyValueParser<std::string, ParserTs...> {
 
  protected:
   template <size_t, typename...> struct MemberChecker {
-    MemberChecker(Object<ParserTs...> & /*parser*/) {}
+    explicit MemberChecker(Object<ParserTs...> & /*parser*/) {}
   };
 
   template <size_t n, typename ParserT, typename... ParserTDs>
   struct MemberChecker<n, ParserT, ParserTDs...>
       : private MemberChecker<n + 1, ParserTDs...> {
-    MemberChecker(Object<ParserTs...> &parser);
+    explicit MemberChecker(Object<ParserTs...> &parser);
   };
 
  private:
@@ -207,6 +216,14 @@ Object<ParserTs...>::Object(
 template <typename... ParserTs>
 Object<ParserTs...>::Object(Object &&other) noexcept
     : KVParser(std::move(other)), _on_finish(std::move(other._on_finish)) {}
+
+template <typename... ParserTs>
+Object<ParserTs...> &Object<ParserTs...>::operator=(Object &&other) noexcept {
+  KVParser::operator=(std::move(other));
+  _on_finish = std::move(other._on_finish);
+
+  return *this;
+}
 
 template <typename... ParserTs>
 void Object<ParserTs...>::setFinishCallback(Callback on_finish) {
