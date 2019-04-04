@@ -130,6 +130,12 @@ Value<ValueT>::Value(Callback on_finish) : _on_finish(std::move(on_finish)) {
       || std::is_same_v<ValueT, std::string>,
       "Invalid type used in Value, only int64_t, bool, double or std::string"
       " are allowed");
+
+  if constexpr (std::is_same_v<ValueT, int64_t>
+                || std::is_same_v<ValueT, bool>
+                || std::is_same_v<ValueT, double>) {
+    _value = 0;
+  }
   // clang-format on
 }
 
