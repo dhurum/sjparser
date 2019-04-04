@@ -1,4 +1,4 @@
-image: dhurum/sjparser-build:latest
+image: registry.gitlab.com/dhurum/docker_build_images/sjparser-build:master
 
 stages:
   - configure
