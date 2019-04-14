@@ -149,7 +149,7 @@ class KeyValueParser : public TokenParser {
     ParserT parser;
     NameT name;
     bool optional;
-    DefaultValue<ParserT, IsStorageParser<ParserT>> default_value;
+    DefaultValue<ParserT> default_value;
   };
 
   std::array<TokenParser *, sizeof...(ParserTs)> _parsers_array;

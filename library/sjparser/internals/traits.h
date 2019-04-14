@@ -27,11 +27,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
+template <typename ParserT>
+using ValueTypeTest = std::void_t<typename std::decay_t<ParserT>::ValueType>;
+
 template <typename, typename = std::void_t<>>
 struct IsStorageParserTest : public std::false_type {};
+
 template <typename ParserT>
-struct IsStorageParserTest<
-    ParserT, std::void_t<typename std::decay_t<ParserT>::ValueType>>
+struct IsStorageParserTest<ParserT, ValueTypeTest<ParserT>>
     : public std::true_type {};
 
 template <typename ParserT>

@@ -23,11 +23,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "traits.h"
+
 namespace SJParser {
 
-template <typename ParserT, bool = false> struct DefaultValue {};
+template <typename ParserT, typename = std::void_t<>> struct DefaultValue {};
 
-template <typename ParserT> struct DefaultValue<ParserT, true> {
+template <typename ParserT>
+struct DefaultValue<ParserT, ValueTypeTest<ParserT>> {
   bool present = false;
   typename std::decay_t<ParserT>::ValueType value;
 };

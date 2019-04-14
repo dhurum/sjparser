@@ -54,7 +54,7 @@ template <typename NameT, typename ParserT> struct Member {
   bool optional = false;
 
   /** Default value */
-  DefaultValue<ParserT, IsStorageParser<ParserT>> default_value;
+  DefaultValue<ParserT> default_value;
 
   /** @brief Constructor
    *
