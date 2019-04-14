@@ -38,14 +38,16 @@ struct MapEndT {};
 struct ArrayStartT {};
 struct ArrayEndT {};
 
-template <typename TokenT> struct TokenTypeResolver { using Type = TokenT; };
+template <typename TokenT> struct TokenTypeResolver {
+  using type = std::decay_t<TokenT>;
+};
 
 template <> struct TokenTypeResolver<std::string> {
-  using Type = std::string_view;
+  using type = std::string_view;
 };
 
 template <typename TokenT>
-using TokenType = typename TokenTypeResolver<TokenT>::Type;
+using TokenType = typename TokenTypeResolver<std::decay_t<TokenT>>::type;
 
 class Dispatcher;
 

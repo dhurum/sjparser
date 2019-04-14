@@ -35,6 +35,6 @@ namespace SJParser {
  */
 template <typename T> struct TypeHolder {
   /** Stored type */
-  using Type = T;
+  using type = T;
 };
 }  // namespace SJParser

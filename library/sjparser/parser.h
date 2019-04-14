@@ -40,7 +40,7 @@ namespace SJParser {
  */
 
 template <typename ParserT, typename ImplHolder = TypeHolder<YajlParser>>
-class Parser : public ImplHolder::Type {
+class Parser : public ImplHolder::type {
  public:
   /** Root parser type. */
   using ParserType = std::decay_t<ParserT>;
