@@ -72,7 +72,7 @@ template <typename ParserT> Parser(ParserT &&)->Parser<ParserT>;
 template <typename ParserT, typename ImplHolder>
 Parser<ParserT, ImplHolder>::Parser(ParserT &&parser,
                                     ImplHolder /*implementation*/)
-    : _parser(std::forward<ParserT>(parser)) {
+    : _parser{std::forward<ParserT>(parser)} {
   static_assert(std::is_base_of_v<TokenParser, ParserType>,
                 "Invalid parser used in Parser");
   this->setTokenParser(&_parser);

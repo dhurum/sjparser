@@ -26,8 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace SJParser {
 
-Dispatcher::Dispatcher(TokenParser *parser) {
-  _root_parser = parser;
+Dispatcher::Dispatcher(TokenParser *parser) : _root_parser{parser} {
   _parsers.push_back(parser);
   parser->setDispatcher(this);
 }

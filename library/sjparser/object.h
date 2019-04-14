@@ -201,21 +201,21 @@ template <typename CallbackT>
 Object<ParserTs...>::Object(
     std::tuple<Member<std::string, ParserTs>...> members, CallbackT on_finish,
     std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
-    : KVParser(std::move(members), {}), _on_finish(std::move(on_finish)) {}
+    : KVParser{std::move(members), {}}, _on_finish{std::move(on_finish)} {}
 
 template <typename... ParserTs>
 template <typename CallbackT>
 Object<ParserTs...>::Object(
     std::tuple<Member<std::string, ParserTs>...> members, ObjectOptions options,
     CallbackT on_finish)
-    : KVParser(std::move(members), options), _on_finish(std::move(on_finish)) {
+    : KVParser{std::move(members), options}, _on_finish{std::move(on_finish)} {
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
 }
 
 template <typename... ParserTs>
 Object<ParserTs...>::Object(Object &&other) noexcept
-    : KVParser(std::move(other)), _on_finish(std::move(other._on_finish)) {}
+    : KVParser{std::move(other)}, _on_finish{std::move(other._on_finish)} {}
 
 template <typename... ParserTs>
 Object<ParserTs...> &Object<ParserTs...>::operator=(Object &&other) noexcept {
@@ -256,7 +256,7 @@ template <typename... ParserTs>
 template <size_t n, typename ParserT, typename... ParserTDs>
 Object<ParserTs...>::MemberChecker<n, ParserT, ParserTDs...>::MemberChecker(
     Object<ParserTs...> &parser)
-    : MemberChecker<n + 1, ParserTDs...>(parser) {
+    : MemberChecker<n + 1, ParserTDs...>{parser} {
   auto &member = parser._member_parsers.template get<n>();
 
   if (!member.parser.isSet() && !member.optional) {

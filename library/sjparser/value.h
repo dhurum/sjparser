@@ -120,7 +120,7 @@ template <typename ValueT> class Value : public TokenParser {
 /****************************** Implementations *******************************/
 
 template <typename ValueT>
-Value<ValueT>::Value(Callback on_finish) : _on_finish(std::move(on_finish)) {
+Value<ValueT>::Value(Callback on_finish) : _on_finish{std::move(on_finish)} {
   // Formatting disabled because of a bug in clang-format
   // clang-format off
   static_assert(
@@ -141,9 +141,9 @@ Value<ValueT>::Value(Callback on_finish) : _on_finish(std::move(on_finish)) {
 
 template <typename ValueT>
 Value<ValueT>::Value(Value &&other) noexcept
-    : TokenParser(std::move(other)),
-      _value(std::move(other._value)),
-      _on_finish(std::move(other._on_finish)) {}
+    : TokenParser{std::move(other)},
+      _value{std::move(other._value)},
+      _on_finish{std::move(other._on_finish)} {}
 
 template <typename ValueT>
 Value<ValueT> &Value<ValueT>::operator=(Value &&other) noexcept {

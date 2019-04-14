@@ -159,7 +159,7 @@ template <typename CallbackT>
 Map<ParserT>::Map(
     ParserT &&parser, CallbackT on_finish,
     std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
-    : _parser(std::forward<ParserT>(parser)), _on_finish(std::move(on_finish)) {
+    : _parser{std::forward<ParserT>(parser)}, _on_finish{std::move(on_finish)} {
   static_assert(std::is_base_of_v<TokenParser, ParserType>,
                 "Invalid parser used in Map");
 }
@@ -168,9 +168,9 @@ template <typename ParserT>
 template <typename ElementCallbackT, typename CallbackT>
 Map<ParserT>::Map(ParserT &&parser, ElementCallbackT on_element,
                   CallbackT on_finish)
-    : _parser(std::forward<ParserT>(parser)),
-      _on_element(std::move(on_element)),
-      _on_finish(std::move(on_finish)) {
+    : _parser{std::forward<ParserT>(parser)},
+      _on_element{std::move(on_element)},
+      _on_finish{std::move(on_finish)} {
   static_assert(std::is_base_of_v<TokenParser, ParserType>,
                 "Invalid parser used in Map");
   static_assert(std::is_constructible_v<ElementCallback, ElementCallbackT>,
@@ -181,10 +181,10 @@ Map<ParserT>::Map(ParserT &&parser, ElementCallbackT on_element,
 
 template <typename ParserT>
 Map<ParserT>::Map(Map &&other) noexcept
-    : TokenParser(std::move(other)),
-      _parser(std::forward<ParserT>(other._parser)),
-      _on_element(std::move(other._on_element)),
-      _on_finish(std::move(other._on_finish)) {}
+    : TokenParser{std::move(other)},
+      _parser{std::forward<ParserT>(other._parser)},
+      _on_element{std::move(other._on_element)},
+      _on_finish{std::move(other._on_finish)} {}
 
 template <typename ParserT>
 Map<ParserT> &Map<ParserT>::operator=(Map &&other) noexcept {

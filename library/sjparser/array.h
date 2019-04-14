@@ -118,7 +118,7 @@ template <typename ParserT> Array(ParserT &&)->Array<ParserT>;
 template <typename ParserT>
 template <typename CallbackT>
 Array<ParserT>::Array(ParserT &&parser, CallbackT on_finish)
-    : _parser(std::forward<ParserT>(parser)), _on_finish(std::move(on_finish)) {
+    : _parser{std::forward<ParserT>(parser)}, _on_finish{std::move(on_finish)} {
   static_assert(std::is_base_of_v<TokenParser, ParserType>,
                 "Invalid parser used in Array");
   static_assert(std::is_constructible_v<Callback, CallbackT>,
@@ -128,9 +128,9 @@ Array<ParserT>::Array(ParserT &&parser, CallbackT on_finish)
 
 template <typename ParserT>
 Array<ParserT>::Array(Array &&other) noexcept
-    : ArrayParser(std::move(other)),
-      _parser(std::forward<ParserT>(other._parser)),
-      _on_finish(std::move(other._on_finish)) {
+    : ArrayParser{std::move(other)},
+      _parser{std::forward<ParserT>(other._parser)},
+      _on_finish{std::move(other._on_finish)} {
   _parser_ptr = &_parser;
 }
 

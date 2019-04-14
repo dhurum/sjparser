@@ -164,16 +164,16 @@ class KeyValueParser : public TokenParser {
 template <typename NameT, typename... ParserTs>
 KeyValueParser<NameT, ParserTs...>::KeyValueParser(
     std::tuple<Member<NameT, ParserTs>...> members, ObjectOptions options)
-    : _member_parsers(_parsers_array, _parsers_map, members),
-      _options(options) {}
+    : _member_parsers{_parsers_array, _parsers_map, members},
+      _options{options} {}
 
 template <typename NameT, typename... ParserTs>
 KeyValueParser<NameT, ParserTs...>::KeyValueParser(
     KeyValueParser &&other) noexcept
-    : TokenParser(std::move(other)),
-      _member_parsers(std::move(other._member_parsers)),
-      _ignore_parser(std::move(other._ignore_parser)),
-      _options(other._options) {
+    : TokenParser{std::move(other)},
+      _member_parsers{std::move(other._member_parsers)},
+      _ignore_parser{std::move(other._ignore_parser)},
+      _options{other._options} {
   _member_parsers.registerParsers(_parsers_array, _parsers_map);
 }
 
@@ -291,11 +291,11 @@ KeyValueParser<NameT, ParserTs...>::MemberParser<n, ParserT, ParserTDs...>::
         std::array<TokenParser *, sizeof...(ParserTs)> &parsers_array,
         std::unordered_map<InternalNameType, TokenParser *> &parsers_map,
         std::tuple<Member<NameT, ParserTs>...> &members)
-    : MemberParser<n + 1, ParserTDs...>(parsers_array, parsers_map, members),
-      parser(std::forward<ParserT>(std::get<n>(members).parser)),
-      name(std::move(std::get<n>(members).name)),
-      optional(std::get<n>(members).optional),
-      default_value(std::move(std::get<n>(members).default_value)) {
+    : MemberParser<n + 1, ParserTDs...>{parsers_array, parsers_map, members},
+      parser{std::forward<ParserT>(std::get<n>(members).parser)},
+      name{std::move(std::get<n>(members).name)},
+      optional{std::get<n>(members).optional},
+      default_value{std::move(std::get<n>(members).default_value)} {
   parsers_array[n] = &parser;
 
   auto [_, inserted] = parsers_map.insert({name, &parser});
@@ -311,11 +311,11 @@ template <typename NameT, typename... ParserTs>
 template <size_t n, typename ParserT, typename... ParserTDs>
 KeyValueParser<NameT, ParserTs...>::MemberParser<
     n, ParserT, ParserTDs...>::MemberParser(MemberParser &&other) noexcept
-    : MemberParser<n + 1, ParserTDs...>(std::move(other)),
-      parser(std::forward<ParserT>(other.parser)),
-      name(std::move(other.name)),
-      optional(other.optional),
-      default_value(std::move(other.default_value)) {}
+    : MemberParser<n + 1, ParserTDs...>{std::move(other)},
+      parser{std::forward<ParserT>(other.parser)},
+      name{std::move(other.name)},
+      optional{other.optional},
+      default_value{std::move(other.default_value)} {}
 
 template <typename NameT, typename... ParserTs>
 template <size_t n, typename ParserT, typename... ParserTDs>

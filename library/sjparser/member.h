@@ -177,10 +177,10 @@ Member<NameT, ParserT>::Member(NameT name, ParserT &&parser,
 
 template <typename NameT, typename ParserT>
 Member<NameT, ParserT>::Member(Member &&other) noexcept
-    : name(std::move(other.name)),
-      parser(std::forward<ParserT>(other.parser)),
-      optional(other.optional),
-      default_value(std::move(other.default_value)) {}
+    : name{std::move(other.name)},
+      parser{std::forward<ParserT>(other.parser)},
+      optional{other.optional},
+      default_value{std::move(other.default_value)} {}
 
 template <typename NameT, typename ParserT>
 Member<NameT, ParserT> &Member<NameT, ParserT>::operator=(

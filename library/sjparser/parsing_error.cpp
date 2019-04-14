@@ -26,8 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace SJParser {
 
 ParsingError::ParsingError(std::string sjparser_error, std::string parser_error)
-    : _sjparser_error(std::move(sjparser_error)),
-      _parser_error(std::move(parser_error)) {}
+    : _sjparser_error{std::move(sjparser_error)},
+      _parser_error{std::move(parser_error)} {}
 
 const char *ParsingError::what() const noexcept {
   if (!_sjparser_error.empty()) {

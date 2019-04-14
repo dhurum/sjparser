@@ -225,23 +225,23 @@ template <typename CallbackT>
 SUnion<TypeMemberT, ParserTs...>::SUnion(
     TypeHolder<TypeMemberT> type,
     std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
-    : Union<TypeMemberT, ParserTs...>(type, std::move(members)),
-      _on_finish(std::move(on_finish)) {}
+    : Union<TypeMemberT, ParserTs...>{type, std::move(members)},
+      _on_finish{std::move(on_finish)} {}
 
 template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>
 SUnion<TypeMemberT, ParserTs...>::SUnion(
     TypeHolder<TypeMemberT> type, std::string type_member,
     std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
-    : Union<TypeMemberT, ParserTs...>(type, std::move(type_member),
-                                      std::move(members)),
-      _on_finish(std::move(on_finish)) {}
+    : Union<TypeMemberT, ParserTs...>{type, std::move(type_member),
+                                      std::move(members)},
+      _on_finish{std::move(on_finish)} {}
 
 template <typename TypeMemberT, typename... ParserTs>
 SUnion<TypeMemberT, ParserTs...>::SUnion(SUnion &&other) noexcept
-    : Union<TypeMemberT, ParserTs...>(std::move(other)),
-      _value(std::move(other._value)),
-      _on_finish(std::move(other._on_finish)) {}
+    : Union<TypeMemberT, ParserTs...>{std::move(other)},
+      _value{std::move(other._value)},
+      _on_finish{std::move(other._on_finish)} {}
 
 template <typename TypeMemberT, typename... ParserTs>
 SUnion<TypeMemberT, ParserTs...> &SUnion<TypeMemberT, ParserTs...>::operator=(
@@ -305,7 +305,7 @@ template <typename TypeMemberT, typename... ParserTs>
 template <size_t n, typename ParserT, typename... ParserTDs>
 SUnion<TypeMemberT, ParserTs...>::ValueSetter<n, ParserT, ParserTDs...>::
     ValueSetter(Type &value, SUnion<TypeMemberT, ParserTs...> &parser)
-    : ValueSetter<n + 1, ParserTDs...>(value, parser) {
+    : ValueSetter<n + 1, ParserTDs...>{value, parser} {
   if (parser.currentMemberId() != n) {
     return;
   }

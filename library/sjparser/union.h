@@ -236,7 +236,7 @@ class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
   std::string _type_member;
   Callback _on_finish;
   std::unordered_map<TokenParser *, size_t> _members_ids_map;
-  size_t _current_member_id;
+  size_t _current_member_id = 0;
 };
 
 /****************************** Implementations *******************************/
@@ -246,9 +246,7 @@ template <typename CallbackT>
 Union<TypeMemberT, ParserTs...>::Union(
     TypeHolder<TypeMemberT> /*type*/,
     std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
-    : KVParser(std::move(members), {}),
-      _on_finish(std::move(on_finish)),
-      _current_member_id(0) {
+    : KVParser{std::move(members), {}}, _on_finish{std::move(on_finish)} {
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
   setupIdsMap();
@@ -259,10 +257,9 @@ template <typename CallbackT>
 Union<TypeMemberT, ParserTs...>::Union(
     TypeHolder<TypeMemberT> /*type*/, std::string type_member,
     std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
-    : KVParser(std::move(members), {}),
-      _type_member(std::move(type_member)),
-      _on_finish(std::move(on_finish)),
-      _current_member_id(0) {
+    : KVParser{std::move(members), {}},
+      _type_member{std::move(type_member)},
+      _on_finish{std::move(on_finish)} {
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
   setupIdsMap();
@@ -270,9 +267,9 @@ Union<TypeMemberT, ParserTs...>::Union(
 
 template <typename TypeMemberT, typename... ParserTs>
 Union<TypeMemberT, ParserTs...>::Union(Union &&other) noexcept
-    : KVParser(std::move(other)),
-      _type_member(std::move(other._type_member)),
-      _on_finish(std::move(other._on_finish)),
+    : KVParser{std::move(other)},
+      _type_member{std::move(other._type_member)},
+      _on_finish{std::move(other._on_finish)},
       _current_member_id(other._current_member_id) {
   setupIdsMap();
 }
@@ -376,7 +373,7 @@ template <typename TypeMemberT, typename... ParserTs>
 template <size_t n, typename ParserT, typename... ParserTDs>
 Union<TypeMemberT, ParserTs...>::MemberChecker<n, ParserT, ParserTDs...>::
     MemberChecker(Union<TypeMemberT, ParserTs...> &parser)
-    : MemberChecker<n + 1, ParserTDs...>(parser) {
+    : MemberChecker<n + 1, ParserTDs...>{parser} {
   if (parser.currentMemberId() != n) {
     return;
   }

@@ -244,8 +244,8 @@ SCustomObject<TypeT, ParserTs...>::SCustomObject(
     TypeHolder<TypeT> /*type*/,
     std::tuple<Member<std::string, ParserTs>...> members, CallbackT on_finish,
     std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
-    : Object<ParserTs...>(std::move(members), {}),
-      _on_finish(std::move(on_finish)) {}
+    : Object<ParserTs...>{std::move(members), {}},
+      _on_finish{std::move(on_finish)} {}
 
 template <typename TypeT, typename... ParserTs>
 template <typename CallbackT>
@@ -253,17 +253,17 @@ SCustomObject<TypeT, ParserTs...>::SCustomObject(
     TypeHolder<TypeT> /*type*/,
     std::tuple<Member<std::string, ParserTs>...> members, ObjectOptions options,
     CallbackT on_finish)
-    : Object<ParserTs...>(std::move(members), options),
-      _on_finish(std::move(on_finish)) {
+    : Object<ParserTs...>{std::move(members), options},
+      _on_finish{std::move(on_finish)} {
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
 }
 
 template <typename TypeT, typename... ParserTs>
 SCustomObject<TypeT, ParserTs...>::SCustomObject(SCustomObject &&other) noexcept
-    : Object<ParserTs...>(std::move(other)),
-      _value(std::move(other._value)),
-      _on_finish(std::move(other._on_finish)) {}
+    : Object<ParserTs...>{std::move(other)},
+      _value{std::move(other._value)},
+      _on_finish{std::move(other._on_finish)} {}
 
 template <typename TypeT, typename... ParserTs>
 SCustomObject<TypeT, ParserTs...> &SCustomObject<TypeT, ParserTs...>::operator=(
