@@ -40,10 +40,8 @@ class YajlParser {
   /** Constructor */
   YajlParser();
 
-  /** Destructor */
-  ~YajlParser();
-
   /** @cond INTERNAL Boilerplate. */
+  ~YajlParser() = default;
   YajlParser(const YajlParser &) = delete;
   YajlParser &operator=(const YajlParser &) = delete;
   YajlParser(YajlParser &&) = delete;
@@ -130,7 +128,8 @@ class YajlParser {
   static int yajlOnArrayEnd(void *ctx);
 
   std::unique_ptr<Dispatcher> _dispatcher;
-  yajl_handle _yajl_handle = nullptr;
+  std::unique_ptr<yajl_handle_t, std::function<decltype(yajl_free)>>
+      _yajl_handle;
   const unsigned char *_data = nullptr;
   size_t _len = 0;
   bool _reset_needed = false;

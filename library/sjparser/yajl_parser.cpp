@@ -21,17 +21,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "yajl_parser.h"
 #include "parsing_error.h"
+#include "yajl_parser.h"
 
 namespace SJParser {
 
-YajlParser::YajlParser() {
+YajlParser::YajlParser() : _yajl_handle{nullptr, yajl_free} {
   resetYajlHandle();
-}
-
-YajlParser::~YajlParser() {
-  freeYajlHandle();
 }
 
 void YajlParser::setTokenParser(TokenParser *parser) {
@@ -39,19 +35,10 @@ void YajlParser::setTokenParser(TokenParser *parser) {
 }
 
 void YajlParser::resetYajlHandle() {
-  freeYajlHandle();
-  _yajl_handle = yajl_alloc(&_parser_yajl_callbacks, nullptr, this);
+  _yajl_handle.reset(yajl_alloc(&_parser_yajl_callbacks, nullptr, this));
   if (_yajl_handle == nullptr) {
     throw std::runtime_error("Can not allocate YAJL handle");  // LCOV_EXCL_LINE
   }
-}
-
-void YajlParser::freeYajlHandle() {
-  if (_yajl_handle == nullptr) {
-    return;
-  }
-  yajl_free(_yajl_handle);
-  _yajl_handle = nullptr;
 }
 
 void YajlParser::parse(const std::string &data) {
@@ -70,7 +57,7 @@ void YajlParser::parse(const char *data, size_t len) {
     _reset_needed = false;
   }
 
-  if (yajl_parse(_yajl_handle, _data, _len) != yajl_status_ok) {
+  if (yajl_parse(_yajl_handle.get(), _data, _len) != yajl_status_ok) {
     _reset_needed = true;
     throwParsingError();
   }
@@ -79,7 +66,7 @@ void YajlParser::parse(const char *data, size_t len) {
 void YajlParser::finish() {
   _reset_needed = true;
 
-  if (yajl_complete_parse(_yajl_handle) != yajl_status_ok) {
+  if (yajl_complete_parse(_yajl_handle.get()) != yajl_status_ok) {
     throwParsingError();
   } else {
     checkDispatcherStack();
@@ -97,10 +84,10 @@ void YajlParser::checkDispatcherStack() {
 void YajlParser::throwParsingError() {
   std::string yajl_error;
 
-  if (auto yajl_error_ptr = yajl_get_error(_yajl_handle, 1, _data, _len);
+  if (auto yajl_error_ptr = yajl_get_error(_yajl_handle.get(), 1, _data, _len);
       yajl_error_ptr) {
     yajl_error = reinterpret_cast<char *>(yajl_error_ptr);
-    yajl_free_error(_yajl_handle, yajl_error_ptr);
+    yajl_free_error(_yajl_handle.get(), yajl_error_ptr);
   } else {
     yajl_error = "Unknown YAJL error\n";  // LCOV_EXCL_LINE
   }
