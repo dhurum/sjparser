@@ -21,8 +21,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "parsing_error.h"
 #include "yajl_parser.h"
+#include "parsing_error.h"
 
 namespace SJParser {
 

@@ -118,7 +118,7 @@ class SUnion : public Union<TypeMemberT, ParserTs...> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  SUnion(TypeHolder<TypeMemberT> type, std::string type_member,
+  SUnion(TypeHolder<TypeMemberT> type, std::string_view type_member,
          std::tuple<Member<TypeMemberT, ParserTs>...> members,
          CallbackT on_finish = nullptr);
 
@@ -231,10 +231,9 @@ SUnion<TypeMemberT, ParserTs...>::SUnion(
 template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>
 SUnion<TypeMemberT, ParserTs...>::SUnion(
-    TypeHolder<TypeMemberT> type, std::string type_member,
+    TypeHolder<TypeMemberT> type, std::string_view type_member,
     std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
-    : Union<TypeMemberT, ParserTs...>{type, std::move(type_member),
-                                      std::move(members)},
+    : Union<TypeMemberT, ParserTs...>{type, type_member, std::move(members)},
       _on_finish{std::move(on_finish)} {}
 
 template <typename TypeMemberT, typename... ParserTs>

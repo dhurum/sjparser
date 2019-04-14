@@ -121,7 +121,7 @@ class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
    * If the callback returns false, parsing will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  Union(TypeHolder<TypeMemberT> type, std::string type_member,
+  Union(TypeHolder<TypeMemberT> type, std::string_view type_member,
         std::tuple<Member<TypeMemberT, ParserTs>...> members,
         CallbackT on_finish = nullptr);
 
@@ -255,10 +255,10 @@ Union<TypeMemberT, ParserTs...>::Union(
 template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>
 Union<TypeMemberT, ParserTs...>::Union(
-    TypeHolder<TypeMemberT> /*type*/, std::string type_member,
+    TypeHolder<TypeMemberT> /*type*/, std::string_view type_member,
     std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
     : KVParser{std::move(members), {}},
-      _type_member{std::move(type_member)},
+      _type_member{type_member},
       _on_finish{std::move(on_finish)} {
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
