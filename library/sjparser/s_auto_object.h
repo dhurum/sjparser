@@ -57,10 +57,10 @@ template <typename... ParserTs> class SAutoObject : public Object<ParserTs...> {
 #endif
 
   /** Stored value type */
-  using Type = std::tuple<typename std::decay_t<ParserTs>::Type...>;
+  using ValueType = std::tuple<typename std::decay_t<ParserTs>::ValueType...>;
 
   /** Finish callback type. */
-  using Callback = std::function<bool(const Type &)>;
+  using Callback = std::function<bool(const ValueType &)>;
 
   /** @brief Constructor.
    *
@@ -139,7 +139,7 @@ template <typename... ParserTs> class SAutoObject : public Object<ParserTs...> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed and no default value was specified or #pop was called).
    */
-  const Type &get() const;
+  const ValueType &get() const;
 
   /** @brief Get the parsed value and unset the parser.
    *
@@ -147,14 +147,14 @@ template <typename... ParserTs> class SAutoObject : public Object<ParserTs...> {
    *
    * @note If you want to use SCustomObject inside this parser, you need to
    * provide both a copy constructor or move constructor and a copy assignment
-   * operators in the SCustomObject::Type, they are used by parser.
+   * operators in the SCustomObject::ValueType, they are used by parser.
    *
    * @return Rvalue reference to the parsed value.
    *
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  Type &&pop();
+  ValueType &&pop();
 
 #ifdef DOXYGEN_ONLY
   /** @brief Member parser getter.
@@ -178,16 +178,16 @@ template <typename... ParserTs> class SAutoObject : public Object<ParserTs...> {
   using Object<ParserTs...>::pop;
 
   template <size_t, typename...> struct ValueSetter {
-    ValueSetter(Type & /*value*/, SAutoObject<ParserTs...> & /*parser*/) {}
+    ValueSetter(ValueType & /*value*/, SAutoObject<ParserTs...> & /*parser*/) {}
   };
 
   template <size_t n, typename ParserT, typename... ParserTDs>
   struct ValueSetter<n, ParserT, ParserTDs...>
       : private ValueSetter<n + 1, ParserTDs...> {
-    ValueSetter(Type &value, SAutoObject<ParserTs...> &parser);
+    ValueSetter(ValueType &value, SAutoObject<ParserTs...> &parser);
   };
 
-  Type _value;
+  ValueType _value;
   Callback _on_finish;
 };
 
@@ -234,14 +234,14 @@ void SAutoObject<ParserTs...>::setFinishCallback(Callback on_finish) {
 }
 
 template <typename... ParserTs>
-const typename SAutoObject<ParserTs...>::Type &SAutoObject<ParserTs...>::get()
-    const {
+const typename SAutoObject<ParserTs...>::ValueType &
+SAutoObject<ParserTs...>::get() const {
   checkSet();
   return _value;
 }
 
 template <typename... ParserTs>
-typename SAutoObject<ParserTs...>::Type &&SAutoObject<ParserTs...>::pop() {
+typename SAutoObject<ParserTs...>::ValueType &&SAutoObject<ParserTs...>::pop() {
   checkSet();
   TokenParser::_set = false;
   return std::move(_value);
@@ -276,7 +276,7 @@ template <typename... ParserTs> void SAutoObject<ParserTs...>::reset() {
 template <typename... ParserTs>
 template <size_t n, typename ParserT, typename... ParserTDs>
 SAutoObject<ParserTs...>::ValueSetter<n, ParserT, ParserTDs...>::ValueSetter(
-    Type &value, SAutoObject<ParserTs...> &parser)
+    ValueType &value, SAutoObject<ParserTs...> &parser)
     : ValueSetter<n + 1, ParserTDs...>{value, parser} {
   auto &member = parser._member_parsers.template get<n>();
 

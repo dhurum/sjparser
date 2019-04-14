@@ -69,11 +69,11 @@ class SCustomObject : public Object<ParserTs...> {
 #endif
 
   /** Stored value type */
-  using Type = TypeT;
+  using ValueType = TypeT;
 
   /** Finish callback type. */
   using Callback =
-      std::function<bool(SCustomObject<Type, ParserTs...> &, Type &)>;
+      std::function<bool(SCustomObject<ValueType, ParserTs...> &, ValueType &)>;
 
   /** @brief Constructor.
    *
@@ -89,7 +89,7 @@ class SCustomObject : public Object<ParserTs...> {
    * will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  SCustomObject(TypeHolder<Type> type,
+  SCustomObject(TypeHolder<ValueType> type,
                 std::tuple<Member<std::string, ParserTs>...> members,
                 CallbackT on_finish = nullptr,
                 std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
@@ -112,7 +112,7 @@ class SCustomObject : public Object<ParserTs...> {
    * will be stopped with an error.
    */
   template <typename CallbackT = std::nullptr_t>
-  SCustomObject(TypeHolder<Type> type,
+  SCustomObject(TypeHolder<ValueType> type,
                 std::tuple<Member<std::string, ParserTs>...> members,
                 ObjectOptions options, CallbackT on_finish = nullptr);
 
@@ -186,7 +186,7 @@ class SCustomObject : public Object<ParserTs...> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  const Type &get() const;
+  const ValueType &get() const;
 
 #ifdef DOXYGEN_ONLY
   /** @brief Get the member parsed value and unset the member parser.
@@ -211,20 +211,20 @@ class SCustomObject : public Object<ParserTs...> {
    *
    * @note
    * @par
-   * If you want your SCustomObject::Type to be movable, you need to provide
-   * either a move assignment operator or a copy assignment operator, they are
-   * used internally.
+   * If you want your SCustomObject::ValueType to be movable, you need to
+   * provide either a move assignment operator or a copy assignment operator,
+   * they are used internally.
    * @par
    * If you want to use this parser in the SAutoObject, you need to provide both
    * a copy constructor and a copy assignment operator in the
-   * SCustomObject::Type, they are used by std::tuple.
+   * SCustomObject::ValueType, they are used by std::tuple.
    *
    * @return Rvalue reference to the parsed value.
    *
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  Type &&pop();
+  ValueType &&pop();
 
  private:
   using TokenParser::checkSet;
@@ -232,7 +232,7 @@ class SCustomObject : public Object<ParserTs...> {
   void finish() override;
   void reset() override;
 
-  Type _value;
+  ValueType _value;
   Callback _on_finish;
 };
 
@@ -281,14 +281,14 @@ void SCustomObject<TypeT, ParserTs...>::setFinishCallback(Callback on_finish) {
 }
 
 template <typename TypeT, typename... ParserTs>
-const typename SCustomObject<TypeT, ParserTs...>::Type &
+const typename SCustomObject<TypeT, ParserTs...>::ValueType &
 SCustomObject<TypeT, ParserTs...>::get() const {
   checkSet();
   return _value;
 }
 
 template <typename TypeT, typename... ParserTs>
-typename SCustomObject<TypeT, ParserTs...>::Type &&
+typename SCustomObject<TypeT, ParserTs...>::ValueType &&
 SCustomObject<TypeT, ParserTs...>::pop() {
   checkSet();
   TokenParser::_set = false;
@@ -317,7 +317,7 @@ void SCustomObject<TypeT, ParserTs...>::finish() {
 template <typename TypeT, typename... ParserTs>
 void SCustomObject<TypeT, ParserTs...>::reset() {
   Object<ParserTs...>::KVParser::reset();
-  _value = Type();
+  _value = {};
 }
 
 }  // namespace SJParser

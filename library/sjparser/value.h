@@ -38,10 +38,10 @@ template <typename ValueT> class Value : public TokenParser {
  public:
   /** Underlying type, that can be obtained from this parser with #get or #pop.
    */
-  using Type = ValueT;
+  using ValueType = ValueT;
 
   /** Finish callback type. */
-  using Callback = std::function<bool(const Type &)>;
+  using Callback = std::function<bool(const ValueType &)>;
 
   /** @brief Constructor.
    *
@@ -96,7 +96,7 @@ template <typename ValueT> class Value : public TokenParser {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  const Type &get() const;
+  const ValueType &get() const;
 
   /** @brief Get the parsed value and unset the parser.
    *
@@ -107,13 +107,13 @@ template <typename ValueT> class Value : public TokenParser {
    * @throw std::runtime_error thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  Type &&pop();
+  ValueType &&pop();
 
  private:
-  void on(TokenType<Type> value) override;
+  void on(TokenType<ValueType> value) override;
   void finish() override;
 
-  Type _value;
+  ValueType _value;
   Callback _on_finish;
 };
 

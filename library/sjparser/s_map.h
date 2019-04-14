@@ -45,7 +45,7 @@ template <typename ParserT> class SMap : public Map<ParserT> {
   using ParserType = std::decay_t<ParserT>;
 
   /** Stored value type */
-  using Type = std::map<std::string, typename ParserType::Type>;
+  using ValueType = std::map<std::string, typename ParserType::ValueType>;
 
   /** Element callback type. */
   using ElementCallback =
@@ -150,7 +150,7 @@ template <typename ParserT> class SMap : public Map<ParserT> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  const Type &get() const;
+  const ValueType &get() const;
 
   /** @brief Get the parsed value and unset the parser.
    *
@@ -161,7 +161,7 @@ template <typename ParserT> class SMap : public Map<ParserT> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  Type &&pop();
+  ValueType &&pop();
 
  private:
   using TokenParser::checkSet;
@@ -170,7 +170,7 @@ template <typename ParserT> class SMap : public Map<ParserT> {
   void finish() override;
   void reset() override;
 
-  Type _values;
+  ValueType _values;
   ElementCallback _on_element;
   Callback _on_finish;
 };
@@ -235,13 +235,13 @@ void SMap<ParserT>::setFinishCallback(Callback on_finish) {
 }
 
 template <typename ParserT>
-const typename SMap<ParserT>::Type &SMap<ParserT>::get() const {
+const typename SMap<ParserT>::ValueType &SMap<ParserT>::get() const {
   checkSet();
   return _values;
 }
 
 template <typename ParserT>
-typename SMap<ParserT>::Type &&SMap<ParserT>::pop() {
+typename SMap<ParserT>::ValueType &&SMap<ParserT>::pop() {
   checkSet();
   TokenParser::_set = false;
   return std::move(_values);
@@ -264,7 +264,7 @@ template <typename ParserT> void SMap<ParserT>::finish() {
 
 template <typename ParserT> void SMap<ParserT>::reset() {
   TokenParser::reset();
-  _values = Type();
+  _values = {};
 }
 
 }  // namespace SJParser

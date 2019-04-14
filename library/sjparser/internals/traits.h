@@ -30,8 +30,8 @@ namespace SJParser {
 template <typename, typename = std::void_t<>>
 struct IsStorageParserTest : public std::false_type {};
 template <typename ParserT>
-struct IsStorageParserTest<ParserT,
-                           std::void_t<typename std::decay_t<ParserT>::Type>>
+struct IsStorageParserTest<
+    ParserT, std::void_t<typename std::decay_t<ParserT>::ValueType>>
     : public std::true_type {};
 
 template <typename ParserT>

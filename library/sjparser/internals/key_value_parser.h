@@ -80,7 +80,7 @@ class KeyValueParser : public TokenParser {
   struct NthTypes<0, ParserT, ParserTDs...> {
     using ParserType = std::decay_t<ParserT>;
 
-    template <typename U = ParserType> using ValueType = typename U::Type;
+    template <typename U = ParserType> using ValueType = typename U::ValueType;
 
     static constexpr bool has_value_type = IsStorageParser<ParserT>;
   };

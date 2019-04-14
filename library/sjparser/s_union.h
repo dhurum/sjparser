@@ -71,10 +71,10 @@ class SUnion : public Union<TypeMemberT, ParserTs...> {
 #endif
 
   /** Stored value type */
-  using Type = std::variant<typename std::decay_t<ParserTs>::Type...>;
+  using ValueType = std::variant<typename std::decay_t<ParserTs>::ValueType...>;
 
   /** Finish callback type. */
-  using Callback = std::function<bool(const Type &)>;
+  using Callback = std::function<bool(const ValueType &)>;
 
   /** @brief Embedded mode constructor.
    *
@@ -164,7 +164,7 @@ class SUnion : public Union<TypeMemberT, ParserTs...> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  const Type &get() const;
+  const ValueType &get() const;
 
 #ifdef DOXYGEN_ONLY
   /** @brief Member parser getter.
@@ -182,14 +182,14 @@ class SUnion : public Union<TypeMemberT, ParserTs...> {
    *
    * @note If you want to use SCustomObject inside this parser, you need to
    * provide both a copy constructor or move constructor and a copy assignment
-   * operators in the SCustomObject::Type, they are used by parser.
+   * operators in the SCustomObject::ValueType, they are used by parser.
    *
    * @return Rvalue reference to the parsed value.
    *
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  Type &&pop();
+  ValueType &&pop();
 
  private:
   using TokenParser::checkSet;
@@ -204,17 +204,17 @@ class SUnion : public Union<TypeMemberT, ParserTs...> {
   using Union<TypeMemberT, ParserTs...>::currentMemberId;
 
   template <size_t, typename...> struct ValueSetter {
-    ValueSetter(Type & /*value*/,
+    ValueSetter(ValueType & /*value*/,
                 SUnion<TypeMemberT, ParserTs...> & /*parser*/) {}
   };
 
   template <size_t n, typename ParserT, typename... ParserTDs>
   struct ValueSetter<n, ParserT, ParserTDs...>
       : private ValueSetter<n + 1, ParserTDs...> {
-    ValueSetter(Type &value, SUnion<TypeMemberT, ParserTs...> &parser);
+    ValueSetter(ValueType &value, SUnion<TypeMemberT, ParserTs...> &parser);
   };
 
-  Type _value;
+  ValueType _value;
   Callback _on_finish;
 };
 
@@ -259,14 +259,14 @@ void SUnion<TypeMemberT, ParserTs...>::setFinishCallback(Callback on_finish) {
 }
 
 template <typename TypeMemberT, typename... ParserTs>
-const typename SUnion<TypeMemberT, ParserTs...>::Type &
+const typename SUnion<TypeMemberT, ParserTs...>::ValueType &
 SUnion<TypeMemberT, ParserTs...>::get() const {
   checkSet();
   return _value;
 }
 
 template <typename TypeMemberT, typename... ParserTs>
-typename SUnion<TypeMemberT, ParserTs...>::Type &&
+typename SUnion<TypeMemberT, ParserTs...>::ValueType &&
 SUnion<TypeMemberT, ParserTs...>::pop() {
   checkSet();
   TokenParser::_set = false;
@@ -298,13 +298,13 @@ void SUnion<TypeMemberT, ParserTs...>::finish() {
 template <typename TypeMemberT, typename... ParserTs>
 void SUnion<TypeMemberT, ParserTs...>::reset() {
   Union<TypeMemberT, ParserTs...>::reset();
-  _value = Type{};
+  _value = {};
 }
 
 template <typename TypeMemberT, typename... ParserTs>
 template <size_t n, typename ParserT, typename... ParserTDs>
 SUnion<TypeMemberT, ParserTs...>::ValueSetter<n, ParserT, ParserTDs...>::
-    ValueSetter(Type &value, SUnion<TypeMemberT, ParserTs...> &parser)
+    ValueSetter(ValueType &value, SUnion<TypeMemberT, ParserTs...> &parser)
     : ValueSetter<n + 1, ParserTDs...>{value, parser} {
   if (parser.currentMemberId() != n) {
     return;

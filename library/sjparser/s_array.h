@@ -42,10 +42,10 @@ template <typename ParserT> class SArray : public Array<ParserT> {
   using ParserType = std::decay_t<ParserT>;
 
   /** Stored value type */
-  using Type = std::vector<typename ParserType::Type>;
+  using ValueType = std::vector<typename ParserType::ValueType>;
 
   /** Finish callback type */
-  using Callback = std::function<bool(const Type &)>;
+  using Callback = std::function<bool(const ValueType &)>;
 
   /** @brief Constructor.
    *
@@ -111,7 +111,7 @@ template <typename ParserT> class SArray : public Array<ParserT> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  const Type &get() const;
+  const ValueType &get() const;
 
   /** @brief Get the parsed value and unset the parser.
    *
@@ -122,7 +122,7 @@ template <typename ParserT> class SArray : public Array<ParserT> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  Type &&pop();
+  ValueType &&pop();
 
  private:
   using TokenParser::checkSet;
@@ -131,7 +131,7 @@ template <typename ParserT> class SArray : public Array<ParserT> {
   void finish() override;
   void reset() override;
 
-  Type _values;
+  ValueType _values;
   Callback _on_finish;
 };
 
@@ -176,13 +176,13 @@ void SArray<ParserT>::setFinishCallback(Callback on_finish) {
 }
 
 template <typename ParserT>
-const typename SArray<ParserT>::Type &SArray<ParserT>::get() const {
+const typename SArray<ParserT>::ValueType &SArray<ParserT>::get() const {
   checkSet();
   return _values;
 }
 
 template <typename ParserT>
-typename SArray<ParserT>::Type &&SArray<ParserT>::pop() {
+typename SArray<ParserT>::ValueType &&SArray<ParserT>::pop() {
   checkSet();
   TokenParser::_set = false;
   return std::move(_values);
@@ -200,7 +200,7 @@ template <typename ParserT> void SArray<ParserT>::finish() {
 
 template <typename ParserT> void SArray<ParserT>::reset() {
   ArrayParser::reset();
-  _values = Type();
+  _values = {};
 }
 
 }  // namespace SJParser

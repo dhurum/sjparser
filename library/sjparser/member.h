@@ -93,7 +93,7 @@ template <typename NameT, typename ParserT> struct Member {
    */
   template <typename ParserU = std::decay_t<ParserT>>
   Member(NameT name, ParserT &&parser, Presence presence,
-         typename ParserU::Type default_value);
+         typename ParserU::ValueType default_value);
 
   /** Move constructor. */
   Member(Member &&other) noexcept;
@@ -167,7 +167,7 @@ template <typename NameT, typename ParserT>
 template <typename ParserU>
 Member<NameT, ParserT>::Member(NameT name, ParserT &&parser,
                                Presence /*presence*/,
-                               typename ParserU::Type default_value)
+                               typename ParserU::ValueType default_value)
     : name{std::move(name)},
       parser{std::forward<ParserT>(parser)},
       optional{true},

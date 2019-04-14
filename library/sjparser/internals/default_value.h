@@ -29,6 +29,6 @@ template <typename ParserT, bool = false> struct DefaultValue {};
 
 template <typename ParserT> struct DefaultValue<ParserT, true> {
   bool present = false;
-  typename std::decay_t<ParserT>::Type value;
+  typename std::decay_t<ParserT>::ValueType value;
 };
 }  // namespace SJParser
