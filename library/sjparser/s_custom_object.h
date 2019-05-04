@@ -227,8 +227,6 @@ class SCustomObject : public Object<ParserTs...> {
   ValueType &&pop();
 
  private:
-  using TokenParser::checkSet;
-
   void finish() override;
   void reset() override;
 
@@ -283,29 +281,29 @@ void SCustomObject<TypeT, ParserTs...>::setFinishCallback(Callback on_finish) {
 template <typename TypeT, typename... ParserTs>
 const typename SCustomObject<TypeT, ParserTs...>::ValueType &
 SCustomObject<TypeT, ParserTs...>::get() const {
-  checkSet();
+  TokenParser::checkSet();
   return _value;
 }
 
 template <typename TypeT, typename... ParserTs>
 typename SCustomObject<TypeT, ParserTs...>::ValueType &&
 SCustomObject<TypeT, ParserTs...>::pop() {
-  checkSet();
-  TokenParser::_set = false;
+  TokenParser::checkSet();
+  TokenParser::unset();
   return std::move(_value);
 }
 
 template <typename TypeT, typename... ParserTs>
 void SCustomObject<TypeT, ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     return;
   }
 
   try {
     typename Object<ParserTs...>::template MemberChecker<0, ParserTs...>(*this);
   } catch (std::exception &e) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     throw;
   }
 

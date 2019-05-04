@@ -152,6 +152,11 @@ class KeyValueParser : public TokenParser {
     DefaultValue<ParserT> default_value;
   };
 
+  auto &parsersArray();
+  auto &parsersMap();
+  auto &memberParsers();
+
+ private:
   std::array<TokenParser *, sizeof...(ParserTs)> _parsers_array;
   std::unordered_map<InternalNameType, TokenParser *> _parsers_map;
   MemberParser<0, ParserTs...> _member_parsers;
@@ -224,11 +229,11 @@ void KeyValueParser<NameT, ParserTs...>::on(MapEndT /*unused*/) {
 
 template <typename NameT, typename... ParserTs>
 void KeyValueParser<NameT, ParserTs...>::onMember(TokenType<NameT> member) {
-  TokenParser::_empty = false;
+  setNotEmpty();
 
   if (auto parser_it = _parsers_map.find(member);
       parser_it != _parsers_map.end()) {
-    _dispatcher->pushParser(parser_it->second);
+    dispatcher()->pushParser(parser_it->second);
     return;
   }
 
@@ -238,7 +243,7 @@ void KeyValueParser<NameT, ParserTs...>::onMember(TokenType<NameT> member) {
     throw std::runtime_error(error.str());
   }
 
-  _dispatcher->pushParser(&_ignore_parser);
+  dispatcher()->pushParser(&_ignore_parser);
 }
 
 template <typename NameT, typename... ParserTs>
@@ -282,6 +287,21 @@ KeyValueParser<NameT, ParserTs...>::pop() {
     return value;
   }
   return std::move(member.parser.pop());
+}
+
+template <typename NameT, typename... ParserTs>
+auto &KeyValueParser<NameT, ParserTs...>::parsersArray() {
+  return _parsers_array;
+}
+
+template <typename NameT, typename... ParserTs>
+auto &KeyValueParser<NameT, ParserTs...>::parsersMap() {
+  return _parsers_map;
+}
+
+template <typename NameT, typename... ParserTs>
+auto &KeyValueParser<NameT, ParserTs...>::memberParsers() {
+  return _member_parsers;
 }
 
 template <typename NameT, typename... ParserTs>

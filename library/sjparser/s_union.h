@@ -192,8 +192,6 @@ class SUnion : public Union<TypeMemberT, ParserTs...> {
   ValueType &&pop();
 
  private:
-  using TokenParser::checkSet;
-
   void finish() override;
   void reset() override;
 
@@ -260,32 +258,32 @@ void SUnion<TypeMemberT, ParserTs...>::setFinishCallback(Callback on_finish) {
 template <typename TypeMemberT, typename... ParserTs>
 const typename SUnion<TypeMemberT, ParserTs...>::ValueType &
 SUnion<TypeMemberT, ParserTs...>::get() const {
-  checkSet();
+  TokenParser::checkSet();
   return _value;
 }
 
 template <typename TypeMemberT, typename... ParserTs>
 typename SUnion<TypeMemberT, ParserTs...>::ValueType &&
 SUnion<TypeMemberT, ParserTs...>::pop() {
-  checkSet();
-  TokenParser::_set = false;
+  TokenParser::checkSet();
+  TokenParser::unset();
   return std::move(_value);
 }
 
 template <typename TypeMemberT, typename... ParserTs>
 void SUnion<TypeMemberT, ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     return;
   }
 
   try {
     ValueSetter<0, ParserTs...>(_value, *this);
   } catch (std::exception &e) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     throw std::runtime_error(std::string("Can not set value: ") + e.what());
   } catch (...) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     throw std::runtime_error("Can not set value: unknown exception");
   }
 
@@ -309,7 +307,7 @@ SUnion<TypeMemberT, ParserTs...>::ValueSetter<n, ParserT, ParserTDs...>::
     return;
   }
 
-  auto &member = parser._member_parsers.template get<n>();
+  auto &member = parser.memberParsers().template get<n>();
 
   if (member.parser.isSet()) {
     value = member.parser.pop();

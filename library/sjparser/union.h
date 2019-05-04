@@ -207,8 +207,6 @@ class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
 #endif
 
  protected:
-  using TokenParser::checkSet;
-
   void reset() override;
 
  private:
@@ -289,8 +287,8 @@ Union<TypeMemberT, ParserTs...> &Union<TypeMemberT, ParserTs...>::operator=(
 template <typename TypeMemberT, typename... ParserTs>
 void Union<TypeMemberT, ParserTs...>::setupIdsMap() {
   _members_ids_map.clear();
-  for (size_t i = 0; i < KVParser::_parsers_array.size(); ++i) {
-    _members_ids_map[KVParser::_parsers_array[i]] = i;
+  for (size_t i = 0; i < KVParser::parsersArray().size(); ++i) {
+    _members_ids_map[KVParser::parsersArray()[i]] = i;
   }
 }
 
@@ -301,7 +299,7 @@ void Union<TypeMemberT, ParserTs...>::setFinishCallback(Callback on_finish) {
 
 template <typename TypeMemberT, typename... ParserTs>
 size_t Union<TypeMemberT, ParserTs...>::currentMemberId() {
-  checkSet();
+  TokenParser::checkSet();
   return _current_member_id;
 }
 
@@ -315,7 +313,7 @@ template <typename TypeMemberT, typename... ParserTs>
 void Union<TypeMemberT, ParserTs...>::on(TokenType<TypeMemberT> value) {
   reset();
   KVParser::onMember(value);
-  _current_member_id = _members_ids_map[KVParser::_parsers_map[value]];
+  _current_member_id = _members_ids_map[KVParser::parsersMap()[value]];
 }
 
 template <typename TypeMemberT, typename... ParserTs>
@@ -346,21 +344,21 @@ void Union<TypeMemberT, ParserTs...>::childParsed() {
   if (_type_member.empty()) {
     // The union embedded into an object must propagate the end event to the
     // parent.
-    KVParser::_dispatcher->on(MapEndT());
+    TokenParser::dispatcher()->on(MapEndT());
   }
 }
 
 template <typename TypeMemberT, typename... ParserTs>
 void Union<TypeMemberT, ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     return;
   }
 
   try {
     MemberChecker<0, ParserTs...>(*this);
   } catch (std::exception &e) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     throw;
   }
 
@@ -378,7 +376,7 @@ Union<TypeMemberT, ParserTs...>::MemberChecker<n, ParserT, ParserTDs...>::
     return;
   }
 
-  auto &member = parser._member_parsers.template get<n>();
+  auto &member = parser.memberParsers().template get<n>();
 
   if (!member.parser.isSet() && !member.optional) {
     std::stringstream error;

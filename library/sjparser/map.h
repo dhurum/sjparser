@@ -129,10 +129,7 @@ template <typename ParserT> class Map : public TokenParser {
   /** @endcond */
 
  protected:
-  /** @cond INTERNAL Elements parser. */
-  ParserT _parser;
-  std::string _current_key;
-  /** @endcond */
+  std::string &currentKey() noexcept;
 
  private:
   void on(MapStartT /*unused*/) override;
@@ -142,6 +139,8 @@ template <typename ParserT> class Map : public TokenParser {
   void childParsed() override;
   void finish() override;
 
+  ParserT _parser;
+  std::string _current_key;
   ElementCallback _on_element;
   Callback _on_finish;
 };
@@ -217,13 +216,18 @@ void Map<ParserT>::setDispatcher(Dispatcher *dispatcher) noexcept {
   _parser.setDispatcher(dispatcher);
 }
 
+template <typename ParserT>
+std::string &Map<ParserT>::currentKey() noexcept {
+  return _current_key;
+}
+
 template <typename ParserT> void Map<ParserT>::on(MapStartT /*unused*/) {
   reset();
 }
 
 template <typename ParserT> void Map<ParserT>::on(MapKeyT key) {
-  TokenParser::_empty = false;
-  _dispatcher->pushParser(&_parser);
+  TokenParser::setNotEmpty();
+  dispatcher()->pushParser(&_parser);
   _current_key = key.key;
 }
 

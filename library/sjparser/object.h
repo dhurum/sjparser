@@ -236,14 +236,14 @@ template <typename... ParserTs> void Object<ParserTs...>::on(MapKeyT key) {
 
 template <typename... ParserTs> void Object<ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     return;
   }
 
   try {
     MemberChecker<0, ParserTs...>(*this);
   } catch (std::exception &e) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     throw;
   }
 
@@ -257,7 +257,7 @@ template <size_t n, typename ParserT, typename... ParserTDs>
 Object<ParserTs...>::MemberChecker<n, ParserT, ParserTDs...>::MemberChecker(
     Object<ParserTs...> &parser)
     : MemberChecker<n + 1, ParserTDs...>{parser} {
-  auto &member = parser._member_parsers.template get<n>();
+  auto &member = parser.memberParsers().template get<n>();
 
   if (!member.parser.isSet() && !member.optional) {
     throw std::runtime_error("Mandatory member " + member.name

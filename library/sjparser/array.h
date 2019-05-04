@@ -96,14 +96,10 @@ template <typename ParserT> class Array : public ArrayParser {
    */
   ParserType &parser();
 
- protected:
-  /** @cond INTERNAL Elements parser. */
-  ParserT _parser;
-  /** @endcond */
-
  private:
   void finish() override;
 
+  ParserT _parser;
   Callback _on_finish;
 };
 
@@ -123,7 +119,7 @@ Array<ParserT>::Array(ParserT &&parser, CallbackT on_finish)
                 "Invalid parser used in Array");
   static_assert(std::is_constructible_v<Callback, CallbackT>,
                 "Invalid callback type");
-  _parser_ptr = &_parser;
+  setParserPtr(&_parser);
 }
 
 template <typename ParserT>
@@ -131,14 +127,14 @@ Array<ParserT>::Array(Array &&other) noexcept
     : ArrayParser{std::move(other)},
       _parser{std::forward<ParserT>(other._parser)},
       _on_finish{std::move(other._on_finish)} {
-  _parser_ptr = &_parser;
+  setParserPtr(&_parser);
 }
 
 template <typename ParserT>
 Array<ParserT> &Array<ParserT>::operator=(Array &&other) noexcept {
   ArrayParser::operator=(std::move(other));
   _parser = std::forward<ParserT>(other._parser);
-  _parser_ptr = &_parser;
+  setParserPtr(&_parser);
   _on_finish = std::move(other._on_finish);
 
   return *this;

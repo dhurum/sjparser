@@ -125,8 +125,6 @@ template <typename ParserT> class SArray : public Array<ParserT> {
   ValueType &&pop();
 
  private:
-  using TokenParser::checkSet;
-
   void childParsed() override;
   void finish() override;
   void reset() override;
@@ -177,19 +175,19 @@ void SArray<ParserT>::setFinishCallback(Callback on_finish) {
 
 template <typename ParserT>
 const typename SArray<ParserT>::ValueType &SArray<ParserT>::get() const {
-  checkSet();
+  TokenParser::checkSet();
   return _values;
 }
 
 template <typename ParserT>
 typename SArray<ParserT>::ValueType &&SArray<ParserT>::pop() {
-  checkSet();
-  TokenParser::_set = false;
+  TokenParser::checkSet();
+  TokenParser::unset();
   return std::move(_values);
 }
 
 template <typename ParserT> void SArray<ParserT>::childParsed() {
-  _values.push_back(Array<ParserT>::_parser.pop());
+  _values.push_back(Array<ParserT>::parser().pop());
 }
 
 template <typename ParserT> void SArray<ParserT>::finish() {

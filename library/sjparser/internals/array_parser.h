@@ -41,9 +41,10 @@ class ArrayParser : public TokenParser {
   void on(ArrayEndT /*unused*/) override;
 
  protected:
-  TokenParser *_parser_ptr;
+   void setParserPtr(TokenParser *parser_ptr);
 
  private:
+  TokenParser *_parser_ptr;
   bool _started = false;
 };
 }  // namespace SJParser

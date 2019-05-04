@@ -160,7 +160,7 @@ void Value<ValueT>::setFinishCallback(Callback on_finish) {
 }
 
 template <typename ValueT> void Value<ValueT>::on(TokenType<ValueT> value) {
-  TokenParser::_empty = false;
+  setNotEmpty();
   _value = value;
   endParsing();
 }
@@ -178,7 +178,7 @@ template <typename ValueT> const ValueT &Value<ValueT>::get() const {
 
 template <typename ValueT> ValueT &&Value<ValueT>::pop() {
   checkSet();
-  _set = false;
+  unset();
   return std::move(_value);
 }
 

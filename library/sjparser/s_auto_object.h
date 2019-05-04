@@ -167,8 +167,6 @@ template <typename... ParserTs> class SAutoObject : public Object<ParserTs...> {
 #endif
 
  private:
-  using TokenParser::checkSet;
-
   void finish() override;
   void reset() override;
 
@@ -236,30 +234,30 @@ void SAutoObject<ParserTs...>::setFinishCallback(Callback on_finish) {
 template <typename... ParserTs>
 const typename SAutoObject<ParserTs...>::ValueType &
 SAutoObject<ParserTs...>::get() const {
-  checkSet();
+  TokenParser::checkSet();
   return _value;
 }
 
 template <typename... ParserTs>
 typename SAutoObject<ParserTs...>::ValueType &&SAutoObject<ParserTs...>::pop() {
-  checkSet();
-  TokenParser::_set = false;
+  TokenParser::checkSet();
+  TokenParser::unset();
   return std::move(_value);
 }
 
 template <typename... ParserTs> void SAutoObject<ParserTs...>::finish() {
   if (TokenParser::isEmpty()) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     return;
   }
 
   try {
     ValueSetter<0, ParserTs...>(_value, *this);
   } catch (std::exception &e) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     throw std::runtime_error(std::string("Can not set value: ") + e.what());
   } catch (...) {
-    TokenParser::_set = false;
+    TokenParser::unset();
     throw std::runtime_error("Can not set value: unknown exception");
   }
 
@@ -278,7 +276,7 @@ template <size_t n, typename ParserT, typename... ParserTDs>
 SAutoObject<ParserTs...>::ValueSetter<n, ParserT, ParserTDs...>::ValueSetter(
     ValueType &value, SAutoObject<ParserTs...> &parser)
     : ValueSetter<n + 1, ParserTDs...>{value, parser} {
-  auto &member = parser._member_parsers.template get<n>();
+  auto &member = parser.memberParsers().template get<n>();
 
   if (member.parser.isSet()) {
     std::get<n>(value) = member.parser.pop();

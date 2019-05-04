@@ -82,13 +82,16 @@ class TokenParser {
   TokenParser &operator=(TokenParser &&) = default;
 
  protected:
+  inline void checkSet() const;
+  inline void unset() noexcept;
+  inline void unexpectedToken(const std::string &type);
+  inline void setNotEmpty() noexcept;
+  inline Dispatcher *dispatcher() noexcept;
+
+ private:
   Dispatcher *_dispatcher = nullptr;
   bool _set = false;
   bool _empty = true;
-
-  inline void checkSet() const;
-
-  inline void unexpectedToken(const std::string &type);
 };
 
 /****************************** Implementations *******************************/
@@ -107,8 +110,20 @@ void TokenParser::checkSet() const {
   }
 }
 
+void TokenParser::unset() noexcept {
+  _set = false;
+}
+
 void TokenParser::unexpectedToken(const std::string &type) {
   throw std::runtime_error("Unexpected token " + type);
+}
+
+void TokenParser::setNotEmpty() noexcept {
+  _empty = false;
+}
+
+Dispatcher *TokenParser::dispatcher() noexcept {
+  return _dispatcher;
 }
 
 }  // namespace SJParser

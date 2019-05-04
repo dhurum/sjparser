@@ -41,11 +41,9 @@ class Dispatcher {
 
   template <typename TokenT> void on(TokenT value);
 
- protected:
+ private:
   std::deque<TokenParser *> _parsers;
   TokenParser *_root_parser = nullptr;
-  std::function<void()> _on_completion;
-  std::string _error;
 };
 
 /****************************** Implementations *******************************/

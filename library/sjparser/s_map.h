@@ -164,8 +164,6 @@ template <typename ParserT> class SMap : public Map<ParserT> {
   ValueType &&pop();
 
  private:
-  using TokenParser::checkSet;
-
   void childParsed() override;
   void finish() override;
   void reset() override;
@@ -236,24 +234,24 @@ void SMap<ParserT>::setFinishCallback(Callback on_finish) {
 
 template <typename ParserT>
 const typename SMap<ParserT>::ValueType &SMap<ParserT>::get() const {
-  checkSet();
+  TokenParser::checkSet();
   return _values;
 }
 
 template <typename ParserT>
 typename SMap<ParserT>::ValueType &&SMap<ParserT>::pop() {
-  checkSet();
-  TokenParser::_set = false;
+  TokenParser::checkSet();
+  TokenParser::unset();
   return std::move(_values);
 }
 
 template <typename ParserT> void SMap<ParserT>::childParsed() {
   if (_on_element
-      && !_on_element(Map<ParserT>::_current_key, Map<ParserT>::_parser)) {
+      && !_on_element(Map<ParserT>::currentKey(), Map<ParserT>::parser())) {
     throw std::runtime_error("Element callback returned false");
   }
   _values.insert(
-      std::pair(Map<ParserT>::_current_key, Map<ParserT>::_parser.pop()));
+      std::pair(Map<ParserT>::currentKey(), Map<ParserT>::parser().pop()));
 }
 
 template <typename ParserT> void SMap<ParserT>::finish() {
