@@ -35,19 +35,28 @@ set(CHECKS
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")
 
+set(CHECK_CONFIG "{ \
+  Checks: '${CHECKS}', \
+  CheckOptions: [{ \
+    key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic, \
+    value: 1 \
+  }]}")
+
 get_target_property(SJPARSER_SOURCE_DIR sjparser SOURCE_DIR)
 
 add_custom_target(check_srcs
   COMMAND ${CLANG_TIDY_BIN} -p ${CMAKE_BINARY_DIR}
-  -checks=${CHECKS} $<TARGET_PROPERTY:sjparser,SOURCES>
+  -config=${CHECK_CONFIG} -warnings-as-errors=* $<TARGET_PROPERTY:sjparser,SOURCES> 
   WORKING_DIRECTORY  ${SJPARSER_SOURCE_DIR}
+  VERBATIM
   COMMAND_EXPAND_LISTS
 )
 
 add_custom_target(check_hdrs
   COMMAND ${CLANG_TIDY_BIN} -p ${CMAKE_BINARY_DIR}
-  -checks=${CHECKS} -warnings-as-errors=* --header-filter=.* ${DUMMY}
+  -config=${CHECK_CONFIG} -warnings-as-errors=* --header-filter=.* ${DUMMY}
   DEPENDS ${DUMMY}
+  VERBATIM
 )
 
 add_custom_target(check
