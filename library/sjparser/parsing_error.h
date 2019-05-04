@@ -45,19 +45,19 @@ class ParsingError : public std::exception {
    *
    * @return SJParser or underlying parser error.
    */
-  const char *what() const noexcept override;
+  [[nodiscard]] const char *what() const noexcept override;
 
   /** @brief SJParser error getter.
    *
    * @return SJParser error.
    */
-  const std::string &sjparserError() const noexcept;
+  [[nodiscard]] const std::string &sjparserError() const noexcept;
 
   /** @brief Underlying parser error getter.
    *
    * @return Underlying parser error.
    */
-  const std::string &parserError() const noexcept;
+  [[nodiscard]] const std::string &parserError() const noexcept;
 
  private:
   std::string _sjparser_error;

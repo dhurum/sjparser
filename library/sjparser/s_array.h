@@ -89,19 +89,19 @@ template <typename ParserT> class SArray : public Array<ParserT> {
    *
    * @return True if the parser has some value stored or false otherwise.
    */
-  bool isSet();
+  [[nodiscard]] bool isSet();
 
   /** @brief Check if the parsed array was empy (null).
    *
    * @return True if the parsed array was empty (null) or false otherwise.
    */
-  bool isEmpty();
+  [[nodiscard]] bool isEmpty();
 
   /** @brief Elements value parser getter.
    *
    * @return Reference to the elements parser.
    */
-  ParserType &parser();
+  [[nodiscard]] ParserType &parser();
 #endif
 
   /** @brief Parsed value getter.
@@ -111,7 +111,7 @@ template <typename ParserT> class SArray : public Array<ParserT> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  const ValueType &get() const;
+  [[nodiscard]] const ValueType &get() const;
 
   /** @brief Get the parsed value and unset the parser.
    *

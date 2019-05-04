@@ -54,8 +54,8 @@ class Dispatcher;
 class TokenParser {
  public:
   virtual void setDispatcher(Dispatcher *dispatcher) noexcept;
-  inline bool isSet() const noexcept;
-  inline bool isEmpty() const noexcept;
+  [[nodiscard]] inline bool isSet() const noexcept;
+  [[nodiscard]] inline bool isEmpty() const noexcept;
   virtual void reset();
   void endParsing();
   virtual void finish() = 0;
@@ -86,7 +86,7 @@ class TokenParser {
   inline void unset() noexcept;
   inline void unexpectedToken(const std::string &type);
   inline void setNotEmpty() noexcept;
-  inline Dispatcher *dispatcher() noexcept;
+  [[nodiscard]] inline Dispatcher *dispatcher() noexcept;
 
  private:
   Dispatcher *_dispatcher = nullptr;

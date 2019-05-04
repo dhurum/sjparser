@@ -90,9 +90,10 @@ class KeyValueParser : public TokenParser {
 
   // Returns NthTypes<n, ParserTs...>::template ValueType<> if it is
   // available, otherwise NthTypes<n, ParserTs...>::ParserType
-  template <size_t n> auto &get();
+  template <size_t n>[[nodiscard]] auto &get();
 
-  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
+  template <size_t n>
+  [[nodiscard]] typename NthTypes<n, ParserTs...>::ParserType &parser();
 
   template <size_t n>
   typename NthTypes<n, ParserTs...>::template ValueType<> pop();
@@ -152,9 +153,9 @@ class KeyValueParser : public TokenParser {
     DefaultValue<ParserT> default_value;
   };
 
-  auto &parsersArray();
-  auto &parsersMap();
-  auto &memberParsers();
+  [[nodiscard]] auto &parsersArray();
+  [[nodiscard]] auto &parsersMap();
+  [[nodiscard]] auto &memberParsers();
 
  private:
   std::array<TokenParser *, sizeof...(ParserTs)> _parsers_array;

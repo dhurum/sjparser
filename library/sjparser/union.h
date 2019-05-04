@@ -152,20 +152,20 @@ class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
    *
    * @throw std::runtime_error Thrown if no members were parsed.
    */
-  size_t currentMemberId();
+  [[nodiscard]] size_t currentMemberId();
 
 #ifdef DOXYGEN_ONLY
   /** @brief Check if the parser has a value.
    *
    * @return True if the parser parsed something or false otherwise.
    */
-  bool isSet();
+  [[nodiscard]] bool isSet();
 
   /** @brief Check if the parsed union was empy (null).
    *
    * @return True if the parsed union was empty (null) or false otherwise.
    */
-  bool isEmpty();
+  [[nodiscard]] bool isEmpty();
 #endif
 
 #ifdef DOXYGEN_ONLY
@@ -181,7 +181,7 @@ class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
    * @throw std::runtime_error thrown if the member parser value is unset (no
    * value was parsed or #pop was called for the member parser).
    */
-  template <size_t n> auto &get();
+  [[nodiscard]] template <size_t n> auto &get();
 
   /** @brief Member parser getter.
    *
@@ -189,7 +189,8 @@ class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
    *
    * @return Reference to n-th member parser.
    */
-  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
+  [[nodiscard]] template <size_t n>
+  typename NthTypes<n, ParserTs...>::ParserType &parser();
 
   /** @brief Get the member parsed value and unset the member parser.
    *

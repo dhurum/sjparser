@@ -81,20 +81,20 @@ template <typename ParserT> class Array : public ArrayParser {
    *
    * @return True if the parser parsed something or false otherwise.
    */
-  bool isSet();
+  [[nodiscard]] bool isSet();
 
   /** @brief Check if the parsed array was empy (null).
    *
    * @return True if the parsed array was empty (null) or false otherwise.
    */
-  bool isEmpty();
+  [[nodiscard]] bool isEmpty();
 #endif
 
   /** @brief Elements parser getter.
    *
    * @return Reference to the elements parser.
    */
-  ParserType &parser();
+  [[nodiscard]] ParserType &parser();
 
  private:
   void finish() override;

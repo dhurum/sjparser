@@ -126,13 +126,13 @@ class Object : public KeyValueParser<std::string, ParserTs...> {
    *
    * @return True if the parser parsed something or false otherwise.
    */
-  bool isSet();
+  [[nodiscard]] bool isSet();
 
   /** @brief Check if the parsed object was empy (null).
    *
    * @return True if the parsed object was empty (null) or false otherwise.
    */
-  bool isEmpty();
+  [[nodiscard]] bool isEmpty();
 
   /** @brief Universal member getter.
    *
@@ -148,7 +148,7 @@ class Object : public KeyValueParser<std::string, ParserTs...> {
    * value was parsed and no default value was specified or #pop was called for
    * the member parser).
    */
-  template <size_t n> auto &get();
+  [[nodiscard]] template <size_t n> auto &get();
 
   /** @brief Member parser getter.
    *
@@ -156,7 +156,8 @@ class Object : public KeyValueParser<std::string, ParserTs...> {
    *
    * @return Reference to n-th member parser.
    */
-  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
+  [[nodiscard]] template <size_t n>
+  typename NthTypes<n, ParserTs...>::ParserType &parser();
 
   /** @brief Get the member parsed value and unset the member parser.
    *

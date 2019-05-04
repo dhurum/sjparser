@@ -41,7 +41,7 @@ class ArrayParser : public TokenParser {
   void on(ArrayEndT /*unused*/) override;
 
  protected:
-   void setParserPtr(TokenParser *parser_ptr);
+  void setParserPtr(TokenParser *parser_ptr);
 
  private:
   TokenParser *_parser_ptr;

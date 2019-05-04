@@ -22,6 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include <gtest/gtest.h>
+#include <tuple>
 #include "sjparser/sjparser.h"
 #include "test_parser.h"
 
@@ -328,7 +329,7 @@ TEST(Value, UnsetValue) {
 
   ASSERT_FALSE(parser.parser().isSet());
   try {
-    parser.parser().get();
+    std::ignore = parser.parser().get();
     FAIL() << "No exception thrown";
   } catch (std::runtime_error &e) {
     ASSERT_STREQ("Can't get value, parser is unset", e.what());

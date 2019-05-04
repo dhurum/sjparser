@@ -59,7 +59,7 @@ class Parser : public ImplHolder::type {
    *
    * @return A reference to the root parser (@ref Parser_T "ParserT").
    */
-  ParserType &parser();
+  [[nodiscard]] ParserType &parser();
 
  private:
   ParserT _parser;

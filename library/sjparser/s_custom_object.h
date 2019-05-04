@@ -143,13 +143,13 @@ class SCustomObject : public Object<ParserTs...> {
    *
    * @return True if the parser has some value stored or false otherwise.
    */
-  bool isSet();
+  [[nodiscard]] bool isSet();
 
   /** @brief Check if the parsed object was empy (null).
    *
    * @return True if the parsed object was empty (null) or false otherwise.
    */
-  bool isEmpty();
+  [[nodiscard]] bool isEmpty();
 #endif
 
 #ifdef DOXYGEN_ONLY
@@ -167,7 +167,7 @@ class SCustomObject : public Object<ParserTs...> {
    * value was parsed and no default value was specified or #pop was called for
    * the member parser).
    */
-  template <size_t n> auto &get();
+  [[nodiscard]] template <size_t n> auto &get();
 
   /** @brief Member parser getter.
    *
@@ -175,7 +175,8 @@ class SCustomObject : public Object<ParserTs...> {
    *
    * @return Reference to n-th member parser.
    */
-  template <size_t n> typename NthTypes<n, ParserTs...>::ParserType &parser();
+  [[nodiscard]] template <size_t n>
+  typename NthTypes<n, ParserTs...>::ParserType &parser();
 #endif
   using Object<ParserTs...>::get;
 
@@ -186,7 +187,7 @@ class SCustomObject : public Object<ParserTs...> {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  const ValueType &get() const;
+  [[nodiscard]] const ValueType &get() const;
 
 #ifdef DOXYGEN_ONLY
   /** @brief Get the member parsed value and unset the member parser.

@@ -122,7 +122,7 @@ template <typename ParserT> class Map : public TokenParser {
    *
    * @return Reference to the elements parser.
    */
-  ParserType &parser();
+  [[nodiscard]] ParserType &parser();
 
   /** @cond INTERNAL Internal */
   void setDispatcher(Dispatcher *dispatcher) noexcept override;
@@ -216,8 +216,7 @@ void Map<ParserT>::setDispatcher(Dispatcher *dispatcher) noexcept {
   _parser.setDispatcher(dispatcher);
 }
 
-template <typename ParserT>
-std::string &Map<ParserT>::currentKey() noexcept {
+template <typename ParserT> std::string &Map<ParserT>::currentKey() noexcept {
   return _current_key;
 }
 

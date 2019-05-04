@@ -80,13 +80,13 @@ template <typename ValueT> class Value : public TokenParser {
    *
    * @return True if the parser has some value stored or false otherwise.
    */
-  bool isSet();
+  [[nodiscard]] bool isSet();
 
   /** @brief Check if the parsed value was empy (null).
    *
    * @return True if the parsed value was empty (null) or false otherwise.
    */
-  bool isEmpty();
+  [[nodiscard]] bool isEmpty();
 #endif
 
   /** @brief Parsed value getter.
@@ -96,7 +96,7 @@ template <typename ValueT> class Value : public TokenParser {
    * @throw std::runtime_error Thrown if the value is unset (no value was
    * parsed or #pop was called).
    */
-  const ValueType &get() const;
+  [[nodiscard]] const ValueType &get() const;
 
   /** @brief Get the parsed value and unset the parser.
    *
