@@ -117,69 +117,9 @@ template <typename ValueT> class Value : public TokenParser {
   Callback _on_finish;
 };
 
-/****************************** Implementations *******************************/
-
-template <typename ValueT>
-Value<ValueT>::Value(Callback on_finish) : _on_finish{std::move(on_finish)} {
-  // Formatting disabled because of a bug in clang-format
-  // clang-format off
-  static_assert(
-      std::is_same_v<ValueT, int64_t>
-      || std::is_same_v<ValueT, bool>
-      || std::is_same_v<ValueT, double>
-      || std::is_same_v<ValueT, std::string>,
-      "Invalid type used in Value, only int64_t, bool, double or std::string"
-      " are allowed");
-
-  if constexpr (std::is_same_v<ValueT, int64_t>
-                || std::is_same_v<ValueT, bool>
-                || std::is_same_v<ValueT, double>) {
-    _value = 0;
-  }
-  // clang-format on
-}
-
-template <typename ValueT>
-Value<ValueT>::Value(Value &&other) noexcept
-    : TokenParser{std::move(other)},
-      _value{std::move(other._value)},
-      _on_finish{std::move(other._on_finish)} {}
-
-template <typename ValueT>
-Value<ValueT> &Value<ValueT>::operator=(Value &&other) noexcept {
-  TokenParser::operator=(std::move(other));
-  _value = std::move(other._value);
-  _on_finish = std::move(other._on_finish);
-
-  return *this;
-}
-
-template <typename ValueT>
-void Value<ValueT>::setFinishCallback(Callback on_finish) {
-  _on_finish = on_finish;
-}
-
-template <typename ValueT> void Value<ValueT>::on(TokenType<ValueT> value) {
-  setNotEmpty();
-  _value = value;
-  endParsing();
-}
-
-template <typename ValueT> void Value<ValueT>::finish() {
-  if (_on_finish && !_on_finish(_value)) {
-    throw std::runtime_error("Callback returned false");
-  }
-}
-
-template <typename ValueT> const ValueT &Value<ValueT>::get() const {
-  checkSet();
-  return _value;
-}
-
-template <typename ValueT> ValueT &&Value<ValueT>::pop() {
-  checkSet();
-  unset();
-  return std::move(_value);
-}
+extern template class Value<int64_t>;
+extern template class Value<bool>;
+extern template class Value<double>;
+extern template class Value<std::string>;
 
 }  // namespace SJParser

@@ -31,6 +31,15 @@ set(CHECKS
   # Project-specific checks, not useful in this case
   -fuchsia-default-arguments
   -fuchsia-trailing-return
+  # Does not work with if constexpr
+  -readability-braces-around-statements
+  -bugprone-suspicious-semicolon
+  -hicpp-braces-around-statements
+  -google-readability-braces-around-statements
+  # Does not allow to write move constructor / assignment operator for a class
+  # with a parent.
+  -bugprone-use-after-move
+  -hicpp-invalid-access-moved
 )
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")
