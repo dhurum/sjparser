@@ -60,7 +60,7 @@ TEST(Member, OptionalWithRvalueParser) {
 
   ASSERT_EQ(member.name, "test");
   ASSERT_TRUE(member.optional);
-  ASSERT_FALSE(member.default_value.present);
+  ASSERT_FALSE(member.default_value.value);
   ASSERT_FALSE(std::is_reference_v<decltype(member.parser)>);
 }
 
@@ -70,7 +70,7 @@ TEST(Member, OptionalWithLvalueParser) {
 
   ASSERT_EQ(member.name, "test");
   ASSERT_TRUE(member.optional);
-  ASSERT_FALSE(member.default_value.present);
+  ASSERT_FALSE(member.default_value.value);
   ASSERT_TRUE(std::is_lvalue_reference_v<decltype(member.parser)>);
 }
 
@@ -79,8 +79,8 @@ TEST(Member, DefaultWithRvalueParser) {
 
   ASSERT_EQ(member.name, "test");
   ASSERT_TRUE(member.optional);
-  ASSERT_TRUE(member.default_value.present);
-  ASSERT_EQ(member.default_value.value, 10);
+  ASSERT_TRUE(member.default_value.value);
+  ASSERT_EQ(*member.default_value.value, 10);
   ASSERT_FALSE(std::is_reference_v<decltype(member.parser)>);
 }
 
@@ -90,8 +90,8 @@ TEST(Member, DefaultWithLvalueParser) {
 
   ASSERT_EQ(member.name, "test");
   ASSERT_TRUE(member.optional);
-  ASSERT_TRUE(member.default_value.present);
-  ASSERT_EQ(member.default_value.value, 10);
+  ASSERT_TRUE(member.default_value.value);
+  ASSERT_EQ(*member.default_value.value, 10);
   ASSERT_TRUE(std::is_lvalue_reference_v<decltype(member.parser)>);
 }
 
@@ -102,7 +102,7 @@ TEST(Member, MoveAssignment) {
 
   ASSERT_EQ(member.name, "test");
   ASSERT_TRUE(member.optional);
-  ASSERT_TRUE(member.default_value.present);
-  ASSERT_EQ(member.default_value.value, 10);
+  ASSERT_TRUE(member.default_value.value);
+  ASSERT_EQ(*member.default_value.value, 10);
   ASSERT_FALSE(std::is_reference_v<decltype(member.parser)>);
 }

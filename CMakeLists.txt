@@ -49,6 +49,10 @@ if(SJPARSER_WITH_TESTS)
   add_subdirectory(tests)
 endif()
 
+if(STANDALONE_BUILD)
+  add_subdirectory(check)
+endif()
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND SJPARSER_WITH_COVERAGE)
   add_subdirectory(coverage)
 endif()

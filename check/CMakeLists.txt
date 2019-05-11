@@ -5,19 +5,6 @@ if(NOT CLANG_TIDY_BIN)
   return()
 endif()
 
-set(DUMMY ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp)
-
-add_custom_command(OUTPUT ${DUMMY}
-  COMMAND ./generate_dummy.sh ${DUMMY}
-  $<TARGET_PROPERTY:sjparser,SJPARSER_HEADERS>
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  COMMAND_EXPAND_LISTS
-)
-
-add_executable(dummy EXCLUDE_FROM_ALL ${DUMMY})
-target_link_libraries(dummy PRIVATE sjparser)
-setup_compilation_options(dummy)
-
 set(CHECKS
   *
   # Dealing with C api requires lots of reinterpret casts
@@ -54,20 +41,46 @@ set(CHECK_CONFIG "{ \
 get_target_property(SJPARSER_SOURCE_DIR sjparser SOURCE_DIR)
 
 add_custom_target(check_srcs
-  COMMAND ${CLANG_TIDY_BIN} -p ${CMAKE_BINARY_DIR}
-  -config=${CHECK_CONFIG} -warnings-as-errors=* $<TARGET_PROPERTY:sjparser,SOURCES> 
+  COMMAND ${CLANG_TIDY_BIN}
+  -p ${CMAKE_BINARY_DIR}
+  -config=${CHECK_CONFIG}
+  -warnings-as-errors=*
+  -header-filter=.*
+  $<TARGET_PROPERTY:sjparser,SOURCES> 
   WORKING_DIRECTORY  ${SJPARSER_SOURCE_DIR}
   VERBATIM
   COMMAND_EXPAND_LISTS
 )
 
-add_custom_target(check_hdrs
-  COMMAND ${CLANG_TIDY_BIN} -p ${CMAKE_BINARY_DIR}
-  -config=${CHECK_CONFIG} -warnings-as-errors=* --header-filter=.* ${DUMMY}
-  DEPENDS ${DUMMY}
+get_target_property(SJPARSER_TESTS_DIR sjparser_tests SOURCE_DIR)
+get_target_property(SJPARSER_HEADERS sjparser SJPARSER_HEADERS)
+
+set(FILTERS "[")
+set(FIRST_FILTER TRUE)
+
+foreach(HEADER ${SJPARSER_HEADERS})
+  if(FIRST_FILTER)
+    set(FIRST_FILTER FALSE)
+  else()
+    set(FILTERS "${FILTERS},")
+  endif()
+  set(FILTERS "${FILTERS}{\"name\":\"${HEADER}\"}")
+endforeach()
+set(FILTERS "${FILTERS}]")
+
+add_custom_target(check_tests
+  COMMAND ${CLANG_TIDY_BIN}
+    -p ${CMAKE_BINARY_DIR}
+    -config=${CHECK_CONFIG}
+    -warnings-as-errors=*
+    -header-filter=.*
+    -line-filter=${FILTERS}
+    $<TARGET_PROPERTY:sjparser_tests,SOURCES>
+  WORKING_DIRECTORY  ${SJPARSER_TESTS_DIR}
   VERBATIM
+  COMMAND_EXPAND_LISTS
 )
 
 add_custom_target(check
-  DEPENDS check_srcs check_hdrs
+  DEPENDS check_srcs check_tests
 )

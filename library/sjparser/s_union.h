@@ -313,12 +313,12 @@ SUnion<TypeMemberT, ParserTs...>::ValueSetter<n, ParserT, ParserTDs...>::
   if (member.parser.isSet()) {
     value = member.parser.pop();
   } else if (member.optional) {
-    if (!member.default_value.present) {
+    if (!member.default_value.value) {
       std::stringstream error;
       error << "Optional member #" << n << " does not have a default value";
       throw std::runtime_error(error.str());
     }
-    value = member.default_value.value;
+    value = *member.default_value.value;
   } else {
     std::stringstream error;
     error << "Mandatory member #" << n << " is not present";

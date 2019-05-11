@@ -288,8 +288,10 @@ Union<TypeMemberT, ParserTs...> &Union<TypeMemberT, ParserTs...>::operator=(
 template <typename TypeMemberT, typename... ParserTs>
 void Union<TypeMemberT, ParserTs...>::setupIdsMap() {
   _members_ids_map.clear();
-  for (size_t i = 0; i < KVParser::parsersArray().size(); ++i) {
-    _members_ids_map[KVParser::parsersArray()[i]] = i;
+  size_t index = 0;
+  for (const auto &id : KVParser::parsersArray()) {
+    _members_ids_map[id] = index;
+    ++index;
   }
 }
 

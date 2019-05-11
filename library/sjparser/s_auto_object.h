@@ -78,7 +78,7 @@ template <typename... ParserTs> class SAutoObject : public Object<ParserTs...> {
       CallbackT on_finish = nullptr,
       std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
           * /*unused*/
-      = 0);
+      = nullptr);
 
   /** @brief Constructor.
    *
@@ -282,11 +282,11 @@ SAutoObject<ParserTs...>::ValueSetter<n, ParserT, ParserTDs...>::ValueSetter(
   if (member.parser.isSet()) {
     std::get<n>(value) = member.parser.pop();
   } else if (member.optional) {
-    if (!member.default_value.present) {
+    if (!member.default_value.value) {
       throw std::runtime_error("Optional member " + member.name
                                + " does not have a default value");
     }
-    std::get<n>(value) = member.default_value.value;
+    std::get<n>(value) = *member.default_value.value;
   } else {
     throw std::runtime_error("Mandatory member " + member.name
                              + " is not present");

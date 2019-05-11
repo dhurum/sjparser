@@ -171,7 +171,7 @@ Member<NameT, ParserT>::Member(NameT name, ParserT &&parser,
     : name{std::move(name)},
       parser{std::forward<ParserT>(parser)},
       optional{true},
-      default_value{true, std::move(default_value)} {
+      default_value{std::move(default_value)} {
   checkTemplateParameters();
 }
 

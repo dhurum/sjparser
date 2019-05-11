@@ -86,6 +86,5 @@ if(STANDALONE_BUILD)
     DESTINATION ${PACKAGE_LOCATION}
   )
 
-  add_subdirectory(check)
   add_subdirectory(documentation)
 endif()

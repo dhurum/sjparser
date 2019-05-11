@@ -69,7 +69,7 @@ template <typename ParserT> class SMap : public Map<ParserT> {
   explicit SMap(ParserT &&parser, CallbackT on_finish = nullptr,
                 std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
                     * /*unused*/
-                = 0);
+                = nullptr);
 
   /** @brief Constructor.
    *

@@ -65,7 +65,7 @@ template <typename ParserT> class Map : public TokenParser {
   explicit Map(ParserT &&parser, CallbackT on_finish = nullptr,
                std::enable_if_t<std::is_constructible_v<Callback, CallbackT>>
                    * /*unused*/
-               = 0);
+               = nullptr);
 
   /** @brief Constructor.
    *

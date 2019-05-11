@@ -253,9 +253,10 @@ auto &KeyValueParser<NameT, ParserTs...>::get() {
   auto &member = _member_parsers.template get<n>();
 
   if constexpr (NthTypes<n, ParserTs...>::has_value_type) {
-    if (!member.parser.isSet() && member.default_value.present) {
-      return static_cast<const decltype(member.default_value.value) &>(
-          member.default_value.value);
+    if (!member.parser.isSet() && member.default_value.value) {
+      return static_cast<const typename decltype(
+          member.default_value.value)::value_type &>(
+          *member.default_value.value);
     }
     return member.parser.get();
     // Disable readability-else-after-return
@@ -279,12 +280,12 @@ typename KeyValueParser<NameT, ParserTs...>::template NthTypes<
 KeyValueParser<NameT, ParserTs...>::pop() {
   auto &member = _member_parsers.template get<n>();
 
-  if (!member.parser.isSet() && member.default_value.present) {
+  if (!member.parser.isSet() && member.default_value.value) {
     // This form is used to reduce the number of required methods for
     // SCustomObject stored type. Otherwise a copy constructor would be
     // necessary.
-    decltype(member.default_value.value) value;
-    value = member.default_value.value;
+    typename decltype(member.default_value.value)::value_type value;
+    value = *member.default_value.value;
     return value;
   }
   return std::move(member.parser.pop());
