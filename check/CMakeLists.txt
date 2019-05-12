@@ -27,8 +27,6 @@ set(CHECKS
   # with a parent.
   -bugprone-use-after-move
   -hicpp-invalid-access-moved
-  # Clang-tidy 7 does not seem to work with std::optional
-  -clang-diagnostic-error
 )
 
 string(REPLACE ";" "," CHECKS "${CHECKS}")
