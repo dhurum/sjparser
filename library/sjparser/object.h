@@ -195,6 +195,24 @@ class Object : public KeyValueParser<std::string, ParserTs...> {
   Callback _on_finish;
 };
 
+}  // namespace SJParser
+
+namespace std {
+
+template <typename... ParserTs>
+struct tuple_size<SJParser::Object<ParserTs...>>
+    : std::integral_constant<std::size_t, sizeof...(ParserTs)> {};
+
+template <std::size_t n, typename... ParserTs>
+struct tuple_element<n, SJParser::Object<ParserTs...>> {
+  using type =
+      decltype(std::declval<SJParser::Object<ParserTs...>>().template get<n>());
+};
+
+}  // namespace std
+
+namespace SJParser {
+
 /****************************** Implementations *******************************/
 
 template <typename... ParserTs>

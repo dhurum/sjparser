@@ -106,3 +106,14 @@ TEST(Member, MoveAssignment) {
   ASSERT_EQ(*member.default_value.value, 10);
   ASSERT_FALSE(std::is_reference_v<decltype(member.parser)>);
 }
+
+TEST(Member, StructuredBindings) {
+  Member member{"test", Value<int64_t>{}, Presence::Optional, 10};
+
+  auto& [name, parser, optional, default_value] = member;
+
+  ASSERT_EQ(name, "test");
+  ASSERT_TRUE(optional);
+  ASSERT_TRUE(default_value.value);
+  ASSERT_EQ(*default_value.value, 10);
+}
