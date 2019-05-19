@@ -176,6 +176,7 @@ class Object : public KeyValueParser<std::string, ParserTs...> {
 #endif
 
  protected:
+  /** @cond INTERNAL */
   template <size_t, typename...> struct MemberChecker {
     explicit MemberChecker(Object<ParserTs...> & /*parser*/) {}
   };
@@ -185,6 +186,7 @@ class Object : public KeyValueParser<std::string, ParserTs...> {
       : private MemberChecker<n + 1, ParserTDs...> {
     explicit MemberChecker(Object<ParserTs...> &parser);
   };
+  /** @endcond */
 
  private:
   using KVParser::on;
