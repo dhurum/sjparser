@@ -243,13 +243,9 @@ class Union : public KeyValueParser<TypeMemberT, ParserTs...> {
 template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>
 Union<TypeMemberT, ParserTs...>::Union(
-    TypeHolder<TypeMemberT> /*type*/,
+    TypeHolder<TypeMemberT> type,
     std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
-    : KVParser{std::move(members), {}}, _on_finish{std::move(on_finish)} {
-  static_assert(std::is_constructible_v<Callback, CallbackT>,
-                "Invalid callback type");
-  setupIdsMap();
-}
+    : Union{type, {}, std::move(members), std::move(on_finish)} {}
 
 template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>

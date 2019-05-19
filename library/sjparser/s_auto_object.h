@@ -197,8 +197,7 @@ template <typename CallbackT>
 SAutoObject<ParserTs...>::SAutoObject(
     std::tuple<Member<std::string, ParserTs>...> members, CallbackT on_finish,
     std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
-    : Object<ParserTs...>{std::move(members), {}},
-      _on_finish{std::move(on_finish)} {}
+    : SAutoObject{std::move(members), ObjectOptions{}, std::move(on_finish)} {}
 
 template <typename... ParserTs>
 template <typename CallbackT>

@@ -202,7 +202,7 @@ template <typename CallbackT>
 Object<ParserTs...>::Object(
     std::tuple<Member<std::string, ParserTs>...> members, CallbackT on_finish,
     std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
-    : KVParser{std::move(members), {}}, _on_finish{std::move(on_finish)} {}
+    : Object{std::move(members), ObjectOptions{}, std::move(on_finish)} {}
 
 template <typename... ParserTs>
 template <typename CallbackT>

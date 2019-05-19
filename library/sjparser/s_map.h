@@ -186,11 +186,7 @@ template <typename CallbackT>
 SMap<ParserT>::SMap(
     ParserT &&parser, CallbackT on_finish,
     std::enable_if_t<std::is_constructible_v<Callback, CallbackT>> * /*unused*/)
-    : Map<ParserT>{std::forward<ParserT>(parser)},
-      _on_finish{std::move(on_finish)} {
-  static_assert(std::is_base_of_v<TokenParser, ParserType>,
-                "Invalid parser used in Map");
-}
+    : SMap{std::forward<ParserT>(parser), nullptr, std::move(on_finish)} {}
 
 template <typename ParserT>
 template <typename ElementCallbackT, typename CallbackT>

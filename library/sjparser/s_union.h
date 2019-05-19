@@ -224,8 +224,7 @@ template <typename CallbackT>
 SUnion<TypeMemberT, ParserTs...>::SUnion(
     TypeHolder<TypeMemberT> type,
     std::tuple<Member<TypeMemberT, ParserTs>...> members, CallbackT on_finish)
-    : Union<TypeMemberT, ParserTs...>{type, std::move(members)},
-      _on_finish{std::move(on_finish)} {}
+    : SUnion{type, {}, std::move(members), std::move(on_finish)} {}
 
 template <typename TypeMemberT, typename... ParserTs>
 template <typename CallbackT>
